@@ -1,6 +1,7 @@
 package aurelienribon.tweenstudio.ui.timeline;
 
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Node;
+import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.FontMetrics;
 import java.awt.Graphics2D;
@@ -149,7 +150,7 @@ class DrawableGrid implements Scrollable {
 
 	private void drawNodeBackgrounds(final Graphics2D gg) {
 		forAllNodes(new NodeAction() {
-			@Override public boolean act(Node node, int line) {
+			@Override public boolean act(String target, String attr, Node node, int line) {
 				int x1 = getXFromTime(node.delayMillis);
 				int x2 = getXFromTime(node.delayMillis + node.durationMillis);
 				int y = getYFromLine(line);
@@ -158,11 +159,30 @@ class DrawableGrid implements Scrollable {
 				return false;
 			}
 		});
+
+		forAllNodes(new NodeAction() {
+			@Override
+			public boolean act(String target, String attr, Node node, int line) {
+				int y = getYFromLine(line);
+				Node[] nodes = parent.getModel().getNodes(target, attr);
+				for (Node n : nodes) {
+					if (n != node
+					&& n.delayMillis < node.delayMillis + node.durationMillis
+					&& n.delayMillis >= node.delayMillis) {
+						int x3 = getXFromTime(n.delayMillis);
+						int x4 = getXFromTime(Math.min(n.delayMillis + n.durationMillis, node.delayMillis + node.durationMillis));
+						gg.setColor(Color.RED);
+						gg.fillRect(x3, y+2, x4-x3, lineHeight-3);
+					}
+				}
+				return false;
+			}
+		});
 	}
 
 	private void drawNodes(final Graphics2D gg) {
 		forAllNodes(new NodeAction() {
-			@Override public boolean act(Node node, int line) {
+			@Override public boolean act(String target, String attr, Node node, int line) {
 				int x = getXFromTime(node.delayMillis + node.durationMillis);
 				int y = getYFromLine(line);
 				gg.setColor(Theme.COLOR_GRID_NODES_FILL);
@@ -170,6 +190,24 @@ class DrawableGrid implements Scrollable {
 				gg.setColor(Theme.COLOR_GRID_BACKGROUND);
 				gg.setStroke(Theme.STROKE_SMALL);
 				gg.drawOval(x-4, y+3, nodeWidth, lineHeight-6);
+				return false;
+			}
+		});
+
+		forAllNodes(new NodeAction() {
+			@Override public boolean act(String target, String attr, Node node, int line) {
+				int x = getXFromTime(node.delayMillis + node.durationMillis);
+				int y = getYFromLine(line);
+				Node[] nodes = parent.getModel().getNodes(target, attr);
+				for (Node n : nodes) {
+					if (n != node && n.durationMillis + n.delayMillis == node.durationMillis + node.delayMillis) {
+						gg.setColor(Color.RED);
+						gg.fillOval(x-4, y+3, nodeWidth, lineHeight-6);
+						gg.setColor(Theme.COLOR_GRID_BACKGROUND);
+						gg.setStroke(Theme.STROKE_SMALL);
+						gg.drawOval(x-4, y+3, nodeWidth, lineHeight-6);
+					}
+				}
 				return false;
 			}
 		});
@@ -232,7 +270,7 @@ class DrawableGrid implements Scrollable {
 				String attr = attrs[j];
 				Node[] nodes = model.getNodes(target, attr);
 				for (Node node : nodes) {
-					if (action.act(node, line))
+					if (action.act(target, attr, node, line))
 						return;
 				}
 			}
@@ -240,7 +278,7 @@ class DrawableGrid implements Scrollable {
 	}
 
 	private interface NodeAction {
-		public boolean act(Node node, int line);
+		public boolean act(String target, String attr, Node node, int line);
 	}
 
 	// -------------------------------------------------------------------------
@@ -316,7 +354,7 @@ class DrawableGrid implements Scrollable {
 			// Node test
 			draggedNode = null;
 			forAllNodes(new NodeAction() {
-				@Override public boolean act(Node node, int line) {
+				@Override public boolean act(String target, String attr, Node node, int line) {
 					if ((getTimeFromX(e.getX()) == node.delayMillis + node.durationMillis) && getLineFromY(e.getY()-vScrollOffset) == line) {
 						draggedNode = node;
 						return true;

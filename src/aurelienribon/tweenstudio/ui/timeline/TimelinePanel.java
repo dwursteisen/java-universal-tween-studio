@@ -20,7 +20,7 @@ public class TimelinePanel extends JPanel {
 	private final DrawableScrollBars scrollBarsPanel;
 
 	private int currentTime = 0;
-	private int selectedLine = 2;
+	private int selectedLine = -1;
 
 	public static void main(String[] args) {
 		TimelineModel model = new TimelineModel()
@@ -134,8 +134,10 @@ public class TimelinePanel extends JPanel {
 		@Override
 		public void run() {
 			while (true) {
-				for (Runnable runnable : updateRunnables)
+				for (Runnable runnable : updateRunnables) {
 					runnable.run();
+					repaint();
+				}
 				try { Thread.sleep(16);
 				} catch (InterruptedException ex) {
 				}

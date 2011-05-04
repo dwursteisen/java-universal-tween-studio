@@ -32,7 +32,6 @@ class DrawableScrollBars {
 					@Override
 					public void run() {
 						scrollable.requestHorizontalScroll(horizontalPosition * 2 - 1);
-						parent.repaint();
 					}
 				});
 			} catch (InterruptedException ex) {
