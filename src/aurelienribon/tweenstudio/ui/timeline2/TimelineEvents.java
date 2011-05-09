@@ -2,6 +2,7 @@ package aurelienribon.tweenstudio.ui.timeline2;
 
 import aurelienribon.common.EventManager;
 import aurelienribon.common.EventManager.SimpleEventListener;
+import aurelienribon.tweenstudio.ui.timeline.TimelineModel;
 import java.util.EventListener;
 
 public class TimelineEvents extends EventManager {
@@ -27,5 +28,15 @@ public class TimelineEvents extends EventManager {
 		for (EventListener listener : listeners)
 			if (CurrentTimeChangedListener.class.isAssignableFrom(listener.getClass()))
 				((CurrentTimeChangedListener)listener).onEvent(newMillis);
+	}
+
+	public interface ModelChangedListener extends EventListener {
+		public void onEvent(TimelineModel newModel);
+	}
+
+	public void fireModelChangedEvent(TimelineModel newModel) {
+		for (EventListener listener : listeners)
+			if (ModelChangedListener.class.isAssignableFrom(listener.getClass()))
+				((ModelChangedListener)listener).onEvent(newModel);
 	}
 }

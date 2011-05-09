@@ -2,7 +2,6 @@ package aurelienribon.tweenstudio.ui.timeline2;
 
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Node;
-import aurelienribon.tweenstudio.ui.timeline.components.Scrollable;
 import java.awt.BorderLayout;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -33,26 +32,7 @@ public class TimelinePanel extends JPanel {
 		setBackground(Theme.COLOR_BACKGROUND);
 		setLayout(new BorderLayout());
 		add(new MenuBarPanel(), BorderLayout.NORTH);
-		add(new ScrollPanel(new Scrollable() {
-
-			@Override
-			public void requestHorizontalScroll(float speed) {
-			}
-
-			@Override
-			public void requestVerticalScroll(float position) {
-			}
-
-			@Override
-			public int getPreferredHeight() {
-				return 100;
-			}
-
-			@Override
-			public int getVerticalOffset() {
-				return 0;
-			}
-		}), BorderLayout.CENTER);
+		add(new ScrollPanel(new GridPanel()), BorderLayout.CENTER);
 	}
 
 	public TimelineModel getModel() {
@@ -61,5 +41,6 @@ public class TimelinePanel extends JPanel {
 
 	public void setModel(TimelineModel model) {
 		this.model = model;
+		TimelineEvents.instance().fireModelChangedEvent(model);
 	}
 }
