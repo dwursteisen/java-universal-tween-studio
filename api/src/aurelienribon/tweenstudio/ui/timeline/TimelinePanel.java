@@ -1,5 +1,6 @@
 package aurelienribon.tweenstudio.ui.timeline;
 
+import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Element;
 import java.awt.BorderLayout;
 import javax.swing.JFrame;
 
@@ -43,6 +44,26 @@ public class TimelinePanel extends javax.swing.JPanel {
 		gridPanel.addListener(new GridPanel.EventListener() {
 			@Override public void timeCursorMoved(int newTime) {
 				menuBarPanel.setTime(newTime);
+			}
+
+			@Override public void selectedElementChanged(Element selectedElement) {
+				namesPanel.setSelectedElement(selectedElement);
+			}
+		});
+
+		menuBarPanel.addListener(new MenuBarPanel.EventListener() {
+			@Override public void addNodeRequested() {
+				gridPanel.requestAddNode();
+			}
+
+			@Override public void delNodeRequested() {
+				gridPanel.requestDelNode();
+			}
+		});
+
+		namesPanel.addListener(new NamesPanel.EventListener() {
+			@Override public void selectedElementChanged(Element selectedElem) {
+				gridPanel.setSelectedElement(selectedElem);
 			}
 		});
     }

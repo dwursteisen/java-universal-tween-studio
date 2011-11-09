@@ -8,12 +8,13 @@ import java.awt.Cursor;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JPanel;
-import javax.swing.event.EventListenerList;
 
 public class GridPanel extends JPanel {
 	private final int oneSecondWidth = 100;
@@ -25,18 +26,54 @@ public class GridPanel extends JPanel {
 	private TimelineModel model;
 	private float timeScale = 1;
 	private int currentTime = 0;
+	private Element selectedElement = null;
+	private Element mouseOverElement = null;
+	private Node selectedNode = null;
+	private Node mouseOverNode = null;
 
 	public GridPanel() {
 		addMouseListener(mouseAdapter);
 		addMouseMotionListener(mouseAdapter);
+		addKeyListener(keyAdapter);
+		setFocusable(true);
 	}
 
 	public void setModel(TimelineModel model) {
 		this.model = model;
 	}
 
+	public void setSelectedElement(Element selectedElement) {
+		if (this.selectedElement != selectedElement) {
+			this.selectedElement = selectedElement;
+			selectedNode = null;
+			repaint();
+		}
+	}
+
+	public void requestAddNode() {
+		if (selectedElement != null) {
+			selectedElement.addNode(currentTime, 0);
+			repaint();
+		}
+	}
+
+	public void requestDelNode() {
+		if (selectedNode != null) {
+			model.forAllElements(new ElementAction() {
+				@Override public boolean apply(Element elem) {
+					if (elem.getNodes().contains(selectedNode)) {
+						elem.getNodes().remove(selectedNode);
+						repaint();
+						return true;
+					}
+					return false;
+				}
+			});
+		}
+	}
+
 	// -------------------------------------------------------------------------
-	// painting
+	// Painting
 	// -------------------------------------------------------------------------
 
 	@Override
@@ -46,14 +83,30 @@ public class GridPanel extends JPanel {
 		gg.fillRect(0, 0, getWidth(), getHeight());
 		if (model == null) return;
 
-		gg.setColor(Theme.COLOR_GRIDPANEL_SECTION);
-		for (int i=0, n=UiHelper.getLinesCount(model); i<n; i++)
-			gg.fillRect(0, paddingTop+lineHeight*i, getWidth(), i != n-1 ? lineHeight-1 : lineHeight);
-
+		paintSections(gg);
 		paintNodesTracks(gg);
 		paintTimeline(gg);
 		paintTimeCursor(gg);
 		paintNodes(gg);
+	}
+
+	private void paintSections(final Graphics2D gg) {
+		final int elemCnt = UiHelper.getLinesCount(model);
+
+		model.forAllElements(new ElementAction() {
+			private int line = 0;
+			@Override public boolean apply(Element elem) {
+				if (elem.isSelectable()) {
+					gg.setColor(Theme.COLOR_GRIDPANEL_SECTION);
+				} else {
+					gg.setColor(Theme.COLOR_GRIDPANEL_SECTION_UNUSABLE);
+				}
+
+				gg.fillRect(0, paddingTop+lineHeight*line, getWidth(), line != elemCnt-1 ? lineHeight-1 : lineHeight);
+				line += 1;
+				return false;
+			}
+		});
 	}
 	
 	private void paintTimeline(Graphics2D gg) {
@@ -104,7 +157,15 @@ public class GridPanel extends JPanel {
 				for (Node node : nodes) {
 					int x1 = getXFromTime(node.getStart());
 					int x2 = getXFromTime(node.getEnd());
-					gg.setColor(Theme.COLOR_GRIDPANEL_NODE_TRACK);
+
+					if (node == selectedNode) {
+						gg.setColor(Theme.COLOR_GRIDPANEL_NODE_TRACK_SELECTED);
+					} else if (node == mouseOverNode) {
+						gg.setColor(Theme.COLOR_GRIDPANEL_NODE_TRACK_MOUSEOVER);
+					} else {
+						gg.setColor(Theme.COLOR_GRIDPANEL_NODE_TRACK);
+					}
+
 					gg.fillRect(x1, y+1, x2-x1, lineHeight-3);
 				}
 
@@ -137,9 +198,25 @@ public class GridPanel extends JPanel {
 
 				for (Node node : nodes) {
 					int x = getXFromTime(node.getEnd());
-					gg.setColor(Theme.COLOR_GRIDPANEL_NODE_FILL);
+
+					if (node == selectedNode) {
+						gg.setColor(Theme.COLOR_GRIDPANEL_NODE_FILL_SELECTED);
+					} else if (node == mouseOverNode) {
+						gg.setColor(Theme.COLOR_GRIDPANEL_NODE_FILL_MOUSEOVER);
+					} else {
+						gg.setColor(Theme.COLOR_GRIDPANEL_NODE_FILL);
+					}
+
 					gg.fillOval(x-4, y+2, nodeWidth, lineHeight-6);
-					gg.setColor(Theme.COLOR_GRIDPANEL_NODE_STROKE);
+
+					if (node == selectedNode) {
+						gg.setColor(Theme.COLOR_GRIDPANEL_NODE_STROKE_SELECTED);
+					} else if (node == mouseOverNode) {
+						gg.setColor(Theme.COLOR_GRIDPANEL_NODE_STROKE_MOUSEOVER);
+					} else {
+						gg.setColor(Theme.COLOR_GRIDPANEL_NODE_STROKE);
+					}
+
 					gg.drawOval(x-4, y+2, nodeWidth, lineHeight-6);
 				}
 
@@ -148,7 +225,8 @@ public class GridPanel extends JPanel {
 					int x = getXFromTime(n1.getEnd());
 					for (int j=0; j<n; j++) {
 						Node n2 = nodes.get(j);
-						if (n1 != n2 && n1.getEnd() >= n2.getStart() && n1.getEnd() <= n2.getEnd()) {
+						if (n1 == n2) continue;
+						if ((n1.getEnd() > n2.getStart() && n1.getEnd() <= n2.getEnd()) || (n1.getEnd() == n2.getEnd())) {
 							gg.setColor(Color.RED);
 							gg.fillOval(x-4, y+2, nodeWidth, lineHeight-6);
 							gg.setColor(Theme.COLOR_GRIDPANEL_NODE_STROKE);
@@ -194,8 +272,8 @@ public class GridPanel extends JPanel {
 		int n2e = n2.getEnd();
 		if (n1s <= n2s && n1e >= n2e) return new int[] {n2s, n2e};
 		if (n1s >= n2s && n1e <= n2e) return new int[] {n1s, n1e};
-		if (n1s >= n2s && n1s <= n2e && n1e >= n2e) return new int[] {n1s, n2e};
-		if (n1s <= n2s && n1e <= n2e && n1e >= n2s) return new int[] {n2s, n1e};
+		if (n1s >= n2s && n1s < n2e && n1e >= n2e) return new int[] {n1s, n2e};
+		if (n1s <= n2s && n1e <= n2e && n1e > n2s) return new int[] {n2s, n1e};
 		return null;
 	}
 
@@ -203,28 +281,26 @@ public class GridPanel extends JPanel {
 	// Input
 	// -------------------------------------------------------------------------
 
-	public final MouseAdapter mouseAdapter = new MouseAdapter() {
+	private final MouseAdapter mouseAdapter = new MouseAdapter() {
 		private boolean isCursorDragged = false;
-		private Node draggedNode = null;
+		private int lastTime;
 
 		@Override
-		public void mouseDragged(MouseEvent e) {
-			if (model == null) return;
+		public void mousePressed(MouseEvent e) {
+			lastTime = getTimeFromX(e.getX());
 
-			if (draggedNode != null && e.isShiftDown()) {
-				int time = getTimeFromX(e.getX());
-				draggedNode.setDuration(Math.max(0, time - draggedNode.getStart()));
+			if (selectedNode != mouseOverNode) {
+				selectedNode = mouseOverNode;
 				repaint();
-			} else if (draggedNode != null && !e.isShiftDown()) {
-				int time = getTimeFromX(e.getX());
-				draggedNode.setStart(Math.max(0, time - draggedNode.getDuration()));
-				repaint();
-			} else if (isCursorDragged) {
-				int time = getTimeFromX(e.getX());
-				currentTime = time;
-				repaint();
-				fireTimeCursorMoved(time);
 			}
+
+			if (selectedElement != mouseOverElement) {
+				selectedElement = mouseOverElement;
+				fireSelectedElementChanged(selectedElement);
+				repaint();
+			}
+
+			requestFocusInWindow();
 		}
 
 		@Override
@@ -233,32 +309,79 @@ public class GridPanel extends JPanel {
 		}
 
 		@Override
+		public void mouseDragged(MouseEvent e) {
+			if (model == null) return;
+
+			int newTime = getTimeFromX(e.getX());
+			int deltaTime = newTime - lastTime;
+			lastTime = newTime;
+
+			 if (isCursorDragged) {
+				currentTime = newTime;
+				repaint();
+				fireTimeCursorMoved(currentTime);
+
+			} else if (selectedNode != null && e.isShiftDown()) {
+				selectedNode.setDuration(Math.max(0, selectedNode.getDuration() + deltaTime));
+				repaint();
+
+			} else if (selectedNode != null && !e.isShiftDown()) {
+				selectedNode.setStart(Math.max(0, selectedNode.getStart() + deltaTime));
+				repaint();
+			}
+		}
+
+		@Override
 		public void mouseMoved(final MouseEvent e) {
 			if (model == null) return;
 
 			// Time cursor test
 			int x = getXFromTime(currentTime);
-			isCursorDragged = (x - 2 <= e.getX() && e.getX() <= x + 2) && (e.getY() >= paddingTop - 9);
+			isCursorDragged = (x - 5 <= e.getX() && e.getX() <= x + 5) && (e.getY() >= paddingTop - 9);
 
-			// Node test
-			draggedNode = null;
+			// Nodes test
+			mouseOverNode = null;
+			mouseOverElement = null;
+			final int evTime = getTimeFromX(e.getX());
+			final int evLine = getLineFromY(e.getY());
+
 			model.forAllElements(new ElementAction() {
 				private int line = 0;
 				@Override public boolean apply(Element elem) {
-					for (Node node : elem.getNodes()) {
-						if ((getTimeFromX(e.getX()) == node.getStart() + node.getDuration()) && getLineFromY(e.getY()) == line) {
-							draggedNode = node;
-							return true;
+					if (evLine == line && elem.isSelectable()) {
+						mouseOverElement = elem;
+						for (Node node : elem.getNodes()) {
+							if (evTime >= node.getStart() && evTime <= node.getEnd()) {
+								mouseOverNode = node;
+								return true;
+							}
 						}
 					}
+
 					line += 1;
 					return false;
 				}
 			});
 
 			// Cursor change
-			setCursor(isCursorDragged || draggedNode != null ? Cursor.getPredefinedCursor(Cursor.E_RESIZE_CURSOR) : Cursor.getDefaultCursor());
+			setCursor(isCursorDragged || mouseOverNode != null ? Cursor.getPredefinedCursor(Cursor.E_RESIZE_CURSOR) : Cursor.getDefaultCursor());
 			repaint();
+		}
+
+		@Override
+		public void mouseExited(MouseEvent e) {
+			mouseOverNode = null;
+			repaint();
+		}
+	};
+
+	private final KeyAdapter keyAdapter = new KeyAdapter() {
+		@Override
+		public void keyPressed(KeyEvent e) {
+			switch (e.getKeyCode()) {
+				case KeyEvent.VK_ENTER: requestAddNode(); break;
+				case KeyEvent.VK_DELETE: requestDelNode(); break;
+			}
 		}
 	};
 
@@ -271,10 +394,16 @@ public class GridPanel extends JPanel {
 
 	public interface EventListener {
 		public void timeCursorMoved(int newTime);
+		public void selectedElementChanged(Element selectedElement);
 	}
 
 	private void fireTimeCursorMoved(int newTime) {
 		for (EventListener listener : listeners)
 			listener.timeCursorMoved(newTime);
+	}
+
+	private void fireSelectedElementChanged(Element selectedElement) {
+		for (EventListener listener : listeners)
+			listener.selectedElementChanged(selectedElement);
 	}
 }

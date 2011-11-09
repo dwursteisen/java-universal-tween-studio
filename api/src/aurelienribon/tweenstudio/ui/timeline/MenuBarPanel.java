@@ -1,6 +1,10 @@
 package aurelienribon.tweenstudio.ui.timeline;
 
 import java.awt.BorderLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.List;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JLabel;
@@ -8,6 +12,7 @@ import javax.swing.JPanel;
 
 public class MenuBarPanel extends JPanel {
 	private final ImageButton addNodeBtn;
+	private final ImageButton delNodeBtn;
 	private final ImageButton playBtn;
 	private final ImageButton goToFirstBtn;
 	private final ImageButton goToPreviousBtn;
@@ -19,11 +24,24 @@ public class MenuBarPanel extends JPanel {
 
     public MenuBarPanel() {
 		addNodeBtn = new ImageButton("ic_addNode.png");
+		delNodeBtn = new ImageButton("ic_delNode.png");
 		playBtn = new ImageButton("ic_play.png");
 		goToFirstBtn = new ImageButton("ic_goToFirst.png");
 		goToPreviousBtn = new ImageButton("ic_goToPrevious.png");
 		goToNextBtn = new ImageButton("ic_goToNext.png");
 		goToLastBtn = new ImageButton("ic_goToLast.png");
+
+		addNodeBtn.addActionListener(new ActionListener() {
+			@Override public void actionPerformed(ActionEvent e) {
+				fireAddNodeRequested();
+			}
+		});
+
+		delNodeBtn.addActionListener(new ActionListener() {
+			@Override public void actionPerformed(ActionEvent e) {
+				fireDelNodeRequested();
+			}
+		});
 
 		timeLbl = new JLabel();
 		timeLbl.setFont(Theme.FONT);
@@ -34,6 +52,7 @@ public class MenuBarPanel extends JPanel {
 		btnPanel.setLayout(new BoxLayout(btnPanel, BoxLayout.X_AXIS));
 		btnPanel.setOpaque(false);
 		btnPanel.add(addNodeBtn); btnPanel.add(Box.createHorizontalStrut(margin));
+		btnPanel.add(delNodeBtn); btnPanel.add(Box.createHorizontalStrut(bigMargin));
 		btnPanel.add(timeLbl); btnPanel.add(Box.createHorizontalStrut(bigMargin));
 		btnPanel.add(goToFirstBtn); btnPanel.add(Box.createHorizontalStrut(margin));
 		btnPanel.add(goToPreviousBtn); btnPanel.add(Box.createHorizontalStrut(margin));
@@ -46,8 +65,30 @@ public class MenuBarPanel extends JPanel {
 		add(btnPanel, BorderLayout.EAST);
 	}
 
-	public void setTime(int millis) {
+	public final void setTime(int millis) {
 		String str = String.format("%02d,%03d", millis / 1000, millis % 1000);
 		timeLbl.setText(str);
+	}
+
+	// -------------------------------------------------------------------------
+	// Events
+	// -------------------------------------------------------------------------
+
+	private final List<EventListener> listeners = new ArrayList<EventListener>();
+	public void addListener(EventListener listener) {listeners.add(listener);}
+
+	public interface EventListener {
+		public void addNodeRequested();
+		public void delNodeRequested();
+	}
+
+	private void fireAddNodeRequested() {
+		for (EventListener listener : listeners)
+			listener.addNodeRequested();
+	}
+
+	private void fireDelNodeRequested() {
+		for (EventListener listener : listeners)
+			listener.delNodeRequested();
 	}
 }
