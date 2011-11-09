@@ -1,2 +1,13 @@
 syntax: glob
-TweenStudio-lib/build/*
+
+api/build/*
+api/dist/*
+api/nbproject/*
+api/manifest.mf
+api/nbbuild.xml
+
+demo/build/*
+demo/dist/*
+demo/nbproject/*
+demo/manifest.mf
+demo/nbbuild.xml
