@@ -345,16 +345,7 @@ class GridPanel extends JPanel implements Scrollable {
 
 	private void updateMaxTime() {
 		int oldTime = maxTime;
-		maxTime = 0;
-		model.forAllElements(new ElementAction() {
-			@Override public boolean apply(Element elem) {
-				for (Node n : elem.getNodes())
-					maxTime = Math.max(maxTime, n.getEnd());
-				return false;
-			}
-		});
-
-		maxTime = Math.max(maxTime, currentTime);
+		maxTime = Math.max(model.getDuration(), currentTime);
 		if (maxTime != oldTime) {
 			fireLengthChanged();
 		}

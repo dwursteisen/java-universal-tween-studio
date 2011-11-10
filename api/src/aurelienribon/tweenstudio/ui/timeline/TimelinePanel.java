@@ -54,6 +54,10 @@ public class TimelinePanel extends JPanel {
 		repaint();
 	}
 
+	public Theme getTheme() {
+		return theme;
+	}
+
 	// -------------------------------------------------------------------------
 	// Helpers
 	// -------------------------------------------------------------------------
