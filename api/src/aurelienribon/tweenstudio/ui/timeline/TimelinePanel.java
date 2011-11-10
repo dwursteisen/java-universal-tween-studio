@@ -20,15 +20,19 @@ public class TimelinePanel extends JPanel {
 	private final GridPanel gridPanel;
 	private final ScrollBar vScrollBar;
 	private final ScrollBar hScrollBar;
+	private final JPanel cornerPanel;
+
+	private Theme theme;
 
 	public TimelinePanel() {
-		Theme theme = new Theme(null);
+		this.theme = new Theme(null);
 
 		menuBarPanel = new MenuBarPanel(theme);
 		namesPanel = new NamesPanel(theme);
 		gridPanel = new GridPanel(theme);
 		vScrollBar = new ScrollBar(theme);
 		hScrollBar = new ScrollBar(theme);
+		cornerPanel = new JPanel();
 
 		buildLayout();
 		addEventListeners();
@@ -40,11 +44,13 @@ public class TimelinePanel extends JPanel {
 	}
 
 	public void setTheme(Theme theme) {
+		this.theme = theme;
 		menuBarPanel.setTheme(theme);
 		namesPanel.setTheme(theme);
 		gridPanel.setTheme(theme);
 		vScrollBar.setTheme(theme);
 		hScrollBar.setTheme(theme);
+		cornerPanel.setBackground(theme.COLOR_GRIDPANEL_BACKGROUND);
 		repaint();
 	}
 
@@ -56,15 +62,16 @@ public class TimelinePanel extends JPanel {
 		vScrollBar.setPreferredSize(new Dimension(15, 0));
 		hScrollBar.setPreferredSize(new Dimension(0, 15));
 
-		JPanel cornerPanel = new JPanel();
 		cornerPanel.setPreferredSize(new Dimension(15, 15));
-		cornerPanel.setBackground(Color.RED);
+		cornerPanel.setBackground(theme.COLOR_GRIDPANEL_BACKGROUND);
 
 		JPanel southPanel = new JPanel(new BorderLayout());
 		southPanel.add(hScrollBar, BorderLayout.CENTER);
 		southPanel.add(cornerPanel, BorderLayout.EAST);
 
 		JSplitPane splitPanel = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, true);
+		splitPanel.setDividerLocation(200);
+		splitPanel.setDividerSize(3);
 		splitPanel.add(namesPanel, JSplitPane.LEFT);
 		splitPanel.add(gridPanel, JSplitPane.RIGHT);
 
