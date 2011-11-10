@@ -16,22 +16,31 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JPanel;
 
-public class GridPanel extends JPanel {
-	private final int oneSecondWidth = 100;
+/**
+ * @author Aurelien Ribon | http://www.aurelienribon.com/
+ */
+class GridPanel extends JPanel implements Scrollable {
+	private final int oneSecondWidth = 70;
 	private final int paddingTop = 30;
 	private final int paddingLeft = 15;
 	private final int lineHeight = 20;
 	private final int nodeWidth = 7;
+	private final int timeScaleLimit = 2;
 
 	private TimelineModel model;
+	private Theme theme;
 	private float timeScale = 1;
 	private int currentTime = 0;
 	private Element selectedElement = null;
 	private Element mouseOverElement = null;
 	private Node selectedNode = null;
 	private Node mouseOverNode = null;
+	private int vOffset;
+	private int hOffset;
+	private int maxTime = 0;
 
-	public GridPanel() {
+	public GridPanel(Theme theme) {
+		this.theme = theme;
 		addMouseListener(mouseAdapter);
 		addMouseMotionListener(mouseAdapter);
 		addKeyListener(keyAdapter);
@@ -40,6 +49,11 @@ public class GridPanel extends JPanel {
 
 	public void setModel(TimelineModel model) {
 		this.model = model;
+	}
+
+	public void setTheme(Theme theme) {
+		this.theme = theme;
+		repaint();
 	}
 
 	public void setSelectedElement(Element selectedElement) {
@@ -72,6 +86,44 @@ public class GridPanel extends JPanel {
 		}
 	}
 
+	public void requestMagnification() {
+		timeScale /= 1.2f;
+		repaint();
+		fireLengthChanged();
+	}
+
+	public void requestMinification() {
+		timeScale *= 1.2f;
+		repaint();
+		fireLengthChanged();
+	}
+
+	public void setVerticalOffset(int vOffset) {
+		this.vOffset = vOffset;
+		repaint();
+	}
+
+	@Override
+	public int getViewLength() {
+		return getWidth();
+	}
+
+	@Override
+	public int getLength() {
+		return getXFromTime(maxTime) + hOffset + 20;
+	}
+
+	@Override
+	public int getOffset() {
+		return hOffset;
+	}
+
+	@Override
+	public void setOffset(int offset) {
+		this.hOffset = offset;
+		repaint();
+	}
+
 	// -------------------------------------------------------------------------
 	// Painting
 	// -------------------------------------------------------------------------
@@ -79,7 +131,7 @@ public class GridPanel extends JPanel {
 	@Override
 	protected void paintComponent(Graphics g) {
 		Graphics2D gg = (Graphics2D)g;
-		gg.setColor(Theme.COLOR_GRIDPANEL_BACKGROUND);
+		gg.setColor(theme.COLOR_GRIDPANEL_BACKGROUND);
 		gg.fillRect(0, 0, getWidth(), getHeight());
 		if (model == null) return;
 
@@ -88,6 +140,8 @@ public class GridPanel extends JPanel {
 		paintTimeline(gg);
 		paintTimeCursor(gg);
 		paintNodes(gg);
+
+		updateMaxTime();
 	}
 
 	private void paintSections(final Graphics2D gg) {
@@ -97,12 +151,12 @@ public class GridPanel extends JPanel {
 			private int line = 0;
 			@Override public boolean apply(Element elem) {
 				if (elem.isSelectable()) {
-					gg.setColor(Theme.COLOR_GRIDPANEL_SECTION);
+					gg.setColor(theme.COLOR_GRIDPANEL_SECTION);
 				} else {
-					gg.setColor(Theme.COLOR_GRIDPANEL_SECTION_UNUSABLE);
+					gg.setColor(theme.COLOR_GRIDPANEL_SECTION_UNUSABLE);
 				}
 
-				gg.fillRect(0, paddingTop+lineHeight*line, getWidth(), line != elemCnt-1 ? lineHeight-1 : lineHeight);
+				gg.fillRect(0, paddingTop-vOffset+lineHeight*line, getWidth(), line != elemCnt-1 ? lineHeight-1 : lineHeight);
 				line += 1;
 				return false;
 			}
@@ -110,11 +164,11 @@ public class GridPanel extends JPanel {
 	}
 	
 	private void paintTimeline(Graphics2D gg) {
-		gg.setFont(Theme.FONT);
+		gg.setFont(theme.FONT);
 		FontMetrics fm = gg.getFontMetrics();
 
-		int minSeconds = 0;
-		int maxSeconds = (int) (getWidth() / oneSecondWidth * timeScale + 1) + minSeconds;
+		int minSeconds = Math.max((int) (timeScale * hOffset / oneSecondWidth), 0);
+		int maxSeconds = (int) (timeScale * getWidth() / oneSecondWidth) + minSeconds + 1;
 
 		int textOffset = -12;
 		int smallTickHeight = 5;
@@ -124,14 +178,22 @@ public class GridPanel extends JPanel {
 			int x = getXFromTime(i*1000);
 
 			String str = String.valueOf(i);
-			gg.setColor(Theme.COLOR_FOREGROUND);
+			gg.setColor(theme.COLOR_FOREGROUND);
 			gg.drawString(str, x - fm.stringWidth(str)/2, paddingTop + textOffset);
 
-			gg.setColor(Theme.COLOR_GRIDPANEL_TIMELINE);
-			gg.drawRect(x-1, paddingTop - bigTickHeight, 2, getHeight());
-			for (int ii=1; ii<10; ii++) {
-				int xx = getXFromTime(ii*100 + i*1000);
-				gg.drawLine(xx, paddingTop - (ii == 5 ? bigTickHeight : smallTickHeight), xx, paddingTop-1);
+			if (timeScale < timeScaleLimit) {
+				gg.setColor(theme.COLOR_GRIDPANEL_TIMELINE);
+				gg.drawRect(x-1, paddingTop - bigTickHeight, 2, getHeight());
+				for (int ii=1; ii<10; ii++) {
+					int xx = getXFromTime(ii*100 + i*1000);
+					gg.drawLine(xx, paddingTop - (ii == 5 ? bigTickHeight : smallTickHeight), xx, paddingTop-1);
+				}
+
+			} else {
+				gg.setColor(theme.COLOR_GRIDPANEL_TIMELINE);
+				gg.drawLine(x, paddingTop - bigTickHeight, x, getHeight());
+				int xx = getXFromTime(5*100 + i*1000);
+				gg.drawLine(xx, paddingTop - bigTickHeight, xx, paddingTop-1);
 			}
 		}
 	}
@@ -139,7 +201,7 @@ public class GridPanel extends JPanel {
 	private void paintTimeCursor(Graphics2D gg) {
 		int x = getXFromTime(currentTime);
 		int y = paddingTop;
-		gg.setColor(Theme.COLOR_GRIDPANEL_CURSOR);
+		gg.setColor(theme.COLOR_GRIDPANEL_CURSOR);
 		gg.fillPolygon(
 			new int[] {x - 8, x, x + 8},
 			new int[] {y - 9, y, y - 9},
@@ -159,11 +221,11 @@ public class GridPanel extends JPanel {
 					int x2 = getXFromTime(node.getEnd());
 
 					if (node == selectedNode) {
-						gg.setColor(Theme.COLOR_GRIDPANEL_NODE_TRACK_SELECTED);
+						gg.setColor(theme.COLOR_GRIDPANEL_NODE_TRACK_SELECTED);
 					} else if (node == mouseOverNode) {
-						gg.setColor(Theme.COLOR_GRIDPANEL_NODE_TRACK_MOUSEOVER);
+						gg.setColor(theme.COLOR_GRIDPANEL_NODE_TRACK_MOUSEOVER);
 					} else {
-						gg.setColor(Theme.COLOR_GRIDPANEL_NODE_TRACK);
+						gg.setColor(theme.COLOR_GRIDPANEL_NODE_TRACK);
 					}
 
 					gg.fillRect(x1, y+1, x2-x1, lineHeight-3);
@@ -200,21 +262,21 @@ public class GridPanel extends JPanel {
 					int x = getXFromTime(node.getEnd());
 
 					if (node == selectedNode) {
-						gg.setColor(Theme.COLOR_GRIDPANEL_NODE_FILL_SELECTED);
+						gg.setColor(theme.COLOR_GRIDPANEL_NODE_FILL_SELECTED);
 					} else if (node == mouseOverNode) {
-						gg.setColor(Theme.COLOR_GRIDPANEL_NODE_FILL_MOUSEOVER);
+						gg.setColor(theme.COLOR_GRIDPANEL_NODE_FILL_MOUSEOVER);
 					} else {
-						gg.setColor(Theme.COLOR_GRIDPANEL_NODE_FILL);
+						gg.setColor(theme.COLOR_GRIDPANEL_NODE_FILL);
 					}
 
 					gg.fillOval(x-4, y+2, nodeWidth, lineHeight-6);
 
 					if (node == selectedNode) {
-						gg.setColor(Theme.COLOR_GRIDPANEL_NODE_STROKE_SELECTED);
+						gg.setColor(theme.COLOR_GRIDPANEL_NODE_STROKE_SELECTED);
 					} else if (node == mouseOverNode) {
-						gg.setColor(Theme.COLOR_GRIDPANEL_NODE_STROKE_MOUSEOVER);
+						gg.setColor(theme.COLOR_GRIDPANEL_NODE_STROKE_MOUSEOVER);
 					} else {
-						gg.setColor(Theme.COLOR_GRIDPANEL_NODE_STROKE);
+						gg.setColor(theme.COLOR_GRIDPANEL_NODE_STROKE);
 					}
 
 					gg.drawOval(x-4, y+2, nodeWidth, lineHeight-6);
@@ -229,7 +291,7 @@ public class GridPanel extends JPanel {
 						if ((n1.getEnd() > n2.getStart() && n1.getEnd() <= n2.getEnd()) || (n1.getEnd() == n2.getEnd())) {
 							gg.setColor(Color.RED);
 							gg.fillOval(x-4, y+2, nodeWidth, lineHeight-6);
-							gg.setColor(Theme.COLOR_GRIDPANEL_NODE_STROKE);
+							gg.setColor(theme.COLOR_GRIDPANEL_NODE_STROKE);
 							gg.drawOval(x-4, y+2, nodeWidth, lineHeight-6);
 						}
 					}
@@ -246,23 +308,27 @@ public class GridPanel extends JPanel {
 	// -------------------------------------------------------------------------
 
 	private int getTimeFromX(int x) {
-		int time = (int) ((x - paddingLeft) * 1000f / oneSecondWidth * timeScale);
+		int time = (int) ((x - paddingLeft + hOffset) * 1000f / oneSecondWidth * timeScale);
 		time = time > 0 ? time : 0;
-		time = Math.round(time / 100f) * 100;
+		if (timeScale < timeScaleLimit) {
+			time = Math.round(time / 100f) * 100;
+		} else {
+			time = Math.round(time / 500f) * 500;
+		}
 		return Math.max(time, 0);
 	}
 
 	private int getXFromTime(int millis) {
-		return (int) (millis / 1000f * oneSecondWidth / timeScale + paddingLeft);
+		return (int) (millis / 1000f * oneSecondWidth / timeScale + paddingLeft - hOffset);
 	}
 
 	private int getLineFromY(int y) {
 		if (y < paddingTop) return -1;
-		return (y - paddingTop) / lineHeight;
+		return (y - paddingTop + vOffset) / lineHeight;
 	}
 
 	private int getYFromLine(int line) {
-		return paddingTop + lineHeight * line;
+		return paddingTop - vOffset + lineHeight * line;
 	}
 
 	private int[] getOverlap(Node n1, Node n2) {
@@ -277,6 +343,23 @@ public class GridPanel extends JPanel {
 		return null;
 	}
 
+	private void updateMaxTime() {
+		int oldTime = maxTime;
+		maxTime = 0;
+		model.forAllElements(new ElementAction() {
+			@Override public boolean apply(Element elem) {
+				for (Node n : elem.getNodes())
+					maxTime = Math.max(maxTime, n.getEnd());
+				return false;
+			}
+		});
+
+		maxTime = Math.max(maxTime, currentTime);
+		if (maxTime != oldTime) {
+			fireLengthChanged();
+		}
+	}
+
 	// -------------------------------------------------------------------------
 	// Input
 	// -------------------------------------------------------------------------
@@ -288,6 +371,11 @@ public class GridPanel extends JPanel {
 		@Override
 		public void mousePressed(MouseEvent e) {
 			lastTime = getTimeFromX(e.getX());
+
+			if (getLineFromY(e.getY()) < 0) {
+				currentTime = lastTime;
+				repaint();
+			}
 
 			if (selectedNode != mouseOverNode) {
 				selectedNode = mouseOverNode;
@@ -316,6 +404,11 @@ public class GridPanel extends JPanel {
 			int deltaTime = newTime - lastTime;
 			lastTime = newTime;
 
+			if (getLineFromY(e.getY()) < 0) {
+				currentTime = newTime;
+				repaint();
+			}
+
 			 if (isCursorDragged) {
 				currentTime = newTime;
 				repaint();
@@ -340,6 +433,8 @@ public class GridPanel extends JPanel {
 			isCursorDragged = (x - 5 <= e.getX() && e.getX() <= x + 5) && (e.getY() >= paddingTop - 9);
 
 			// Nodes test
+			Node oldMouseOverNode = mouseOverNode;
+			Element oldMouseOverElement = mouseOverElement;
 			mouseOverNode = null;
 			mouseOverElement = null;
 			final int evTime = getTimeFromX(e.getX());
@@ -363,9 +458,11 @@ public class GridPanel extends JPanel {
 				}
 			});
 
+			if (oldMouseOverNode != mouseOverNode || oldMouseOverElement != mouseOverElement)
+				repaint();
+
 			// Cursor change
 			setCursor(isCursorDragged || mouseOverNode != null ? Cursor.getPredefinedCursor(Cursor.E_RESIZE_CURSOR) : Cursor.getDefaultCursor());
-			repaint();
 		}
 
 		@Override
@@ -389,12 +486,13 @@ public class GridPanel extends JPanel {
 	// Events
 	// -------------------------------------------------------------------------
 
-	private final List<EventListener> listeners = new ArrayList<EventListener>();
+	private final List<EventListener> listeners = new ArrayList<EventListener>(1);
 	public void addListener(EventListener listener) {listeners.add(listener);}
 
 	public interface EventListener {
 		public void timeCursorMoved(int newTime);
 		public void selectedElementChanged(Element selectedElement);
+		public void lengthChanged();
 	}
 
 	private void fireTimeCursorMoved(int newTime) {
@@ -405,5 +503,10 @@ public class GridPanel extends JPanel {
 	private void fireSelectedElementChanged(Element selectedElement) {
 		for (EventListener listener : listeners)
 			listener.selectedElementChanged(selectedElement);
+	}
+
+	private void fireLengthChanged() {
+		for (EventListener listener : listeners)
+			listener.lengthChanged();
 	}
 }

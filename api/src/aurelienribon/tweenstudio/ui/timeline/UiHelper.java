@@ -5,7 +5,7 @@ import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Element;
 /**
  * @author Aurelien Ribon | http://www.aurelienribon.com/
  */
-public class UiHelper {
+class UiHelper {
 	public static int getLinesCount(TimelineModel model) {
 		return _getLinesCount(model.getRoot())-1;
 	}

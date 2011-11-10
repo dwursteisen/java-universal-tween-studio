@@ -3,6 +3,9 @@ package aurelienribon.tweenstudio.ui.timeline;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * @author Aurelien Ribon | http://www.aurelienribon.com/
+ */
 public class TimelineModel {
     private final Element root = new Element("");
 

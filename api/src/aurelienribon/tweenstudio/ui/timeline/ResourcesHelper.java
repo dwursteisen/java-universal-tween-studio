@@ -1,4 +1,4 @@
-package aurelienribon.tweenstudio.ui.timeline.gfx;
+package aurelienribon.tweenstudio.ui.timeline;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -8,9 +8,9 @@ import javax.imageio.ImageIO;
 /**
  * @author Aurelien Ribon | http://www.aurelienribon.com/
  */
-public class ResourcesHelper {
+class ResourcesHelper {
 	public static BufferedImage getGfx(String name) {
-		URL url = ResourcesHelper.class.getResource(name);
+		URL url = ResourcesHelper.class.getResource("gfx/" + name);
 		if (url == null) throw new RuntimeException(name + " not found in timeline gfx");
 
 		BufferedImage img = null;

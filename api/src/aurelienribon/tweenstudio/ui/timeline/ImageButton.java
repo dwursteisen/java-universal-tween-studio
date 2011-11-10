@@ -1,6 +1,5 @@
 package aurelienribon.tweenstudio.ui.timeline;
 
-import aurelienribon.tweenstudio.ui.timeline.gfx.ResourcesHelper;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.event.MouseAdapter;
@@ -8,7 +7,10 @@ import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import javax.swing.JButton;
 
-public class ImageButton extends JButton {
+/**
+ * @author Aurelien Ribon | http://www.aurelienribon.com/
+ */
+class ImageButton extends JButton {
 	private final BufferedImage mouseOverImage;
 	private final BufferedImage mousePressedImage;
 	private final BufferedImage image;

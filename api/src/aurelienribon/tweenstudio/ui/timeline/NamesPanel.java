@@ -2,7 +2,6 @@ package aurelienribon.tweenstudio.ui.timeline;
 
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Element;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.ElementAction;
-import aurelienribon.tweenstudio.ui.timeline.gfx.ResourcesHelper;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
@@ -16,7 +15,7 @@ import javax.swing.JPanel;
 /**
  * @author Aurelien Ribon | http://www.aurelienribon.com/
  */
-public class NamesPanel extends JPanel {
+class NamesPanel extends JPanel implements Scrollable {
 	private final BufferedImage imgIdxClosed = ResourcesHelper.getGfx("img_idxClosed.png");
 	private final BufferedImage imgIdxOpened = ResourcesHelper.getGfx("img_idxOpened.png");
 	private final BufferedImage imgIdxNone = ResourcesHelper.getGfx("img_idxNone.png");
@@ -26,10 +25,13 @@ public class NamesPanel extends JPanel {
 	private final int lineHeight = 20;
 	
 	private TimelineModel model;
+	private Theme theme;
 	private Element selectedElement;
 	private Element mouseOverElement;
+	private int vOffset;
 
-	public NamesPanel() {
+	public NamesPanel(Theme theme) {
+		this.theme = theme;
 		addMouseListener(mouseAdapter);
 		addMouseMotionListener(mouseAdapter);
 	}
@@ -38,19 +40,53 @@ public class NamesPanel extends JPanel {
 		this.model = model;
 	}
 
+	public void setTheme(Theme theme) {
+		this.theme = theme;
+		repaint();
+	}
+
 	public void setSelectedElement(Element selectedElement) {
 		this.selectedElement = selectedElement;
 		repaint();
 	}
 
 	@Override
+	public int getViewLength() {
+		return getHeight();
+	}
+
+	@Override
+	public int getLength() {
+		int height = model != null
+			? paddingTop + UiHelper.getLinesCount(model) * lineHeight
+			: 0;
+		return Math.max(0, height) + lineHeight;
+	}
+
+	@Override
+	public int getOffset() {
+		return vOffset;
+	}
+
+	@Override
+	public void setOffset(int offset) {
+		this.vOffset = offset;
+		fireVerticalOffsetChanged(vOffset);
+		repaint();
+	}
+
+	// -------------------------------------------------------------------------
+	// Painting
+	// -------------------------------------------------------------------------
+
+	@Override
 	protected void paintComponent(Graphics g) {
 		Graphics2D gg = (Graphics2D) g;
-		gg.setColor(Theme.COLOR_NAMESPANEL_BACKGROUND);
+		gg.setColor(theme.COLOR_NAMESPANEL_BACKGROUND);
 		gg.fillRect(0, 0, getWidth(), getHeight());
 		if (model == null) return;
 
-		gg.translate(0, paddingTop);
+		gg.translate(0, paddingTop - vOffset);
 		drawSections(gg);
 		drawNames(gg);
 	}
@@ -60,13 +96,13 @@ public class NamesPanel extends JPanel {
 			private int line = 0;
 			@Override public boolean apply(Element elem) {
 				if (!elem.isSelectable()) {
-					gg.setColor(Theme.COLOR_NAMESPANEL_SECTION_UNUSABLE);
+					gg.setColor(theme.COLOR_NAMESPANEL_SECTION_UNUSABLE);
 				} else if (elem == selectedElement) {
-					gg.setColor(Theme.COLOR_NAMESPANEL_SECTION_SELECTED);
+					gg.setColor(theme.COLOR_NAMESPANEL_SECTION_SELECTED);
 				} else if (elem == mouseOverElement) {
-					gg.setColor(Theme.COLOR_NAMESPANEL_SECTION_MOUSEOVER);
+					gg.setColor(theme.COLOR_NAMESPANEL_SECTION_MOUSEOVER);
 				} else {
-					gg.setColor(Theme.COLOR_NAMESPANEL_SECTION);
+					gg.setColor(theme.COLOR_NAMESPANEL_SECTION);
 				}
 
 				gg.fillRect(0, line*lineHeight, getWidth(), lineHeight);
@@ -77,8 +113,8 @@ public class NamesPanel extends JPanel {
 	}
 
 	private void drawNames(final Graphics2D gg) {
-		gg.setFont(Theme.FONT);
-		gg.setColor(Theme.COLOR_FOREGROUND);
+		gg.setFont(theme.FONT);
+		gg.setColor(theme.COLOR_FOREGROUND);
 
 		model.forAllElements(new TimelineModel.ElementAction() {
 			private int line = 0;
@@ -152,15 +188,21 @@ public class NamesPanel extends JPanel {
 	// Events
 	// -------------------------------------------------------------------------
 
-	private final List<EventListener> listeners = new ArrayList<EventListener>();
+	private final List<EventListener> listeners = new ArrayList<EventListener>(1);
 	public void addListener(EventListener listener) {listeners.add(listener);}
 
 	public interface EventListener {
 		public void selectedElementChanged(Element selectedElem);
+		public void verticalOffsetChanged(int vOffset);
 	}
 
 	private void fireSelectedElementChanged(Element selectedElem) {
 		for (EventListener listener : listeners)
 			listener.selectedElementChanged(selectedElem);
+	}
+
+	private void fireVerticalOffsetChanged(int vOffset) {
+		for (EventListener listener : listeners)
+			listener.verticalOffsetChanged(vOffset);
 	}
 }

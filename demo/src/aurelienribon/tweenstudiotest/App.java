@@ -1,12 +1,5 @@
 package aurelienribon.tweenstudiotest;
 
-import aurelienribon.libgdx.tween.Tween;
-import aurelienribon.libgdx.tween.TweenSequence;
-import aurelienribon.libgdx.tween.equations.Cubic;
-import aurelienribon.tweenstudio.TweenStudio;
-import aurelienribon.tweenstudio.TweenStudioEditor;
-import aurelienribon.tweenstudio.TweenStudioObject;
-import aurelienribon.tweenstudio.elements.TweenableSprite;
 import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.InputProcessor;
@@ -27,9 +20,9 @@ public class App implements ApplicationListener {
 	private Sprite logoSprite1;
 	private Sprite logoSprite2;
 	private Sprite logoSprite3;
-	private TweenableSprite logoSpriteTween1;
-	private TweenableSprite logoSpriteTween2;
-	private TweenableSprite logoSpriteTween3;
+	private TweenSprite logoSpriteTween1;
+	private TweenSprite logoSpriteTween2;
+	private TweenSprite logoSpriteTween3;
 
 	@Override
 	public void create() {
@@ -56,9 +49,9 @@ public class App implements ApplicationListener {
 		logoSprite3.setOrigin(logoSprite3.getWidth()/2, logoSprite3.getHeight()/2);
 		logoSprite3.setPosition(+2 - logoSprite3.getOriginX(), 0 - logoSprite3.getOriginY());
 
-		logoSpriteTween1 = new TweenableSprite(logoSprite1);
-		logoSpriteTween2 = new TweenableSprite(logoSprite2);
-		logoSpriteTween3 = new TweenableSprite(logoSprite3);
+		logoSpriteTween1 = new TweenSprite(logoSprite1);
+		logoSpriteTween2 = new TweenSprite(logoSprite2);
+		logoSpriteTween3 = new TweenSprite(logoSprite3);
 
 		TweenStudio studio = createStudio();
 		studio.edit();
@@ -80,8 +73,6 @@ public class App implements ApplicationListener {
 		logoSprite2.draw(sb);
 		logoSprite3.draw(sb);
 		sb.end();
-
-		Tween.update();
 	}
 
 	@Override
