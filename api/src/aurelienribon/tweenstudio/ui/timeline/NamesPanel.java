@@ -8,8 +8,6 @@ import java.awt.Image;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
-import java.util.ArrayList;
-import java.util.List;
 import javax.swing.JPanel;
 
 /**
@@ -26,6 +24,7 @@ class NamesPanel extends JPanel implements Scrollable {
 	
 	private TimelineModel model;
 	private Theme theme;
+	private Callback callback;
 	private Element selectedElement;
 	private Element mouseOverElement;
 	private int vOffset;
@@ -43,6 +42,10 @@ class NamesPanel extends JPanel implements Scrollable {
 	public void setTheme(Theme theme) {
 		this.theme = theme;
 		repaint();
+	}
+
+	public void setCallback(Callback callback) {
+		this.callback = callback;
 	}
 
 	public void setSelectedElement(Element selectedElement) {
@@ -71,8 +74,17 @@ class NamesPanel extends JPanel implements Scrollable {
 	@Override
 	public void setOffset(int offset) {
 		this.vOffset = offset;
-		fireVerticalOffsetChanged(vOffset);
+		callback.verticalOffsetChanged(vOffset);
 		repaint();
+	}
+
+	// -------------------------------------------------------------------------
+	// Callback
+	// -------------------------------------------------------------------------
+
+	public interface Callback {
+		public void selectedElementChanged(Element selectedElem);
+		public void verticalOffsetChanged(int vOffset);
 	}
 
 	// -------------------------------------------------------------------------
@@ -151,7 +163,7 @@ class NamesPanel extends JPanel implements Scrollable {
 		public void mousePressed(MouseEvent e) {
 			if (selectedElement != mouseOverElement) {
 				selectedElement = mouseOverElement;
-				fireSelectedElementChanged(selectedElement);
+				callback.selectedElementChanged(selectedElement);
 			}
 			repaint();
 		}
@@ -183,26 +195,4 @@ class NamesPanel extends JPanel implements Scrollable {
 			repaint();
 		}
 	};
-
-	// -------------------------------------------------------------------------
-	// Events
-	// -------------------------------------------------------------------------
-
-	private final List<EventListener> listeners = new ArrayList<EventListener>(1);
-	public void addListener(EventListener listener) {listeners.add(listener);}
-
-	public interface EventListener {
-		public void selectedElementChanged(Element selectedElem);
-		public void verticalOffsetChanged(int vOffset);
-	}
-
-	private void fireSelectedElementChanged(Element selectedElem) {
-		for (EventListener listener : listeners)
-			listener.selectedElementChanged(selectedElem);
-	}
-
-	private void fireVerticalOffsetChanged(int vOffset) {
-		for (EventListener listener : listeners)
-			listener.verticalOffsetChanged(vOffset);
-	}
 }

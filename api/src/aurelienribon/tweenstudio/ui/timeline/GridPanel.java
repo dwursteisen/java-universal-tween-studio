@@ -12,7 +12,6 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JPanel;
 
@@ -29,6 +28,7 @@ class GridPanel extends JPanel implements Scrollable {
 
 	private TimelineModel model;
 	private Theme theme;
+	private Callback callback;
 	private float timeScale = 1;
 	private int currentTime = 0;
 	private Element selectedElement = null;
@@ -56,12 +56,20 @@ class GridPanel extends JPanel implements Scrollable {
 		repaint();
 	}
 
+	public void setCallback(Callback callback) {
+		this.callback = callback;
+	}
+
 	public void setSelectedElement(Element selectedElement) {
 		if (this.selectedElement != selectedElement) {
 			this.selectedElement = selectedElement;
 			selectedNode = null;
 			repaint();
 		}
+	}
+
+	public void setCurrentTime(int currentTime) {
+		this.currentTime = currentTime;
 	}
 
 	public void requestAddNode() {
@@ -89,13 +97,13 @@ class GridPanel extends JPanel implements Scrollable {
 	public void requestMagnification() {
 		timeScale /= 1.2f;
 		repaint();
-		fireLengthChanged();
+		callback.lengthChanged();
 	}
 
 	public void requestMinification() {
 		timeScale *= 1.2f;
 		repaint();
-		fireLengthChanged();
+		callback.lengthChanged();
 	}
 
 	public void setVerticalOffset(int vOffset) {
@@ -122,6 +130,16 @@ class GridPanel extends JPanel implements Scrollable {
 	public void setOffset(int offset) {
 		this.hOffset = offset;
 		repaint();
+	}
+
+	// -------------------------------------------------------------------------
+	// Callback
+	// -------------------------------------------------------------------------
+
+	public interface Callback {
+		public void currentTimeChanged(int newTime);
+		public void selectedElementChanged(Element selectedElement);
+		public void lengthChanged();
 	}
 
 	// -------------------------------------------------------------------------
@@ -346,9 +364,7 @@ class GridPanel extends JPanel implements Scrollable {
 	private void updateMaxTime() {
 		int oldTime = maxTime;
 		maxTime = Math.max(model.getDuration(), currentTime);
-		if (maxTime != oldTime) {
-			fireLengthChanged();
-		}
+		if (maxTime != oldTime) callback.lengthChanged();
 	}
 
 	// -------------------------------------------------------------------------
@@ -375,7 +391,7 @@ class GridPanel extends JPanel implements Scrollable {
 
 			if (selectedElement != mouseOverElement) {
 				selectedElement = mouseOverElement;
-				fireSelectedElementChanged(selectedElement);
+				callback.selectedElementChanged(selectedElement);
 				repaint();
 			}
 
@@ -403,7 +419,7 @@ class GridPanel extends JPanel implements Scrollable {
 			 if (isCursorDragged) {
 				currentTime = newTime;
 				repaint();
-				fireTimeCursorMoved(currentTime);
+				callback.currentTimeChanged(currentTime);
 
 			} else if (selectedNode != null && e.isShiftDown()) {
 				selectedNode.setDuration(Math.max(0, selectedNode.getDuration() + deltaTime));
@@ -472,32 +488,4 @@ class GridPanel extends JPanel implements Scrollable {
 			}
 		}
 	};
-
-	// -------------------------------------------------------------------------
-	// Events
-	// -------------------------------------------------------------------------
-
-	private final List<EventListener> listeners = new ArrayList<EventListener>(1);
-	public void addListener(EventListener listener) {listeners.add(listener);}
-
-	public interface EventListener {
-		public void timeCursorMoved(int newTime);
-		public void selectedElementChanged(Element selectedElement);
-		public void lengthChanged();
-	}
-
-	private void fireTimeCursorMoved(int newTime) {
-		for (EventListener listener : listeners)
-			listener.timeCursorMoved(newTime);
-	}
-
-	private void fireSelectedElementChanged(Element selectedElement) {
-		for (EventListener listener : listeners)
-			listener.selectedElementChanged(selectedElement);
-	}
-
-	private void fireLengthChanged() {
-		for (EventListener listener : listeners)
-			listener.lengthChanged();
-	}
 }

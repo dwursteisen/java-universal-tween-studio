@@ -21,7 +21,7 @@ import java.util.Map;
 public class TweenStudio {
 	private final TweenManager tweenManager;
 	private final List<Tweenable> tweenables = new ArrayList<Tweenable>(5);
-	private final Map<Tweenable, String> namesMap = new HashMap<Tweenable, String>();
+	private final Map<Tweenable, String> namesMap = new HashMap<Tweenable, String>(5);
 	private Map<Tweenable, InitialState> initialStatesMap;
 
 	public TweenStudio(TweenManager tweenManager) {

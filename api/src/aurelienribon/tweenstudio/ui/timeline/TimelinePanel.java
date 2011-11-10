@@ -2,12 +2,11 @@ package aurelienribon.tweenstudio.ui.timeline;
 
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Element;
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import javax.swing.JPanel;
 import javax.swing.JSplitPane;
 
@@ -58,6 +57,10 @@ public class TimelinePanel extends JPanel {
 		return theme;
 	}
 
+	public void setTimeCursorPosition(int millis) {
+		gridPanel.setCurrentTime(millis);
+	}
+
 	// -------------------------------------------------------------------------
 	// Helpers
 	// -------------------------------------------------------------------------
@@ -100,13 +103,13 @@ public class TimelinePanel extends JPanel {
 			@Override public void componentResized(ComponentEvent e) {hScrollBar.repaint();}
 		});
 
-		gridPanel.addListener(new GridPanel.EventListener() {
-			@Override public void timeCursorMoved(int newTime) {menuBarPanel.setTime(newTime);}
+		gridPanel.setCallback(new GridPanel.Callback() {
+			@Override public void currentTimeChanged(int newTime) {menuBarPanel.setTime(newTime); fireTimeCursorPositionChanged(newTime);}
 			@Override public void selectedElementChanged(Element selectedElement) {namesPanel.setSelectedElement(selectedElement);}
 			@Override public void lengthChanged() {hScrollBar.repaint();}
 		});
 
-		menuBarPanel.addListener(new MenuBarPanel.EventListener() {
+		menuBarPanel.setCallback(new MenuBarPanel.Callback() {
 			@Override public void magnifyRequested() {gridPanel.requestMagnification();}
 			@Override public void minifyRequested() {gridPanel.requestMinification();}
 			@Override public void addNodeRequested() {gridPanel.requestAddNode();}
@@ -118,7 +121,7 @@ public class TimelinePanel extends JPanel {
 			@Override public void goToLastRequested() {fireGoToLastRequested();}
 		});
 
-		namesPanel.addListener(new NamesPanel.EventListener() {
+		namesPanel.setCallback(new NamesPanel.Callback() {
 			@Override public void selectedElementChanged(Element selectedElem) {gridPanel.setSelectedElement(selectedElem);}
 			@Override public void verticalOffsetChanged(int vOffset) {gridPanel.setVerticalOffset(vOffset);}
 		});
@@ -128,7 +131,7 @@ public class TimelinePanel extends JPanel {
 	// Events
 	// -------------------------------------------------------------------------
 
-	private final List<EventListener> listeners = new ArrayList<EventListener>();
+	private final List<EventListener> listeners = new CopyOnWriteArrayList<EventListener>();
 	public void addListener(EventListener listener) {listeners.add(listener);}
 
 	public interface EventListener {
@@ -137,6 +140,7 @@ public class TimelinePanel extends JPanel {
 		public void goToPreviousRequested();
 		public void goToNextRequested();
 		public void goToLastRequested();
+		public void timeCursorPositionChanged(int newTime);
 	}
 
 	private void firePlayRequested() {
@@ -162,5 +166,10 @@ public class TimelinePanel extends JPanel {
 	private void fireGoToLastRequested() {
 		for (EventListener listener : listeners)
 			listener.goToLastRequested();
+	}
+
+	private void fireTimeCursorPositionChanged(int newTime) {
+		for (EventListener listener : listeners)
+			listener.timeCursorPositionChanged(newTime);
 	}
 }

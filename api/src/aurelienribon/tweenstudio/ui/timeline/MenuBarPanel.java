@@ -3,8 +3,6 @@ package aurelienribon.tweenstudio.ui.timeline;
 import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.List;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JLabel;
@@ -26,6 +24,7 @@ class MenuBarPanel extends JPanel {
 	private final JLabel timeLbl;
 	private final int margin = 2;
 	private final int bigMargin = 20;
+	private Callback callback;
 
     public MenuBarPanel(Theme theme) {
 		magBtn = new ImageButton("ic_glassPlus.png");
@@ -39,39 +38,39 @@ class MenuBarPanel extends JPanel {
 		goToLastBtn = new ImageButton("ic_goToLast.png");
 
 		magBtn.addActionListener(new ActionListener() {
-			@Override public void actionPerformed(ActionEvent e) {fireMagnifyRequested();}
+			@Override public void actionPerformed(ActionEvent e) {callback.magnifyRequested();}
 		});
 
 		minBtn.addActionListener(new ActionListener() {
-			@Override public void actionPerformed(ActionEvent e) {fireMinifyRequested();}
+			@Override public void actionPerformed(ActionEvent e) {callback.minifyRequested();}
 		});
 
 		addNodeBtn.addActionListener(new ActionListener() {
-			@Override public void actionPerformed(ActionEvent e) {fireAddNodeRequested();}
+			@Override public void actionPerformed(ActionEvent e) {callback.addNodeRequested();}
 		});
 
 		delNodeBtn.addActionListener(new ActionListener() {
-			@Override public void actionPerformed(ActionEvent e) {fireDelNodeRequested();}
+			@Override public void actionPerformed(ActionEvent e) {callback.delNodeRequested();}
 		});
 
 		playBtn.addActionListener(new ActionListener() {
-			@Override public void actionPerformed(ActionEvent e) {firePlayRequested();}
+			@Override public void actionPerformed(ActionEvent e) {callback.playRequested();}
 		});
 
 		goToFirstBtn.addActionListener(new ActionListener() {
-			@Override public void actionPerformed(ActionEvent e) {fireGoToFirstRequested();}
+			@Override public void actionPerformed(ActionEvent e) {callback.goToFirstRequested();}
 		});
 
 		goToPreviousBtn.addActionListener(new ActionListener() {
-			@Override public void actionPerformed(ActionEvent e) {fireGoToPreviousRequested();}
+			@Override public void actionPerformed(ActionEvent e) {callback.goToPreviousRequested();}
 		});
 
 		goToNextBtn.addActionListener(new ActionListener() {
-			@Override public void actionPerformed(ActionEvent e) {fireGoToNextRequested();}
+			@Override public void actionPerformed(ActionEvent e) {callback.goToNextRequested();}
 		});
 
 		goToLastBtn.addActionListener(new ActionListener() {
-			@Override public void actionPerformed(ActionEvent e) {fireGoToLastRequested();}
+			@Override public void actionPerformed(ActionEvent e) {callback.goToLastRequested();}
 		});
 
 		timeLbl = new JLabel();
@@ -114,14 +113,15 @@ class MenuBarPanel extends JPanel {
 		repaint();
 	}
 
+	public void setCallback(Callback callback) {
+		this.callback = callback;
+	}
+
 	// -------------------------------------------------------------------------
-	// Events
+	// Callback
 	// -------------------------------------------------------------------------
 
-	private final List<EventListener> listeners = new ArrayList<EventListener>(1);
-	public void addListener(EventListener listener) {listeners.add(listener);}
-
-	public interface EventListener {
+	public interface Callback {
 		public void magnifyRequested();
 		public void minifyRequested();
 		public void addNodeRequested();
@@ -131,50 +131,5 @@ class MenuBarPanel extends JPanel {
 		public void goToPreviousRequested();
 		public void goToNextRequested();
 		public void goToLastRequested();
-	}
-
-	private void fireMagnifyRequested() {
-		for (EventListener listener : listeners)
-			listener.magnifyRequested();
-	}
-
-	private void fireMinifyRequested() {
-		for (EventListener listener : listeners)
-			listener.minifyRequested();
-	}
-
-	private void fireAddNodeRequested() {
-		for (EventListener listener : listeners)
-			listener.addNodeRequested();
-	}
-
-	private void fireDelNodeRequested() {
-		for (EventListener listener : listeners)
-			listener.delNodeRequested();
-	}
-
-	private void firePlayRequested() {
-		for (EventListener listener : listeners)
-			listener.playRequested();
-	}
-
-	private void fireGoToFirstRequested() {
-		for (EventListener listener : listeners)
-			listener.goToFirstRequested();
-	}
-
-	private void fireGoToPreviousRequested() {
-		for (EventListener listener : listeners)
-			listener.goToPreviousRequested();
-	}
-
-	private void fireGoToNextRequested() {
-		for (EventListener listener : listeners)
-			listener.goToNextRequested();
-	}
-
-	private void fireGoToLastRequested() {
-		for (EventListener listener : listeners)
-			listener.goToLastRequested();
 	}
 }
