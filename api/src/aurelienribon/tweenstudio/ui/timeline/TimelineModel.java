@@ -1,6 +1,7 @@
 package aurelienribon.tweenstudio.ui.timeline;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -8,7 +9,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * @author Aurelien Ribon | http://www.aurelienribon.com/
  */
 public class TimelineModel {
-    private final Element root = new Element("");
+    private final Element root = new Element(this, null, "root");
 	private int duration = 0;
 
 	// -------------------------------------------------------------------------
@@ -19,10 +20,11 @@ public class TimelineModel {
 		Element added = null;
 		Element elem = root;
 		for (String name : names) {
-			added = new Element(name);
-			if (elem.getChild(name) == null)
-				elem.getChildren().add(added);
-			elem = elem.getChild(name);
+			if (elem.getChild(name) == null) {
+				elem = added = elem.addChild(name);
+			} else {
+				elem = elem.getChild(name);
+			}
 		}
 		return added;
 	}
@@ -107,6 +109,12 @@ public class TimelineModel {
 	public void addListener(EventListener listener) {listeners.add(listener);}
 
 	public interface EventListener {
+		public void stateChanged();
+	}
+
+	private void fireStateChanged() {
+		for (EventListener listener : listeners)
+			listener.stateChanged();
 	}
 
 	// -------------------------------------------------------------------------
@@ -118,14 +126,26 @@ public class TimelineModel {
 	}
 
 	public static class Element {
+		private final TimelineModel timelineModel;
+		private final Element parent;
 		private final String name;
-		private final List<Element> children = new ArrayList<Element>();
-		private final List<Node> nodes = new ArrayList<Node>();
+		private final List<Element> children = new ArrayList<Element>(0);
+		private final List<Node> nodes = new ArrayList<Node>(0);
 		private boolean selectable = true;
 		private Object userData = null;
 
-		public Element(String name) {
+		public Element(TimelineModel timelineModel, Element parent, String name) {
+			this.timelineModel = timelineModel;
+			this.parent = parent;
 			this.name = name;
+		}
+
+		public TimelineModel getTimelineModel() {
+			return timelineModel;
+		}
+
+		public Element getParent() {
+			return parent;
 		}
 
 		public String getName() {
@@ -133,11 +153,11 @@ public class TimelineModel {
 		}
 
 		public List<Element> getChildren() {
-			return children;
+			return Collections.unmodifiableList(children);
 		}
 
 		public List<Node> getNodes() {
-			return nodes;
+			return Collections.unmodifiableList(nodes);
 		}
 
 		public Element getChild(String name) {
@@ -147,8 +167,18 @@ public class TimelineModel {
 			return null;
 		}
 
-		public void addNode(int start, int duration) {
-			nodes.add(new Node(start, duration));
+		public Element addChild(String name) {
+			Element child = new Element(timelineModel, this, name);
+			children.add(child);
+			timelineModel.fireStateChanged();
+			return child;
+		}
+
+		public Node addNode(int start, int duration) {
+			Node node = new Node(this, start, duration);
+			nodes.add(node);
+			timelineModel.fireStateChanged();
+			return node;
 		}
 
 		public boolean isSelectable() {
@@ -166,13 +196,19 @@ public class TimelineModel {
 		public void setUserData(Object userData) {
 			this.userData = userData;
 		}
+
+		public interface Callback {
+			public void stateChanged();
+		}
 	}
 
 	public static class Node {
+		private final Element parent;
 		private int start;
 		private int duration;
 
-		public Node(int delay, int duration) {
+		public Node(Element parent, int delay, int duration) {
+			this.parent = parent;
 			this.start = delay;
 			this.duration = duration;
 		}
@@ -190,11 +226,17 @@ public class TimelineModel {
 		}
 
 		public void setStart(int start) {
-			this.start = start;
+			if (this.start != start) {
+				this.start = start;
+				parent.getTimelineModel().fireStateChanged();
+			}
 		}
 
 		public void setDuration(int duration) {
-			this.duration = duration;
+			if (this.duration != duration) {
+				this.duration = duration;
+				parent.getTimelineModel().fireStateChanged();
+			}
 		}
 	}
 }
