@@ -14,14 +14,23 @@ public abstract class Editor {
 
 	public abstract void initialize();
 
+	public List<Property> getProperties(Class<? extends Tweenable> clazz) {
+		assert propertiesMap.containsKey(clazz);
+		return propertiesMap.get(clazz);
+	}
+
+	public Property getProperty(Class<? extends Tweenable> clazz, int tweenType) {
+		List<Property> properties = getProperties(clazz);
+		for (Property property : properties)
+			if (property.getId() == tweenType)
+				return property;
+		assert false;
+		return null;
+	}
+
 	protected void registerProperty(Class<? extends Tweenable> clazz, int propertyId, String propertyName) {
 		if (!propertiesMap.containsKey(clazz))
 			propertiesMap.put(clazz, new ArrayList<Property>(5));
 		propertiesMap.get(clazz).add(new Property(propertyId, propertyName));
-	}
-
-	public List<Property> getProperties(Class<? extends Tweenable> clazz) {
-		assert propertiesMap.containsKey(clazz);
-		return propertiesMap.get(clazz);
 	}
 }

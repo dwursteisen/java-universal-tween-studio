@@ -6,6 +6,7 @@ package aurelienribon.tweenstudio;
 public class Property {
 	private final int id;
 	private final String name;
+	private int combinedTweensCount = -1;
 
 	public Property(int id, String name) {
 		this.id = id;
@@ -18,5 +19,13 @@ public class Property {
 
 	public String getName() {
 		return name;
+	}
+
+	public int getCombinedTweensCount() {
+		return combinedTweensCount;
+	}
+
+	public void setCombinedTweensCount(int combinedTweensCount) {
+		this.combinedTweensCount = combinedTweensCount;
 	}
 }

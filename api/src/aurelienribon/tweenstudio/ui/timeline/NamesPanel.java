@@ -1,7 +1,6 @@
 package aurelienribon.tweenstudio.ui.timeline;
 
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Element;
-import aurelienribon.tweenstudio.ui.timeline.TimelineModel.ElementAction;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
@@ -48,8 +47,8 @@ class NamesPanel extends JPanel implements Scrollable {
 		this.callback = callback;
 	}
 
-	public void setSelectedElement(Element selectedElement) {
-		this.selectedElement = selectedElement;
+	public void setSelectedElementSilently(Element elem) {
+		this.selectedElement = elem;
 		repaint();
 	}
 
@@ -104,45 +103,39 @@ class NamesPanel extends JPanel implements Scrollable {
 	}
 
 	private void drawSections(final Graphics2D gg) {
-		model.forAllElements(new TimelineModel.ElementAction() {
-			private int line = 0;
-			@Override public boolean apply(Element elem) {
-				if (!elem.isSelectable()) {
-					gg.setColor(theme.COLOR_NAMESPANEL_SECTION_UNUSABLE);
-				} else if (elem == selectedElement) {
-					gg.setColor(theme.COLOR_NAMESPANEL_SECTION_SELECTED);
-				} else if (elem == mouseOverElement) {
-					gg.setColor(theme.COLOR_NAMESPANEL_SECTION_MOUSEOVER);
-				} else {
-					gg.setColor(theme.COLOR_NAMESPANEL_SECTION);
-				}
-
-				gg.fillRect(0, line*lineHeight, getWidth(), lineHeight);
-				line += 1;
-				return false;
+		int line = 0;
+		for (Element elem : model.getElements()) {
+			if (!elem.isSelectable()) {
+				gg.setColor(theme.COLOR_NAMESPANEL_SECTION_UNUSABLE);
+			} else if (elem == selectedElement) {
+				gg.setColor(theme.COLOR_NAMESPANEL_SECTION_SELECTED);
+			} else if (elem == mouseOverElement) {
+				gg.setColor(theme.COLOR_NAMESPANEL_SECTION_MOUSEOVER);
+			} else {
+				gg.setColor(theme.COLOR_NAMESPANEL_SECTION);
 			}
-		});
+
+			gg.fillRect(0, line*lineHeight, getWidth(), lineHeight);
+			line += 1;
+		}
 	}
 
 	private void drawNames(final Graphics2D gg) {
 		gg.setFont(theme.FONT);
 		gg.setColor(theme.COLOR_FOREGROUND);
 
-		model.forAllElements(new TimelineModel.ElementAction() {
-			private int line = 0;
-			@Override public boolean apply(Element elem) {
-				int level = model.getPath(elem).length;
-				int x = paddingLeft + (level-1)*paddingIncremental;
-				int y = line*lineHeight-5;
-				Image img = elem.getChildren().isEmpty() ? imgIdxNone : imgIdxClosed;
+		int line = 0;
+		for (Element elem : model.getElements()) {
+			int level = elem.getLevel();
+			int x = paddingLeft + level*paddingIncremental;
+			int y = line*lineHeight-5;
+			Image img = elem.getChildren().isEmpty() ? imgIdxNone : imgIdxClosed;
 
-				gg.drawImage(img, x, y + 7, null);
-				gg.drawString(elem.getName(), x + 20, y + 20);
+			gg.drawImage(img, x, y + 7, null);
+			gg.drawString(elem.getName(), x + 20, y + 20);
 
-				line += 1;
-				return false;
-			}
-		});
+			line += 1;
+		}
 	}
 
 	// -------------------------------------------------------------------------
@@ -173,18 +166,14 @@ class NamesPanel extends JPanel implements Scrollable {
 			mouseOverElement = null;
 			final int evLine = getLineFromY(e.getY());
 
-			model.forAllElements(new ElementAction() {
-				private int line = 0;
-				@Override public boolean apply(Element elem) {
-					if (evLine == line && elem.isSelectable()) {
-						mouseOverElement = elem;
-						return true;
-					}
-
-					line += 1;
-					return false;
+			int line = 0;
+			for (Element elem : model.getElements()) {
+				if (evLine == line && elem.isSelectable()) {
+					mouseOverElement = elem;
+					break;
 				}
-			});
+				line += 1;
+			}
 			
 			repaint();
 		}

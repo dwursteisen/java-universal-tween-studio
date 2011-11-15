@@ -29,14 +29,8 @@ public class TweenSprite implements Tweenable {
 				returnValues[1] = sprite.getScaleY();
 				return 2;
 
-			case ROTATION:
-				returnValues[0] = sprite.getRotation();
-				return 1;
-
-			case OPACITY:
-				returnValues[0] = sprite.getColor().a;
-				return 1;
-
+			case ROTATION: returnValues[0] = sprite.getRotation(); return 1;
+			case OPACITY: returnValues[0] = sprite.getColor().a; return 1;
 			default: assert false; return -1;
 		}
 	}
@@ -50,13 +44,8 @@ public class TweenSprite implements Tweenable {
 					newValues[1] - sprite.getOriginY());
 				break;
 
-			case SCALE_XY:
-				sprite.setScale(newValues[0], newValues[1]);
-				break;
-
-			case ROTATION:
-				sprite.setRotation(newValues[0]);
-				break;
+			case SCALE_XY: sprite.setScale(newValues[0], newValues[1]); break;
+			case ROTATION: sprite.setRotation(newValues[0]); break;
 
 			case OPACITY:
 				Color c = sprite.getColor();

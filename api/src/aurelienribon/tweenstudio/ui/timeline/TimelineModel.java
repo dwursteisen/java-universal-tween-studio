@@ -37,10 +37,6 @@ public class TimelineModel {
 		return addElement(names);
 	}
 
-	public void forAllElements(ElementAction action) {
-		_forAllElements(root, action);
-	}
-
 	public Element getRoot() {
 		return root;
 	}
@@ -63,20 +59,17 @@ public class TimelineModel {
 		return getElement(names);
 	}
 
-	public String[] getPath(Element elem) {
-		String path = _getPath(elem, root);
-		return path != null ? path.split("/") : null;
+	public List<Element> getElements() {
+		List<Element> elems = new ArrayList<Element>();
+		_getElements(root, elems);
+		return Collections.unmodifiableList(elems);
 	}
 
 	public int getDuration() {
 		duration = 0;
-		forAllElements(new ElementAction() {
-			@Override public boolean apply(Element elem) {
-				for (Node n : elem.getNodes())
-					duration = Math.max(duration, n.getEnd());
-				return false;
-			}
-		});
+		for (Element elem : getElements())
+			for (Node n : elem.getNodes())
+				duration = Math.max(duration, n.getEnd());
 		return duration;
 	}
 
@@ -84,21 +77,11 @@ public class TimelineModel {
 	// Helpers
 	// -------------------------------------------------------------------------
 
-	private boolean _forAllElements(Element elem, ElementAction action) {
-		if (elem != root && action.apply(elem)) return true;
-		for (Element child : elem.getChildren())
-			if (_forAllElements(child, action))
-				return true;
-		return false;
-	}
-
-	private String _getPath(Element searchedElem, Element elem) {
-		if (elem == searchedElem) return searchedElem.getName();
+	private void _getElements(Element elem, List<Element> elems) {
 		for (Element child : elem.getChildren()) {
-			String path = _getPath(searchedElem, child);
-			if (path != null) return elem != root ? elem.getName() + "/" + path : path;
+			elems.add(child);
+			_getElements(child, elems);
 		}
-		return null;
 	}
 
 	// -------------------------------------------------------------------------
@@ -121,16 +104,13 @@ public class TimelineModel {
 	// Inner classes
 	// -------------------------------------------------------------------------
 
-	public interface ElementAction {
-		public boolean apply(Element elem);
-	}
-
 	public static class Element {
 		private final TimelineModel timelineModel;
 		private final Element parent;
 		private final String name;
 		private final List<Element> children = new ArrayList<Element>(0);
 		private final List<Node> nodes = new ArrayList<Node>(0);
+		private final int level;
 		private boolean selectable = true;
 		private Object userData = null;
 
@@ -138,6 +118,7 @@ public class TimelineModel {
 			this.timelineModel = timelineModel;
 			this.parent = parent;
 			this.name = name;
+			this.level = parent != null ? parent.getLevel() + 1 : -1;
 		}
 
 		public TimelineModel getTimelineModel() {
@@ -150,6 +131,10 @@ public class TimelineModel {
 
 		public String getName() {
 			return name;
+		}
+
+		public int getLevel() {
+			return level;
 		}
 
 		public List<Element> getChildren() {
@@ -170,7 +155,6 @@ public class TimelineModel {
 		public Element addChild(String name) {
 			Element child = new Element(timelineModel, this, name);
 			children.add(child);
-			timelineModel.fireStateChanged();
 			return child;
 		}
 
@@ -179,6 +163,10 @@ public class TimelineModel {
 			nodes.add(node);
 			timelineModel.fireStateChanged();
 			return node;
+		}
+
+		public void removeNode(Node node) {
+			nodes.remove(node);
 		}
 
 		public boolean isSelectable() {
@@ -196,16 +184,13 @@ public class TimelineModel {
 		public void setUserData(Object userData) {
 			this.userData = userData;
 		}
-
-		public interface Callback {
-			public void stateChanged();
-		}
 	}
 
 	public static class Node {
 		private final Element parent;
 		private int start;
 		private int duration;
+		private Object userData = null;
 
 		public Node(Element parent, int delay, int duration) {
 			this.parent = parent;
@@ -225,6 +210,10 @@ public class TimelineModel {
 			return start + duration;
 		}
 
+		public Element getParent() {
+			return parent;
+		}
+
 		public void setStart(int start) {
 			if (this.start != start) {
 				this.start = start;
@@ -237,6 +226,14 @@ public class TimelineModel {
 				this.duration = duration;
 				parent.getTimelineModel().fireStateChanged();
 			}
+		}
+
+		public Object getUserData() {
+			return userData;
+		}
+
+		public void setUserData(Object userData) {
+			this.userData = userData;
 		}
 	}
 }

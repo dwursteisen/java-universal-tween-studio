@@ -5,6 +5,8 @@ import java.awt.Graphics;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
+import java.util.List;
 import javax.swing.JButton;
 
 /**
@@ -13,21 +15,36 @@ import javax.swing.JButton;
 class ImageButton extends JButton {
 	private final BufferedImage mouseOverImage;
 	private final BufferedImage mousePressedImage;
-	private final BufferedImage image;
+	private final List<BufferedImage> images = new ArrayList<BufferedImage>();
 	private final Dimension size;
 
 	private boolean isMouseOver = false;
 	private boolean isMousePressed = false;
+	private int imageIdx = 0;
 
     public ImageButton(String gfxName) {
 		this.mouseOverImage = ResourcesHelper.getGfx("ic_btnMouseOver.png");
 		this.mousePressedImage = ResourcesHelper.getGfx("ic_btnMousePressed.png");
-		this.image = ResourcesHelper.getGfx(gfxName);
+		this.images.add(ResourcesHelper.getGfx(gfxName));
 		this.size = new Dimension(20, 20);
 
 		addMouseListener(mouseAdapter);
 		setFocusable(false);
 		setBorder(null);
+	}
+
+	public ImageButton addImage(String gfxName) {
+		images.add(ResourcesHelper.getGfx(gfxName));
+		return this;
+	}
+
+	public void setImageIdx(int imageIdx) {
+		this.imageIdx = imageIdx;
+		repaint();
+	}
+
+	public int getImageIdx() {
+		return imageIdx;
 	}
 
 	@Override
@@ -47,12 +64,13 @@ class ImageButton extends JButton {
 
 	@Override
 	protected void paintComponent(Graphics g) {
-		if (isMousePressed)
+		if (isMousePressed) {
 			g.drawImage(mousePressedImage, 0, 0, null);
-		else if(isMouseOver)
+		} else if (isMouseOver) {
 			g.drawImage(mouseOverImage, 0, 0, null);
+		}
 
-		g.drawImage(image, 2, 2, null);
+		g.drawImage(images.get(imageIdx), 2, 2, null);
 	}
 
 	private MouseAdapter mouseAdapter = new MouseAdapter() {

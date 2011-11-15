@@ -1,7 +1,6 @@
 package aurelienribon.tweenstudiotest;
 
 import aurelienribon.tweenengine.TweenManager;
-import aurelienribon.tweenstudio.Editor;
 import aurelienribon.tweenstudio.TweenStudio;
 import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Gdx;
@@ -24,7 +23,6 @@ public class App implements ApplicationListener {
 	private TweenSprite logoSpriteTween2;
 	private TweenSprite logoSpriteTween3;
 
-	private TweenManager tweenManager;
 	private TweenStudio tweenStudio;
 
 	@Override
@@ -56,9 +54,7 @@ public class App implements ApplicationListener {
 		logoSpriteTween2 = new TweenSprite(logoSprite2);
 		logoSpriteTween3 = new TweenSprite(logoSprite3);
 
-		tweenManager = new TweenManager();
-
-		tweenStudio = new TweenStudio(tweenManager);
+		tweenStudio = new TweenStudio();
 		tweenStudio.registerTweenable(logoSpriteTween1, "Logo 1");
 		tweenStudio.registerTweenable(logoSpriteTween2, "Logo 2");
 		tweenStudio.registerTweenable(logoSpriteTween3, "Logo 3");
@@ -71,7 +67,7 @@ public class App implements ApplicationListener {
 
 	@Override
 	public void render() {
-		tweenManager.update();
+		tweenStudio.update();
 
 		GL10 gl = Gdx.gl10;
 		gl.glClearColor(1, 1, 1, 1);

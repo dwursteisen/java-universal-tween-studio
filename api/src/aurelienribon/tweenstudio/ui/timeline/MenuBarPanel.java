@@ -31,7 +31,7 @@ class MenuBarPanel extends JPanel {
 		minBtn = new ImageButton("ic_glassMinus.png");
 		addNodeBtn = new ImageButton("ic_addNode.png");
 		delNodeBtn = new ImageButton("ic_delNode.png");
-		playBtn = new ImageButton("ic_play.png");
+		playBtn = new ImageButton("ic_play.png").addImage("ic_pause.png");
 		goToFirstBtn = new ImageButton("ic_goToFirst.png");
 		goToPreviousBtn = new ImageButton("ic_goToPrevious.png");
 		goToNextBtn = new ImageButton("ic_goToNext.png");
@@ -54,7 +54,7 @@ class MenuBarPanel extends JPanel {
 		});
 
 		playBtn.addActionListener(new ActionListener() {
-			@Override public void actionPerformed(ActionEvent e) {callback.playRequested();}
+			@Override public void actionPerformed(ActionEvent e) {if (playBtn.getImageIdx() == 0) callback.playRequested(); else callback.pauseRequested();}
 		});
 
 		goToFirstBtn.addActionListener(new ActionListener() {
@@ -117,6 +117,14 @@ class MenuBarPanel extends JPanel {
 		this.callback = callback;
 	}
 
+	public void setPlayBtnVisible() {
+		playBtn.setImageIdx(0);
+	}
+
+	public void setPauseBtnVisible() {
+		playBtn.setImageIdx(1);
+	}
+
 	// -------------------------------------------------------------------------
 	// Callback
 	// -------------------------------------------------------------------------
@@ -127,6 +135,7 @@ class MenuBarPanel extends JPanel {
 		public void addNodeRequested();
 		public void delNodeRequested();
 		public void playRequested();
+		public void pauseRequested();
 		public void goToFirstRequested();
 		public void goToPreviousRequested();
 		public void goToNextRequested();
