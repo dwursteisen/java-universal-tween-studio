@@ -22,7 +22,7 @@ public class App implements ApplicationListener {
 		// Create the studio...
 		createStudio();
 		// ...then spawn it when you want !
-		tweenStudio.edit(LibGdxTweenStudioEditor.class, "data/anim.tweens");
+		tweenStudio.edit(LibGdxTweenStudioEditorX.class, "data/anim.tweens");
 	}
 
 	private void createSprites() {
@@ -48,6 +48,7 @@ public class App implements ApplicationListener {
 	private void createStudio() {
 		// Registration of the editor/player (only needed once per application)
 		TweenStudio.registerEditor(new LibGdxTweenStudioEditor());
+		TweenStudio.registerEditor(new LibGdxTweenStudioEditorX());
 		TweenStudio.registerPlayer(new LibGdxTweenStudioPlayer());
 
 		// Instantiation of the studio

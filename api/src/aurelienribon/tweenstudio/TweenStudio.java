@@ -72,12 +72,16 @@ public class TweenStudio {
 		this.editor = editors.get(editorClass);
 		this.filepath = filepath;
 		
-		String fileContent = editor.getFileContent(filepath);
+		editor.setStudio(this);
 		editor.initialize();
+
 		initializeProperties(editor);
 		initializeInitialStates(editor);
 		createModel(editor);
+
+		String fileContent = editor.getFileContent(filepath);
 		ImportExportHelper.stringToModel(fileContent, model);
+
 		createWindow(model);
 	}
 
@@ -94,6 +98,26 @@ public class TweenStudio {
 	}
 
 	// -------------------------------------------------------------------------
+	// Package API
+	// -------------------------------------------------------------------------
+
+	List<Tweenable> getTweenables() {
+		return tweenables;
+	}
+
+	void targetsChanged(Tweenable tweenable, int tweenType, float... targets) {
+		String tweenableName = namesMap.get(tweenable);
+		String propertyName = editor.getProperty(tweenable.getClass(), tweenType).getName();
+
+		Element elem = model.getElement(tweenableName + "/" + propertyName);
+		int currentTime = wnd.getTimeCursorPosition();
+
+		Node node = getNodeAtTime(elem, currentTime);
+		NodeData nodeData = (NodeData) node.getUserData();
+		nodeData.setTargets(targets);
+	}
+
+	// -------------------------------------------------------------------------
 	// Helpers
 	// -------------------------------------------------------------------------
 
@@ -102,7 +126,7 @@ public class TweenStudio {
 			List<Property> properties = editor.getProperties(tweenable.getClass());
 
 			for (Property property : properties) {
-				int cnt = tweenable.getTweenValues(property.getId(), buffer);
+				int cnt = tweenable.getTweenValues(property.getTweenType(), buffer);
 				property.setCombinedTweensCount(cnt);
 			}
 		}
@@ -130,7 +154,7 @@ public class TweenStudio {
 
 			for (Property property : properties) {
 				elem = model.addElement(namesMap.get(tweenable) + "/" + property.getName());
-				elem.setUserData(new ElementData(tweenable, property.getId()));
+				elem.setUserData(new ElementData(tweenable, property.getTweenType()));
 			}
 		}
 	}
@@ -153,6 +177,7 @@ public class TweenStudio {
 			@Override public void windowClosing(WindowEvent e) {
 				String str = ImportExportHelper.modelToString(model);
 				editor.setFileContent(filepath, str);
+				editor.dispose();
 			}
 		});
 
@@ -210,6 +235,19 @@ public class TweenStudio {
 		InitialState initState = initialStatesMap.get(tweenable);
 		float[] initValues = initState.getValues(tweenType);
 		tweenable.onTweenUpdated(tweenType, initValues);
+	}
+
+	private Node getNodeAtTime(Element elem, int time) {
+		Node node = null;
+		for (Node n : elem.getNodes()) {
+			if (n.getEnd() == time) {
+				node = n;
+				break;
+			}
+		}
+
+		if (node == null) node = elem.addNode(time, 0);
+		return node;
 	}
 
 	// -------------------------------------------------------------------------

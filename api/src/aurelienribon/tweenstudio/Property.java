@@ -8,12 +8,12 @@ public class Property {
 	private final String name;
 	private int combinedTweensCount = -1;
 
-	public Property(int id, String name) {
-		this.id = id;
+	public Property(int tweenType, String name) {
+		this.id = tweenType;
 		this.name = name;
 	}
 
-	public int getId() {
+	public int getTweenType() {
 		return id;
 	}
 

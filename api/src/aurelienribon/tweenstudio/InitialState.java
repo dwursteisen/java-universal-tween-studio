@@ -12,7 +12,7 @@ public class InitialState {
 
 	public InitialState(Editor editor, Tweenable tweenable) {
 		for (Property property : editor.getProperties(tweenable.getClass())) {
-			int tweenType = property.getId();
+			int tweenType = property.getTweenType();
 			int count = property.getCombinedTweensCount();
 			float[] values = new float[count];
 			tweenable.getTweenValues(tweenType, values);

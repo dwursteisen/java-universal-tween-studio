@@ -16,6 +16,10 @@ public class SpriteTweenable implements Tweenable {
 		this.sprite = sprite;
 	}
 
+	public Sprite getSprite() {
+		return sprite;
+	}
+
 	@Override
 	public int getTweenValues(int tweenType, float[] returnValues) {
 		switch (tweenType) {
