@@ -6,35 +6,35 @@ repeat: none
 logoStudio
   rotate: false
   xy: 2, 2
-  size: 249, 111
-  orig: 251, 113
-  offset: 1, 1
+  size: 249, 108
+  orig: 249, 108
+  offset: 0, 0
   index: -1
 logoTweenEngine
   rotate: false
-  xy: 2, 115
-  size: 300, 96
-  orig: 314, 108
-  offset: 2, 2
+  xy: 2, 112
+  size: 301, 99
+  orig: 301, 99
+  offset: 0, 0
   index: -1
 logoTween
   rotate: false
   xy: 253, 2
-  size: 213, 74
-  orig: 213, 74
+  size: 212, 73
+  orig: 212, 73
   offset: 0, 0
   index: -1
-logoWave
+wave
   rotate: false
   xy: 2, 213
-  size: 445, 63
-  orig: 452, 65
-  offset: 4, 2
+  size: 440, 67
+  orig: 440, 67
+  offset: 0, 0
   index: -1
 logoLibgdx
   rotate: false
-  xy: 304, 115
-  size: 55, 55
-  orig: 64, 64
-  offset: 4, 5
+  xy: 305, 112
+  size: 64, 60
+  orig: 64, 60
+  offset: 0, 0
   index: -1

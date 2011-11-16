@@ -1,5 +1,6 @@
 package aurelienribon.tweenstudio;
 
+import aurelienribon.tweenengine.TweenManager;
 import aurelienribon.tweenengine.Tweenable;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -12,6 +13,7 @@ import java.util.Map;
 public abstract class Editor {
 	private final Map<Class<? extends Tweenable>, List<Property>> propertiesMap = new HashMap<Class<? extends Tweenable>, List<Property>>();
 	private TweenStudio studio;
+	private TweenManager tweenManager;
 
 	// -------------------------------------------------------------------------
 	// Abstract
@@ -32,12 +34,16 @@ public abstract class Editor {
 		propertiesMap.get(clazz).add(new Property(tweenType, propertyName));
 	}
 
-	protected void fireTargetsChanged(Tweenable tweenable, int tweenType, float... targets) {
-		studio.targetsChanged(tweenable, tweenType, targets);
+	protected void fireStateChanged(Tweenable tweenable, int tweenType) {
+		studio.tweenableStateChanged(tweenable, tweenType);
 	}
 
 	protected List<Tweenable> getRegisteredTweenables() {
 		return studio.getTweenables();
+	}
+
+	protected TweenManager getTweenManager() {
+		return tweenManager;
 	}
 
 	// -------------------------------------------------------------------------
@@ -60,5 +66,9 @@ public abstract class Editor {
 
 	void setStudio(TweenStudio studio) {
 		this.studio = studio;
+	}
+
+	void setTweenManager(TweenManager tweenManager) {
+		this.tweenManager = tweenManager;
 	}
 }

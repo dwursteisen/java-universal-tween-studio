@@ -26,6 +26,7 @@ import javax.swing.event.ChangeListener;
 public class MainWindow extends javax.swing.JFrame {
 	private final EaseChangeListener easeListener = new EaseChangeListener();
 	private Callback callback;
+	private Node selectedNode;
 
 	public MainWindow() {
 		initComponents();
@@ -36,7 +37,7 @@ public class MainWindow extends javax.swing.JFrame {
 
 		timelinePanel.addListener(new EventListener() {
 			@Override public void selectedElementChanged(Element element) {}
-			@Override public void selectedNodeChanged(Node node) {updateTargetsValues(node);}
+			@Override public void selectedNodeChanged(Node node) {selectedNode = node; updateTargetsValues(node);}
 			@Override public void playRequested() {callback.playRequested();}
 			@Override public void pauseRequested() {callback.pauseRequested();}
 			@Override public void timeCursorPositionChanged(int oldTime, int newTime) {callback.timeCursorPositionChanged(oldTime, newTime);}
@@ -69,6 +70,10 @@ public class MainWindow extends javax.swing.JFrame {
 
 	public void setPlaying(boolean playing) {
 		timelinePanel.setPlaying(playing);
+	}
+
+	public void updateTargetsValues() {
+		updateTargetsValues(selectedNode);
 	}
 
 	// -------------------------------------------------------------------------

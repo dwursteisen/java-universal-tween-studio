@@ -31,6 +31,14 @@ public class TweenStudio {
 		players.put(player.getClass(), player);
 	}
 
+	public static Editor getRegisteredEditor(Class<? extends Editor> editorClass) {
+		return editors.get(editorClass);
+	}
+
+	public static Player getRegisteredPlayer(Class<? extends Player> playerClass) {
+		return players.get(playerClass);
+	}
+
 	// -------------------------------------------------------------------------
 
 	private final List<Tweenable> tweenables = new ArrayList<Tweenable>(5);
@@ -43,6 +51,7 @@ public class TweenStudio {
 	private Map<Tweenable, InitialState> initialStatesMap;
 	private TimelineModel model;
 	private MainWindow wnd;
+	private TweenManager editorTweenManager;
 
 	private long playStartTime;
 	private int playDuration;
@@ -71,8 +80,10 @@ public class TweenStudio {
 
 		this.editor = editors.get(editorClass);
 		this.filepath = filepath;
-		
+
+		editorTweenManager = new TweenManager();
 		editor.setStudio(this);
+		editor.setTweenManager(editorTweenManager);
 		editor.initialize();
 
 		initializeProperties(editor);
@@ -95,6 +106,9 @@ public class TweenStudio {
 				wnd.setPlaying(false);
 			}
 		}
+
+		if (editorTweenManager != null)
+			editorTweenManager.update();
 	}
 
 	// -------------------------------------------------------------------------
@@ -105,16 +119,20 @@ public class TweenStudio {
 		return tweenables;
 	}
 
-	void targetsChanged(Tweenable tweenable, int tweenType, float... targets) {
+	void tweenableStateChanged(Tweenable tweenable, int tweenType) {
 		String tweenableName = namesMap.get(tweenable);
-		String propertyName = editor.getProperty(tweenable.getClass(), tweenType).getName();
-
-		Element elem = model.getElement(tweenableName + "/" + propertyName);
 		int currentTime = wnd.getTimeCursorPosition();
 
+		String propertyName = editor.getProperty(tweenable.getClass(), tweenType).getName();
+		Element elem = model.getElement(tweenableName + "/" + propertyName);
 		Node node = getNodeAtTime(elem, currentTime);
 		NodeData nodeData = (NodeData) node.getUserData();
-		nodeData.setTargets(targets);
+
+		tweenable.getTweenValues(tweenType, buffer);
+		nodeData.setTargets(buffer);
+
+		resetTweens();
+		wnd.updateTargetsValues();
 	}
 
 	// -------------------------------------------------------------------------

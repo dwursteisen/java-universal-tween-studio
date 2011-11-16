@@ -1,31 +1,8 @@
-Logo LibGDX;position;600;3700;Linear.INOUT;160.0;310.0
-Logo LibGDX;position;0;0;Linear.INOUT;160.0;310.0
-Logo LibGDX;position;6700;0;Linear.INOUT;128.5;275.5
-Logo LibGDX;rotation;0;1700;Linear.INOUT;0.0
-Logo LibGDX;rotation;1700;2800;Linear.INOUT;0.0
-Logo LibGDX;opacity;1000;0;Linear.INOUT;0.99607843
-Logo LibGDX;scale;0;0;Linear.INOUT;1.5;1.5
-Logo LibGDX;scale;1000;0;Linear.INOUT;1.5;1.5
-Logo Tween Engine;position;0;0;Linear.INOUT;160.0;180.0
-Logo Tween Engine;position;2100;7000;Linear.INOUT;160.0;180.0
-Logo Tween Engine;position;6700;0;Linear.INOUT;8.0;129.0
-Logo Tween Engine;opacity;800;5000;Linear.INOUT;0.99607843
-Logo Tween Engine;scale;0;0;Linear.INOUT;0.8;0.8
-Logo Tween Engine;scale;2600;6600;Linear.INOUT;0.8;0.8
-Logo Tween;rotation;3600;2800;Linear.INOUT;0.0
-Logo Tween;rotation;2400;1200;Linear.INOUT;0.0
-Logo Tween;rotation;700;1700;Linear.INOUT;0.0
-Logo Tween;rotation;700;0;Linear.INOUT;0.0
-Logo Tween;opacity;0;10300;Linear.INOUT;0.99607843
-Logo Tween;scale;4400;1600;Linear.INOUT;1.0;1.0
-Logo Tween;scale;2500;1900;Linear.INOUT;1.0;1.0
-Logo Tween;scale;100;1600;Linear.INOUT;1.0;1.0
-Logo Tween;scale;1700;800;Linear.INOUT;1.0;1.0
-Logo Tween;scale;100;0;Linear.INOUT;1.0;1.0
-Logo Studio;rotation;4100;4600;Linear.INOUT;0.0
-Logo Studio;rotation;2400;1700;Linear.INOUT;0.0
-Logo Studio;rotation;500;1300;Linear.INOUT;0.0
-Logo Studio;rotation;500;0;Linear.INOUT;0.0
-Logo Studio;scale;3000;2100;Linear.INOUT;1.0;1.0
-Logo Studio;scale;900;800;Linear.INOUT;1.0;1.0
-Logo Studio;scale;1700;600;Linear.INOUT;1.0;1.0
+Logo LibGDX;position;0;0;Linear.INOUT;0.12500143;4.489584
+Logo Tween;position;0;0;Linear.INOUT;-0.16666746;-0.8474845
+Logo Studio;position;0;0;Linear.INOUT;-0.18749952;-1.7073282
+Wave 1;position;0;0;Linear.INOUT;-0.0416677;-3.8068173
+Wave 2;position;0;0;Linear.INOUT;-0.0625;-4.2026515
+Wave 2;scale;0;0;Linear.INOUT;1.4270816;1.4270816
+Wave 3;position;0;0;Linear.INOUT;-0.020833492;-4.6818194
+Wave 3;scale;0;0;Linear.INOUT;1.872911;1.872911

@@ -20,8 +20,8 @@ public class NodeData {
 	}
 
 	public void setTargets(float[] targets) {
-		assert targets.length == this.targets.length;
-		System.arraycopy(targets, 0, this.targets, 0, targets.length);
+		assert targets.length >= this.targets.length;
+		System.arraycopy(targets, 0, this.targets, 0, this.targets.length);
 	}
 
 	public TweenEquation getEquation() {
