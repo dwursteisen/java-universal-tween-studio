@@ -7,6 +7,13 @@ import aurelienribon.tweenstudio.ui.MainWindow;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Element;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Node;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -32,8 +39,7 @@ public class TweenStudio {
 	private long playStartTime;
 	private int playDuration;
 
-	public TweenStudio() {
-	}
+	private OutputStream outputStream;
 
 	// -------------------------------------------------------------------------
 	// Public API
@@ -44,11 +50,46 @@ public class TweenStudio {
 		namesMap.put(tweenable, name);
 	}
 
-	public void play() {
+	public void play(File file) {
+		InputStream is = null;
+		try {
+			is = new FileInputStream(file);
+			play(is);
+		} catch (FileNotFoundException ex) {
+			throw new RuntimeException(ex);
+		} finally {
+			try {if (is != null) is.close();} catch (IOException ex) {}
+		}
 	}
 
-	public void edit(Editor editor) {
+	public void play(InputStream is) {
+		try {
+			String str = IoHelper.readStream(is);
+		} catch (IOException ex) {
+			throw new RuntimeException(ex);
+		} finally {
+			try {is.close();} catch (IOException ex) {}
+		}
+	}
+
+	public void edit(Editor editor, File file) {
+		try {
+			InputStream is = new FileInputStream(file);
+			OutputStream os = new FileOutputStream(file);
+			edit(editor, is, os);
+		} catch (FileNotFoundException ex) {
+		}
+	}
+
+	public void edit(Editor editor, InputStream is, OutputStream os) {
+		try {
+			String str = IoHelper.readStream(is);
+		} catch (IOException ex) {
+			throw new RuntimeException(ex);
+		}
+
 		this.editor = editor;
+
 		editor.initialize();
 
 		initializeProperties(editor);
@@ -142,13 +183,14 @@ public class TweenStudio {
 		}
 
 		int accTime = 0, delta = 100, duration = model.getDuration();
-		while (accTime < duration) {
+		while (accTime <= duration + delta) {
 			accTime += delta;
 			tweenManager.update(delta);
 		}
 
 		int currentTime = wnd.getTimeCursorPosition();
-		tweenManager.update(currentTime-accTime);
+		tweenManager.update(-accTime-1);
+		tweenManager.update(currentTime+1);
 	}
 
 	private void createTweens(Element elem, Tweenable tweenable, int tweenType) {
@@ -186,7 +228,8 @@ public class TweenStudio {
 	private MainWindow.Callback wndCallback = new MainWindow.Callback() {
 		@Override
 		public void timeCursorPositionChanged(int oldTime, int newTime) {
-			tweenManager.update(newTime-oldTime);
+			tweenManager.update(-oldTime-1);
+			tweenManager.update(newTime+1);
 		}
 
 		@Override

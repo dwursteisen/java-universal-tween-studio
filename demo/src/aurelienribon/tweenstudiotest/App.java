@@ -1,6 +1,5 @@
 package aurelienribon.tweenstudiotest;
 
-import aurelienribon.tweenengine.TweenManager;
 import aurelienribon.tweenstudio.TweenStudio;
 import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Gdx;

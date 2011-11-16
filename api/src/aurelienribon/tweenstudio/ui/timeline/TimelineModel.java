@@ -167,6 +167,7 @@ public class TimelineModel {
 
 		public void removeNode(Node node) {
 			nodes.remove(node);
+			timelineModel.fireStateChanged();
 		}
 
 		public boolean isSelectable() {
