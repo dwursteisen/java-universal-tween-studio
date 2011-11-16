@@ -11,6 +11,7 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseWheelEvent;
 import java.util.List;
 import javax.swing.JPanel;
 
@@ -43,6 +44,7 @@ class GridPanel extends JPanel implements Scrollable {
 		this.theme = theme;
 		addMouseListener(mouseAdapter);
 		addMouseMotionListener(mouseAdapter);
+		addMouseWheelListener(mouseAdapter);
 		addKeyListener(keyAdapter);
 		setFocusable(true);
 	}
@@ -164,6 +166,7 @@ class GridPanel extends JPanel implements Scrollable {
 		public void selectedElementChanged(Element selectedElement);
 		public void selectedNodeChanged(Node selectedNode);
 		public void lengthChanged();
+		public void scrollRequired(int amount);
 	}
 
 	// -------------------------------------------------------------------------
@@ -487,6 +490,11 @@ class GridPanel extends JPanel implements Scrollable {
 
 			mouseOverNode = null;
 			repaint();
+		}
+
+		@Override
+		public void mouseWheelMoved(MouseWheelEvent e) {
+			callback.scrollRequired(e.getWheelRotation() * 40);
 		}
 	};
 

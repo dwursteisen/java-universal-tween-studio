@@ -4,67 +4,63 @@ import aurelienribon.tweenstudio.TweenStudio;
 import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL10;
-import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 
 public class App implements ApplicationListener {
-	private static final float SCREEN_WIDTH_METERS = 10.0f;
-
-	private SpriteBatch sb;
-	private OrthographicCamera camera;
-	private Texture logoTexture;
-	private Sprite logoSprite1;
-	private Sprite logoSprite2;
-	private Sprite logoSprite3;
-	private TweenSprite logoSpriteTween1;
-	private TweenSprite logoSpriteTween2;
-	private TweenSprite logoSpriteTween3;
-
+	private SpriteBatch spriteBatch;
+	private Sprite[] sprites;
+	private SpriteTweenable[] spriteTweenables;
 	private TweenStudio tweenStudio;
 
 	@Override
 	public void create() {
-		sb = new SpriteBatch();
-		float ratio = (float)Gdx.graphics.getWidth() / (float)Gdx.graphics.getHeight();
-		camera = new OrthographicCamera(SCREEN_WIDTH_METERS, SCREEN_WIDTH_METERS / ratio);
-		camera.update();
-		
-		logoTexture = new Texture(Gdx.files.internal("data/logo.png"));
-		logoTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+		spriteBatch = new SpriteBatch();
+		createSprites();
 
-		logoSprite1 = new Sprite(logoTexture);
-		logoSprite1.setSize(2, 2);
-		logoSprite1.setOrigin(logoSprite1.getWidth()/2, logoSprite1.getHeight()/2);
-		logoSprite1.setPosition(0 - logoSprite1.getOriginX(), 0 - logoSprite1.getOriginY());
-
-		logoSprite2 = new Sprite(logoTexture);
-		logoSprite2.setSize(2, 2);
-		logoSprite2.setOrigin(logoSprite2.getWidth()/2, logoSprite2.getHeight()/2);
-		logoSprite2.setPosition(-2 - logoSprite2.getOriginX(), 0 - logoSprite2.getOriginY());
-
-		logoSprite3 = new Sprite(logoTexture);
-		logoSprite3.setSize(2, 2);
-		logoSprite3.setOrigin(logoSprite3.getWidth()/2, logoSprite3.getHeight()/2);
-		logoSprite3.setPosition(+2 - logoSprite3.getOriginX(), 0 - logoSprite3.getOriginY());
-
-		logoSpriteTween1 = new TweenSprite(logoSprite1);
-		logoSpriteTween2 = new TweenSprite(logoSprite2);
-		logoSpriteTween3 = new TweenSprite(logoSprite3);
-
-		TweenStudio.registerEditor(new LibGdxTweenStudioEditor());
-		TweenStudio.registerPlayer(new LibGdxTweenStudioPlayer());
-
-		tweenStudio = new TweenStudio();
-		tweenStudio.registerTweenable(logoSpriteTween1, "Logo 1");
-		tweenStudio.registerTweenable(logoSpriteTween2, "Logo 2");
-		tweenStudio.registerTweenable(logoSpriteTween3, "Logo 3");
+		// Create the studio...
+		createStudio();
+		// ...then spawn it when you want !
 		tweenStudio.edit(LibGdxTweenStudioEditor.class, "data/anim.tweens");
 	}
 
-	@Override
-	public void resume() {
+	private void createSprites() {
+		TextureAtlas atlas = new TextureAtlas(Gdx.files.internal("data/pack"));
+
+		sprites = new Sprite[7];
+		sprites[0] = atlas.createSprite("logoLibgdx");
+		sprites[1] = atlas.createSprite("logoTweenEngine");
+		sprites[2] = atlas.createSprite("logoTween");
+		sprites[3] = atlas.createSprite("logoStudio");
+		sprites[4] = atlas.createSprite("logoWave");
+		sprites[5] = atlas.createSprite("logoWave");
+		sprites[6] = atlas.createSprite("logoWave");
+
+		for (Sprite sp : sprites)
+			sp.setOrigin(sp.getWidth()/2, sp.getHeight()/2);
+		
+		spriteTweenables = new SpriteTweenable[sprites.length];
+		for (int i=0; i<sprites.length; i++)
+			spriteTweenables[i] = new SpriteTweenable(sprites[i]);
+	}
+
+	private void createStudio() {
+		// Registration of the editor/player (only needed once per application)
+		TweenStudio.registerEditor(new LibGdxTweenStudioEditor());
+		TweenStudio.registerPlayer(new LibGdxTweenStudioPlayer());
+
+		// Instantiation of the studio
+		tweenStudio = new TweenStudio();
+
+		// Registration of the Tweenables we want to animate
+		tweenStudio.registerTweenable(spriteTweenables[0], "Logo LibGDX");
+		tweenStudio.registerTweenable(spriteTweenables[1], "Logo Tween Engine");
+		tweenStudio.registerTweenable(spriteTweenables[2], "Logo Tween");
+		tweenStudio.registerTweenable(spriteTweenables[3], "Logo Studio");
+		tweenStudio.registerTweenable(spriteTweenables[4], "Wave 1");
+		tweenStudio.registerTweenable(spriteTweenables[5], "Wave 2");
+		tweenStudio.registerTweenable(spriteTweenables[6], "Wave 3");
 	}
 
 	@Override
@@ -75,23 +71,14 @@ public class App implements ApplicationListener {
 		gl.glClearColor(1, 1, 1, 1);
 		gl.glClear(GL10.GL_COLOR_BUFFER_BIT);
 
-		sb.begin();
-		camera.apply(gl);
-		logoSprite1.draw(sb);
-		logoSprite2.draw(sb);
-		logoSprite3.draw(sb);
-		sb.end();
+		spriteBatch.begin();
+		for (int i=0; i<sprites.length; i++)
+			sprites[i].draw(spriteBatch);
+		spriteBatch.end();
 	}
 
-	@Override
-	public void resize(int i, int i1) {
-	}
-
-	@Override
-	public void pause() {
-	}
-
-	@Override
-	public void dispose() {
-	}
+	@Override public void resize(int w, int h) {}
+	@Override public void pause() {}
+	@Override public void resume() {}
+	@Override public void dispose() {}
 }

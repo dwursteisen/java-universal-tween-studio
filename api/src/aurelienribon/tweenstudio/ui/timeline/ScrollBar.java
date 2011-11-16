@@ -36,6 +36,22 @@ class ScrollBar extends JPanel {
 		repaint();
 	}
 
+	public void scroll(int amount) {
+		int sLen = scrollable.getLength();
+		int vLen = scrollable.getViewLength();
+		if (vLen >= sLen || getAvailableLength() == 0) return;
+
+		int offset = scrollable.getOffset() + amount;
+		if (offset > sLen - vLen) {
+			offset = sLen - vLen;
+		} else if (offset < 0) {
+			offset = 0;
+		}
+		
+		scrollable.setOffset(offset);
+		repaint();
+	}
+
 	// -------------------------------------------------------------------------
 	// Painting
 	// -------------------------------------------------------------------------

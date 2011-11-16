@@ -181,7 +181,7 @@ public class TweenStudio {
 
 		int currentTime = wnd.getTimeCursorPosition();
 		tweenManager.update(-accTime-1);
-		tweenManager.update(currentTime+1);
+		tweenManager.update(currentTime+2);
 	}
 
 	private void createTweens(Element elem, Tweenable tweenable, int tweenType) {
@@ -220,7 +220,7 @@ public class TweenStudio {
 		@Override
 		public void timeCursorPositionChanged(int oldTime, int newTime) {
 			tweenManager.update(-oldTime-1);
-			tweenManager.update(newTime+1);
+			tweenManager.update(newTime+2);
 		}
 
 		@Override

@@ -135,6 +135,7 @@ public class TimelinePanel extends JPanel {
 			@Override public void selectedElementChanged(Element selectedElement) {namesPanel.setSelectedElementSilently(selectedElement); fireSelectedElementChanged(selectedElement);}
 			@Override public void selectedNodeChanged(Node selectedNode) {fireSelectedNodeChanged(selectedNode);}
 			@Override public void lengthChanged() {hScrollBar.repaint();}
+			@Override public void scrollRequired(int amount) {vScrollBar.scroll(amount);}
 		});
 
 		menuBarPanel.setCallback(new MenuBarPanel.Callback() {
@@ -153,6 +154,7 @@ public class TimelinePanel extends JPanel {
 		namesPanel.setCallback(new NamesPanel.Callback() {
 			@Override public void selectedElementChanged(Element selectedElem) {gridPanel.setSelectedElementSilently(selectedElem);fireSelectedElementChanged(selectedElem);}
 			@Override public void verticalOffsetChanged(int vOffset) {gridPanel.setVerticalOffset(vOffset);}
+			@Override public void scrollRequired(int amount) {vScrollBar.scroll(amount);}
 		});
 	}
 

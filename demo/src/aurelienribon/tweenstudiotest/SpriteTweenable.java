@@ -4,7 +4,7 @@ import aurelienribon.tweenengine.Tweenable;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 
-public class TweenSprite implements Tweenable {
+public class SpriteTweenable implements Tweenable {
 	public static final int POSITION_XY = 1;
 	public static final int SCALE_XY = 2;
 	public static final int ROTATION = 3;
@@ -12,7 +12,7 @@ public class TweenSprite implements Tweenable {
 
 	private Sprite sprite;
 
-	public TweenSprite(Sprite sprite) {
+	public SpriteTweenable(Sprite sprite) {
 		this.sprite = sprite;
 	}
 

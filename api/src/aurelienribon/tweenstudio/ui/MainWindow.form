@@ -57,7 +57,7 @@
           <Group type="103" groupAlignment="0" attributes="0">
               <Group type="102" alignment="0" attributes="0">
                   <Component id="jPanel2" min="-2" max="-2" attributes="0"/>
-                  <EmptySpace max="-2" attributes="0"/>
+                  <EmptySpace type="separate" max="-2" attributes="0"/>
                   <Component id="jPanel3" max="32767" attributes="0"/>
                   <EmptySpace max="-2" attributes="0"/>
               </Group>
@@ -76,8 +76,8 @@
                   <Group type="102" attributes="0">
                       <EmptySpace max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="0" attributes="0">
-                          <Component id="jLabel1" pref="180" max="32767" attributes="0"/>
-                          <Component id="jLabel2" alignment="0" pref="180" max="32767" attributes="0"/>
+                          <Component id="jLabel1" pref="162" max="32767" attributes="0"/>
+                          <Component id="jLabel2" alignment="0" pref="162" max="32767" attributes="0"/>
                       </Group>
                       <EmptySpace max="-2" attributes="0"/>
                   </Group>
@@ -109,7 +109,7 @@
                   <Color blue="ff" green="ff" red="ff" type="rgb"/>
                 </Property>
                 <Property name="horizontalAlignment" type="int" value="0"/>
-                <Property name="text" type="java.lang.String" value="&lt;html&gt; &lt;p align=&quot;center&quot;&gt;2011 - Aur&#xe9;lien Ribon&lt;br/&gt;&lt;font color=&quot;#6eccff&quot;&gt;www.aurelienribon.com&lt;/font&gt;&lt;/p&gt;"/>
+                <Property name="text" type="java.lang.String" value="&lt;html&gt; &lt;p align=&quot;center&quot;&gt;v0.2 - 2011 - Aur&#xe9;lien Ribon&lt;br/&gt;&lt;font color=&quot;#6eccff&quot;&gt;www.aurelienribon.com&lt;/font&gt;&lt;/p&gt;"/>
               </Properties>
             </Component>
           </SubComponents>
@@ -133,7 +133,7 @@
                       <EmptySpace max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="0" attributes="0">
                           <Component id="easeFuncPanel" alignment="0" max="32767" attributes="0"/>
-                          <Component id="targetsPanel" alignment="0" pref="148" max="32767" attributes="0"/>
+                          <Component id="targetsPanel" alignment="0" pref="130" max="32767" attributes="0"/>
                       </Group>
                       <EmptySpace max="-2" attributes="0"/>
                   </Group>
@@ -144,7 +144,7 @@
                   <Group type="102" alignment="0" attributes="0">
                       <Component id="easeFuncPanel" min="-2" max="-2" attributes="0"/>
                       <EmptySpace type="separate" max="-2" attributes="0"/>
-                      <Component id="targetsPanel" pref="242" max="32767" attributes="0"/>
+                      <Component id="targetsPanel" pref="140" max="32767" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
                   </Group>
               </Group>
@@ -161,7 +161,7 @@
                   <Group type="103" groupAlignment="0" attributes="0">
                       <Component id="jLabel3" alignment="0" min="-2" max="-2" attributes="0"/>
                       <Group type="102" alignment="1" attributes="0">
-                          <Component id="easeEquationCbox" pref="85" max="32767" attributes="0"/>
+                          <Component id="easeEquationCbox" pref="67" max="32767" attributes="0"/>
                           <EmptySpace max="-2" attributes="0"/>
                           <Component id="easeTypeCBox" min="-2" max="-2" attributes="0"/>
                       </Group>

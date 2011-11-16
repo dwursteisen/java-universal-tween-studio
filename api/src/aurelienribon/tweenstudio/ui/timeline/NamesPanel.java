@@ -6,6 +6,7 @@ import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseWheelEvent;
 import java.awt.image.BufferedImage;
 import javax.swing.JPanel;
 
@@ -32,6 +33,7 @@ class NamesPanel extends JPanel implements Scrollable {
 		this.theme = theme;
 		addMouseListener(mouseAdapter);
 		addMouseMotionListener(mouseAdapter);
+		addMouseWheelListener(mouseAdapter);
 	}
 
 	public void setModel(TimelineModel model) {
@@ -84,6 +86,7 @@ class NamesPanel extends JPanel implements Scrollable {
 	public interface Callback {
 		public void selectedElementChanged(Element selectedElem);
 		public void verticalOffsetChanged(int vOffset);
+		public void scrollRequired(int amount);
 	}
 
 	// -------------------------------------------------------------------------
@@ -182,6 +185,11 @@ class NamesPanel extends JPanel implements Scrollable {
 		public void mouseExited(MouseEvent e) {
 			mouseOverElement = null;
 			repaint();
+		}
+
+		@Override
+		public void mouseWheelMoved(MouseWheelEvent e) {
+			callback.scrollRequired(e.getWheelRotation() * 40);
 		}
 	};
 }

@@ -15,10 +15,10 @@ import java.io.Writer;
 public class LibGdxTweenStudioEditor extends Editor {
 	@Override
 	public void initialize() {
-		registerProperty(TweenSprite.class, TweenSprite.POSITION_XY, "position");
-		registerProperty(TweenSprite.class, TweenSprite.ROTATION, "rotation");
-		registerProperty(TweenSprite.class, TweenSprite.OPACITY, "opacity");
-		registerProperty(TweenSprite.class, TweenSprite.SCALE_XY, "scale");
+		registerProperty(SpriteTweenable.class, SpriteTweenable.POSITION_XY, "position");
+		registerProperty(SpriteTweenable.class, SpriteTweenable.ROTATION, "rotation");
+		registerProperty(SpriteTweenable.class, SpriteTweenable.OPACITY, "opacity");
+		registerProperty(SpriteTweenable.class, SpriteTweenable.SCALE_XY, "scale");
 	}
 
 	@Override
