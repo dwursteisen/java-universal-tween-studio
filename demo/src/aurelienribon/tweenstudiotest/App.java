@@ -53,11 +53,14 @@ public class App implements ApplicationListener {
 		logoSpriteTween2 = new TweenSprite(logoSprite2);
 		logoSpriteTween3 = new TweenSprite(logoSprite3);
 
+		TweenStudio.registerEditor(new LibGdxTweenStudioEditor());
+		TweenStudio.registerPlayer(new LibGdxTweenStudioPlayer());
+
 		tweenStudio = new TweenStudio();
 		tweenStudio.registerTweenable(logoSpriteTween1, "Logo 1");
 		tweenStudio.registerTweenable(logoSpriteTween2, "Logo 2");
 		tweenStudio.registerTweenable(logoSpriteTween3, "Logo 3");
-		tweenStudio.edit(new LibGdxTweenStudioEditor());
+		tweenStudio.edit(LibGdxTweenStudioEditor.class, "data/anim.tweens");
 	}
 
 	@Override

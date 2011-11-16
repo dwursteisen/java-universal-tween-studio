@@ -19,6 +19,11 @@ public class NodeData {
 		return targets;
 	}
 
+	public void setTargets(float[] targets) {
+		assert targets.length == this.targets.length;
+		System.arraycopy(targets, 0, this.targets, 0, targets.length);
+	}
+
 	public TweenEquation getEquation() {
 		return equation;
 	}

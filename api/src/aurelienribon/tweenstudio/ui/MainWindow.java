@@ -1,18 +1,8 @@
 package aurelienribon.tweenstudio.ui;
 
 import aurelienribon.tweenengine.TweenEquation;
-import aurelienribon.tweenengine.equations.Back;
-import aurelienribon.tweenengine.equations.Bounce;
-import aurelienribon.tweenengine.equations.Circ;
-import aurelienribon.tweenengine.equations.Cubic;
-import aurelienribon.tweenengine.equations.Elastic;
-import aurelienribon.tweenengine.equations.Expo;
-import aurelienribon.tweenengine.equations.Linear;
-import aurelienribon.tweenengine.equations.Quad;
-import aurelienribon.tweenengine.equations.Quart;
-import aurelienribon.tweenengine.equations.Quint;
-import aurelienribon.tweenengine.equations.Sine;
 import aurelienribon.tweenstudio.NodeData;
+import aurelienribon.tweenstudio.TweenHelper;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Element;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Node;
@@ -128,19 +118,6 @@ public class MainWindow extends javax.swing.JFrame {
 	}
 
 	private class EaseChangeListener implements ActionListener {
-		private final TweenEquation[] equations = new TweenEquation[] {
-			Linear.INOUT,
-			Quad.IN, Quad.OUT, Quad.INOUT,
-			Cubic.IN, Cubic.OUT, Cubic.INOUT,
-			Quart.IN, Quart.OUT, Quart.INOUT,
-			Quint.IN, Quint.OUT, Quint.INOUT,
-			Expo.IN, Expo.OUT, Expo.INOUT,
-			Sine.IN, Sine.OUT, Sine.INOUT,
-			Circ.IN, Circ.OUT, Circ.INOUT,
-			Bounce.IN, Bounce.OUT, Bounce.INOUT,
-			Back.IN, Back.OUT, Back.INOUT,
-			Elastic.IN, Elastic.OUT, Elastic.INOUT
-		};
 		private Node node;
 
 		public void setNode(Node node) {
@@ -151,20 +128,11 @@ public class MainWindow extends javax.swing.JFrame {
 		public void actionPerformed(ActionEvent e) {
 			assert node != null;
 			String name = easeEquationCbox.getSelectedItem() + "." + easeTypeCBox.getSelectedItem();
-			TweenEquation equation = getEquation(name);
+			TweenEquation equation = TweenHelper.getEquation(name);
 
 			NodeData nodeData = (NodeData) node.getUserData();
 			nodeData.setEquation(equation);
 			callback.nodeInfoChanged(node);
-		}
-
-		private TweenEquation getEquation(String name) {
-			if (name.startsWith("Linear")) name = "Linear.INOUT";
-			for (TweenEquation equation : equations)
-				if (equation.toString().equals(name))
-					return equation;
-			assert false;
-			return Linear.INOUT;
 		}
 	}
 

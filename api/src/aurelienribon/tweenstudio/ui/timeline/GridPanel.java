@@ -113,6 +113,7 @@ class GridPanel extends JPanel implements Scrollable {
 				break;
 			}
 		}
+		setSelectedNode(null);
 		return node;
 	}
 

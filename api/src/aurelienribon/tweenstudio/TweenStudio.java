@@ -7,13 +7,8 @@ import aurelienribon.tweenstudio.ui.MainWindow;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Element;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Node;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -25,21 +20,32 @@ import javax.swing.UnsupportedLookAndFeelException;
  * @author Aurelien Ribon | http://www.aurelienribon.com/
  */
 public class TweenStudio {
-	private static final float[] buffer = new float[Tween.MAX_COMBINED_TWEENS];
+	private static Map<Class<? extends Editor>, Editor> editors = new HashMap<Class<? extends Editor>, Editor>(1);
+	private static Map<Class<? extends Player>, Player> players = new HashMap<Class<? extends Player>, Player>(1);
+
+	public static void registerEditor(Editor editor) {
+		editors.put(editor.getClass(), editor);
+	}
+
+	public static void registerPlayer(Player player) {
+		players.put(player.getClass(), player);
+	}
+
+	// -------------------------------------------------------------------------
 
 	private final List<Tweenable> tweenables = new ArrayList<Tweenable>(5);
 	private final Map<Tweenable, String> namesMap = new HashMap<Tweenable, String>(5);
 	private final TweenManager tweenManager = new TweenManager();
+	private final float[] buffer = new float[Tween.MAX_COMBINED_TWEENS];
 
 	private Editor editor;
+	private String filepath;
 	private Map<Tweenable, InitialState> initialStatesMap;
 	private TimelineModel model;
 	private MainWindow wnd;
 
 	private long playStartTime;
 	private int playDuration;
-
-	private OutputStream outputStream;
 
 	// -------------------------------------------------------------------------
 	// Public API
@@ -50,52 +56,29 @@ public class TweenStudio {
 		namesMap.put(tweenable, name);
 	}
 
-	public void play(File file) {
-		InputStream is = null;
-		try {
-			is = new FileInputStream(file);
-			play(is);
-		} catch (FileNotFoundException ex) {
-			throw new RuntimeException(ex);
-		} finally {
-			try {if (is != null) is.close();} catch (IOException ex) {}
-		}
+	public void play(Class<? extends Player> playerClass, String filepath) {
+		if (!players.containsKey(playerClass))
+			throw new RuntimeException("No such player registered");
+
+		Player player = players.get(playerClass);
+		String fileContent = player.getFileContent(filepath);
+		ImportExportHelper.stringToTweens(fileContent, tweenManager);
 	}
 
-	public void play(InputStream is) {
-		try {
-			String str = IoHelper.readStream(is);
-		} catch (IOException ex) {
-			throw new RuntimeException(ex);
-		} finally {
-			try {is.close();} catch (IOException ex) {}
-		}
-	}
+	public void edit(Class<? extends Editor> editorClass, String filepath) {
+		if (!editors.containsKey(editorClass))
+			throw new RuntimeException("No such editor registered");
 
-	public void edit(Editor editor, File file) {
-		try {
-			InputStream is = new FileInputStream(file);
-			OutputStream os = new FileOutputStream(file);
-			edit(editor, is, os);
-		} catch (FileNotFoundException ex) {
-		}
-	}
-
-	public void edit(Editor editor, InputStream is, OutputStream os) {
-		try {
-			String str = IoHelper.readStream(is);
-		} catch (IOException ex) {
-			throw new RuntimeException(ex);
-		}
-
-		this.editor = editor;
-
+		this.editor = editors.get(editorClass);
+		this.filepath = filepath;
+		
+		String fileContent = editor.getFileContent(filepath);
 		editor.initialize();
-
 		initializeProperties(editor);
 		initializeInitialStates(editor);
 		createModel(editor);
-		createWindow(model, editor);
+		ImportExportHelper.stringToModel(fileContent, model);
+		createWindow(model);
 	}
 
 	public void update() {
@@ -137,7 +120,7 @@ public class TweenStudio {
 	private void createModel(Editor editor) {
 		model = new TimelineModel();
 		model.addListener(new TimelineModel.EventListener() {
-			@Override public void stateChanged() {resetTweens();}
+			@Override public void stateChanged() {if (wnd != null) resetTweens();}
 		});
 
 		for (Tweenable tweenable : tweenables) {
@@ -152,7 +135,7 @@ public class TweenStudio {
 		}
 	}
 
-	private void createWindow(final TimelineModel model, Editor editor) {
+	private void createWindow(final TimelineModel model) {
 		try {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 		} catch (ClassNotFoundException ex) {
@@ -166,6 +149,14 @@ public class TweenStudio {
 		wnd.setSize(1000, 500);
 		wnd.setCallback(wndCallback);
 		wnd.setVisible(true);
+		wnd.addWindowListener(new WindowAdapter() {
+			@Override public void windowClosing(WindowEvent e) {
+				String str = ImportExportHelper.modelToString(model);
+				editor.setFileContent(filepath, str);
+			}
+		});
+
+		resetTweens();
 	}
 
 	private void resetTweens() {

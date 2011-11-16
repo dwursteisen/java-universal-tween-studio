@@ -13,6 +13,8 @@ public abstract class Editor {
 	private final Map<Class<? extends Tweenable>, List<Property>> propertiesMap = new HashMap<Class<? extends Tweenable>, List<Property>>();
 
 	public abstract void initialize();
+	public abstract void setFileContent(String filepath, String content);
+	public abstract String getFileContent(String filepath);
 
 	public List<Property> getProperties(Class<? extends Tweenable> clazz) {
 		assert propertiesMap.containsKey(clazz);
