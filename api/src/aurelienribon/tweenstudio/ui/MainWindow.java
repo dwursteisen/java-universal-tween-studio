@@ -37,7 +37,7 @@ public class MainWindow extends javax.swing.JFrame {
 
 		timelinePanel.addListener(new EventListener() {
 			@Override public void selectedElementChanged(Element element) {}
-			@Override public void selectedNodeChanged(Node node) {selectedNode = node; updateTargetsValues(node);}
+			@Override public void selectedNodeChanged(Node node) {selectedNode = node; updateTargetsValues();}
 			@Override public void playRequested() {callback.playRequested();}
 			@Override public void pauseRequested() {callback.pauseRequested();}
 			@Override public void timeCursorPositionChanged(int oldTime, int newTime) {callback.timeCursorPositionChanged(oldTime, newTime);}
@@ -132,6 +132,7 @@ public class MainWindow extends javax.swing.JFrame {
 		@Override
 		public void actionPerformed(ActionEvent e) {
 			assert node != null;
+
 			String name = easeEquationCbox.getSelectedItem() + "." + easeTypeCBox.getSelectedItem();
 			TweenEquation equation = TweenHelper.getEquation(name);
 

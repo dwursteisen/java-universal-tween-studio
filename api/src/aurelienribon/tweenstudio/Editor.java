@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Aurelien Ribon | http://www.aurelienribon.com/
@@ -13,7 +14,6 @@ import java.util.Map;
 public abstract class Editor {
 	private final Map<Class<? extends Tweenable>, List<Property>> propertiesMap = new HashMap<Class<? extends Tweenable>, List<Property>>();
 	private TweenStudio studio;
-	private TweenManager tweenManager;
 
 	// -------------------------------------------------------------------------
 	// Abstract
@@ -21,6 +21,7 @@ public abstract class Editor {
 
 	public abstract void initialize();
 	public abstract void dispose();
+	public abstract void render();
 	public abstract void setFileContent(String filepath, String content);
 	public abstract String getFileContent(String filepath);
 
@@ -38,12 +39,16 @@ public abstract class Editor {
 		studio.tweenableStateChanged(tweenable, tweenType);
 	}
 
+	protected void fireStateChanged(Tweenable tweenable, Set<Integer> tweenTypes) {
+		studio.tweenableStateChanged(tweenable, tweenTypes);
+	}
+
 	protected List<Tweenable> getRegisteredTweenables() {
 		return studio.getTweenables();
 	}
 
-	protected TweenManager getTweenManager() {
-		return tweenManager;
+	protected String getRegisteredName(Tweenable tweenable) {
+		return studio.getName(tweenable);
 	}
 
 	// -------------------------------------------------------------------------
@@ -66,9 +71,5 @@ public abstract class Editor {
 
 	void setStudio(TweenStudio studio) {
 		this.studio = studio;
-	}
-
-	void setTweenManager(TweenManager tweenManager) {
-		this.tweenManager = tweenManager;
 	}
 }

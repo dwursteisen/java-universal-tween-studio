@@ -82,6 +82,8 @@ public class App implements ApplicationListener {
 		for (int i=0; i<sprites.length; i++)
 			sprites[i].draw(spriteBatch);
 		spriteBatch.end();
+
+		tweenStudio.render();
 	}
 
 	@Override public void resize(int w, int h) {}

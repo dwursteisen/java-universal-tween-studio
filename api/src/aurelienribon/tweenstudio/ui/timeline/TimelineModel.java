@@ -185,6 +185,25 @@ public class TimelineModel {
 		public void setUserData(Object userData) {
 			this.userData = userData;
 		}
+
+		public void sortNodes() {
+			List<Node> unsortedNodes = new ArrayList<Node>(nodes);
+			List<Node> sortedNodes = new ArrayList<Node>();
+
+			while (!unsortedNodes.isEmpty()) {
+				Node firstNode = unsortedNodes.get(0);
+				for (Node n : unsortedNodes) {
+					boolean test1 = n.getStart() < firstNode.getStart();
+					boolean test2 = n.getStart() == firstNode.getStart() && n.getEnd() < firstNode.getEnd();
+					if (test1 || test2) firstNode = n;
+				}
+				unsortedNodes.remove(firstNode);
+				sortedNodes.add(firstNode);
+			}
+
+			nodes.clear();
+			nodes.addAll(sortedNodes);
+		}
 	}
 
 	public static class Node {

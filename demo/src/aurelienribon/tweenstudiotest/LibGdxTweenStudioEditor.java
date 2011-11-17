@@ -26,6 +26,10 @@ public class LibGdxTweenStudioEditor extends Editor {
 	}
 
 	@Override
+	public void render() {
+	}
+
+	@Override
 	public void setFileContent(String filepath, String content) {
 		try {
 			FileHandle file = Gdx.files.absolute(filepath);

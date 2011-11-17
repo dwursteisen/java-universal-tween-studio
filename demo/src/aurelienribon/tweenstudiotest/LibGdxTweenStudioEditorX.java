@@ -1,19 +1,25 @@
 package aurelienribon.tweenstudiotest;
 
-import aurelienribon.tweenengine.Tween;
 import aurelienribon.tweenengine.Tweenable;
-import aurelienribon.tweenengine.equations.Quad;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL10;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.Sprite;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.glutils.ImmediateModeRenderer;
+import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author Aurelien Ribon | http://www.aurelienribon.com
@@ -22,6 +28,13 @@ public class LibGdxTweenStudioEditorX extends LibGdxTweenStudioEditor {
 	private final List<Sprite> sprites = new ArrayList<Sprite>();
 	private InputProcessor oldInputProcessor;
 	private OrthographicCamera camera;
+
+	private final ImmediateModeRenderer imr = new ImmediateModeRenderer();
+	private final SpriteBatch spriteBatch = new SpriteBatch();
+	private final BitmapFont font = new BitmapFont();
+	private Sprite mouseOverSprite;
+	private Sprite selectedSprite;
+	private boolean selectionLocked;
 
 	// -------------------------------------------------------------------------
 	// Public API
@@ -48,7 +61,31 @@ public class LibGdxTweenStudioEditorX extends LibGdxTweenStudioEditor {
 	@Override
 	public void dispose() {
 		super.dispose();
+		
 		Gdx.input.setInputProcessor(oldInputProcessor);
+	}
+
+	@Override
+	public void render() {
+		super.render();
+
+		GL10 gl = Gdx.gl10;
+		camera.apply(gl);
+		if (selectedSprite != null) drawBoundingBox(gl, selectedSprite, new Color(0.2f, 0.2f, 0.8f, 1.0f));
+		if (mouseOverSprite != null) drawBoundingBox(gl, mouseOverSprite, new Color(0.2f, 0.2f, 0.8f, 0.5f));
+
+		spriteBatch.getProjectionMatrix().setToOrtho2D(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+		spriteBatch.begin();
+		font.setColor(Color.BLUE);
+		if (selectedSprite != null) {
+			String name = getRegisteredName(getTweenable(selectedSprite));
+			font.draw(spriteBatch, "Selected: " + name, 5, Gdx.graphics.getHeight());
+		}
+		if (mouseOverSprite != null) {
+			String name = getRegisteredName(getTweenable(mouseOverSprite));
+			font.draw(spriteBatch, "Mouseover :" + name, 5, Gdx.graphics.getHeight() - 20);
+		}
+		spriteBatch.end();
 	}
 
 	// -------------------------------------------------------------------------
@@ -56,65 +93,54 @@ public class LibGdxTweenStudioEditorX extends LibGdxTweenStudioEditor {
 	// -------------------------------------------------------------------------
 
 	private final InputProcessor inputProcessor = new InputAdapter() {
-		private final Vector2 lastPoint = new Vector2();
-		private Sprite currentSprite;
-		private int currentTweenType;
-		private boolean currentSpriteLocked = false;
-		private int currentSpriteIdx = -1;
+		private final Set<Integer> tweenTypes = new HashSet<Integer>();
+		private int lastX;
+		private int lastY;
+		private int selectedSpriteIdx = -1;
 
 		@Override
 		public boolean touchMoved(int x, int y) {
-			Vector2 p = screenToWorld(x, y);
+			if (!selectionLocked) {
+				mouseOverSprite = null;
+				Vector2 p = screenToWorld(new Vector2(x, y));
 
-			if (!currentSpriteLocked) {
-				Sprite selected = null;
 				for (Sprite sp : sprites)
 					if (isOver(p, sp))
-						selected = sp;
-				if (selected != currentSprite) {
-					currentSprite = selected;
-					blinkSprite(currentSprite);
-				}
+						mouseOverSprite = sp;
 			}
 
-			lastPoint.set(p);
+			lastX = x;
+			lastY = y;
 			return true;
 		}
 
 		@Override
 		public boolean touchDown(int x, int y, int pointer, int button) {
-			Vector2 p = screenToWorld(x, y);
-
-			if (!currentSpriteLocked) {
-				for (Sprite sp : sprites)
-					if (isOver(p, sp))
-						currentSprite = sp;
-			}
-
-			lastPoint.set(p);
+			if (!selectionLocked) selectedSprite = mouseOverSprite;
+			lastX = x;
+			lastY = y;
 			return true;
 		}
 
 		@Override
 		public boolean touchUp(int x, int y, int pointer, int button) {
-			if (currentSprite != null) {
-				currentTweenType = getTweenType();
-				fireStateChanged(getTweenable(currentSprite), currentTweenType);
-			}
+			if (selectedSprite != null)
+				fireStateChanged(getTweenable(selectedSprite), tweenTypes);
+			tweenTypes.clear();
 			return true;
 		}
 
 		@Override
 		public boolean touchDragged(int x, int y, int pointer) {
-			Vector2 p = screenToWorld(x, y);
-
-			if (currentSprite != null) {
-				currentTweenType = getTweenType();
-				Vector2 delta = new Vector2(p).sub(lastPoint);
-				apply(currentSprite, currentTweenType, delta);
+			if (selectedSprite != null) {
+				int tweenType = getTweenType();
+				tweenTypes.add(tweenType);
+				Vector2 delta = new Vector2(x, y).sub(lastX, lastY);
+				apply(selectedSprite, tweenType, delta);
 			}
 
-			lastPoint.set(p);
+			lastX = x;
+			lastY = y;
 			return true;
 		}
 
@@ -122,19 +148,17 @@ public class LibGdxTweenStudioEditorX extends LibGdxTweenStudioEditor {
 		public boolean keyDown(int keycode) {
 			switch (keycode) {
 				case Keys.TAB:
-					currentSpriteLocked = true;
-					currentSpriteIdx = Gdx.input.isKeyPressed(Keys.SHIFT_LEFT) || Gdx.input.isKeyPressed(Keys.SHIFT_RIGHT)
-						? currentSpriteIdx - 1 
-						: currentSpriteIdx + 1;
-					if (currentSpriteIdx >= sprites.size()) currentSpriteIdx = 0;
-					if (currentSpriteIdx < 0) currentSpriteIdx = sprites.size()-1;
-					currentSprite = sprites.get(currentSpriteIdx);
-					blinkSprite(currentSprite);
+					selectionLocked = true;
+					selectedSpriteIdx = Gdx.input.isKeyPressed(Keys.SHIFT_LEFT) || Gdx.input.isKeyPressed(Keys.SHIFT_RIGHT)
+						? selectedSpriteIdx - 1
+						: selectedSpriteIdx + 1;
+					if (selectedSpriteIdx >= sprites.size()) selectedSpriteIdx = 0;
+					if (selectedSpriteIdx < 0) selectedSpriteIdx = sprites.size()-1;
+					selectedSprite = sprites.get(selectedSpriteIdx);
 					break;
 
 				case Keys.ESCAPE:
-					currentSpriteLocked = false;
-					currentSprite = null;
+					selectionLocked = false;
 					break;
 			}
 			return true;
@@ -144,20 +168,6 @@ public class LibGdxTweenStudioEditorX extends LibGdxTweenStudioEditor {
 	// -------------------------------------------------------------------------
 	// Helpers
 	// -------------------------------------------------------------------------
-
-	private Vector2 screenToWorld(int x, int y) {
-		Vector3 v3 = new Vector3(x, y, 0);
-		camera.unproject(v3);
-		return new Vector2(v3.x, v3.y);
-	}
-
-	private boolean isOver(Vector2 p, Sprite sp) {
-		float left = sp.getX() + sp.getOriginX() * (1 - sp.getScaleX());
-		float right = sp.getX() + sp.getWidth() + sp.getOriginX() * (sp.getScaleX() - 1);
-		float bottom = sp.getY() + sp.getOriginY() * (1 - sp.getScaleY());
-		float top = sp.getY() + sp.getHeight() + sp.getOriginY() * (sp.getScaleY() - 1);
-		return left <= p.x && p.x <= right && bottom <= p.y && p.y <= top;
-	}
 
 	private Tweenable getTweenable(Sprite sp) {
 		for (Tweenable tweenable : getRegisteredTweenables())
@@ -175,14 +185,15 @@ public class LibGdxTweenStudioEditorX extends LibGdxTweenStudioEditor {
 		return SpriteTweenable.POSITION_XY;
 	}
 
-	private void apply(Sprite sp, int tweenType, Vector2 delta) {
+	private void apply(Sprite sp, int tweenType, Vector2 screenDelta) {
+		Vector2 worldDelta = screenToWorld(screenDelta).sub(screenToWorld(new Vector2(0, 0)));
 		switch (tweenType) {
-			case SpriteTweenable.POSITION_XY: sp.translate(delta.x, delta.y); break;
-			case SpriteTweenable.ROTATION: sp.rotate(delta.x); break;
-			case SpriteTweenable.SCALE_XY: sp.scale(delta.x/20); break;
+			case SpriteTweenable.POSITION_XY: sp.translate(worldDelta.x, worldDelta.y); break;
+			case SpriteTweenable.ROTATION: sp.rotate(screenDelta.x); break;
+			case SpriteTweenable.SCALE_XY: sp.scale(screenDelta.x/20); break;
 			case SpriteTweenable.OPACITY:
 				Color c = sp.getColor();
-				float ca = c.a + delta.x/100;
+				float ca = c.a + screenDelta.x/100;
 				ca = Math.min(ca, 1);
 				ca = Math.max(ca, 0);
 				sp.setColor(c.r, c.g, c.b, ca);
@@ -190,14 +201,61 @@ public class LibGdxTweenStudioEditorX extends LibGdxTweenStudioEditor {
 		}
 	}
 
-	private void blinkSprite(Sprite sp) {
-		if (sp == null) return;
-		Tween.to(getTweenable(sp), SpriteTweenable.SCALE_XY, 150, Quad.INOUT)
-			.target(sp.getScaleX()*1.1f, sp.getScaleY()*1.1f)
-			.addToManager(getTweenManager());
-		Tween.to(getTweenable(sp), SpriteTweenable.SCALE_XY, 150, Quad.INOUT)
-			.target(sp.getScaleX(), sp.getScaleY())
-			.delay(200)
-			.addToManager(getTweenManager());
+	private Vector2 screenToWorld(Vector2 v) {
+		Vector3 v3 = new Vector3(v.x, v.y, 0);
+		camera.unproject(v3);
+		return new Vector2(v3.x, v3.y);
+	}
+
+	private Rectangle getBoundingBox(Sprite sp) {
+		float left = sp.getX() + sp.getOriginX() * (1 - sp.getScaleX());
+		float right = sp.getX() + sp.getWidth() + sp.getOriginX() * (sp.getScaleX() - 1);
+		float bottom = sp.getY() + sp.getOriginY() * (1 - sp.getScaleY());
+		float top = sp.getY() + sp.getHeight() + sp.getOriginY() * (sp.getScaleY() - 1);
+		return new Rectangle(left, bottom, right-left, top-bottom);
+	}
+
+	private boolean isOver(Vector2 p, Sprite sp) {
+		Vector2 orig = new Vector2(sp.getX() + sp.getOriginX(), sp.getY() + sp.getOriginY());
+		Vector2 p2 = rotate(p, orig, -sp.getRotation());
+		Rectangle bb = getBoundingBox(sp);
+		return bb.x <= p2.x && p2.x <= bb.x + bb.width && bb.y <= p2.y && p2.y <= bb.y + bb.height;
+	}
+
+	private Vector2 rotate(Vector2 v, Vector2 o, float angleDeg) {
+		float cos = MathUtils.cosDeg(angleDeg);
+		float sin = MathUtils.sinDeg(angleDeg);
+		float x = v.x;
+		float y = v.y;
+		float newX = cos*(x-o.x) - sin*(y-o.y) + o.x;
+		float newY = sin*(x-o.x) + cos*(y-o.y) + o.y;
+		return new Vector2(newX, newY);
+	}
+	
+	private void drawBoundingBox(GL10 gl, Sprite sp, Color color) {
+		gl.glPushMatrix();
+		gl.glTranslatef(+sp.getX()+sp.getOriginX(), +sp.getY()+sp.getOriginY(), 0);
+		gl.glRotatef(sp.getRotation(), 0, 0, 1);
+		gl.glTranslatef(-sp.getX()-sp.getOriginX(), -sp.getY()-sp.getOriginY(), 0);
+
+		Rectangle bb = getBoundingBox(sp);
+		drawRect(bb.x, bb.y, bb.width, bb.height, color);
+
+		if (selectionLocked) {
+			Vector2 size = screenToWorld(new Vector2(10, -10)).sub(screenToWorld(new Vector2(0, 0)));
+			drawRect(bb.x+bb.width-size.x/2, bb.y+bb.height-size.y/2, size.x, size.y, color);
+		}
+
+		gl.glPopMatrix();
+	}
+
+	private void drawRect(float x, float y, float w, float h, Color c) {
+		Gdx.gl10.glLineWidth(2);
+		imr.begin(GL10.GL_LINE_LOOP);
+		imr.color(c.r, c.g, c.b, c.a); imr.vertex(x, y, 0);
+		imr.color(c.r, c.g, c.b, c.a); imr.vertex(x, y+h, 0);
+		imr.color(c.r, c.g, c.b, c.a); imr.vertex(x+w, y+h, 0);
+		imr.color(c.r, c.g, c.b, c.a); imr.vertex(x+w, y, 0);
+		imr.end();
 	}
 }

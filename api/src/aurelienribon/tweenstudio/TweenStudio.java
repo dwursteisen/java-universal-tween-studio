@@ -4,6 +4,8 @@ import aurelienribon.tweenengine.Tween;
 import aurelienribon.tweenengine.TweenManager;
 import aurelienribon.tweenengine.Tweenable;
 import aurelienribon.tweenstudio.ui.MainWindow;
+import aurelienribon.tweenstudio.ui.timeline.TimelineHelper;
+import aurelienribon.tweenstudio.ui.timeline.TimelineHelper.NodePart;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Element;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Node;
@@ -11,8 +13,10 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
@@ -83,7 +87,6 @@ public class TweenStudio {
 
 		editorTweenManager = new TweenManager();
 		editor.setStudio(this);
-		editor.setTweenManager(editorTweenManager);
 		editor.initialize();
 
 		initializeProperties(editor);
@@ -107,8 +110,11 @@ public class TweenStudio {
 			}
 		}
 
-		if (editorTweenManager != null)
-			editorTweenManager.update();
+		if (editorTweenManager != null) editorTweenManager.update();
+	}
+
+	public void render() {
+		if (editor != null) editor.render();
 	}
 
 	// -------------------------------------------------------------------------
@@ -119,17 +125,29 @@ public class TweenStudio {
 		return tweenables;
 	}
 
+	String getName(Tweenable tweenable) {
+		return namesMap.get(tweenable);
+	}
+
 	void tweenableStateChanged(Tweenable tweenable, int tweenType) {
+		Set<Integer> tweenTypes = new HashSet<Integer>();
+		tweenTypes.add(tweenType);
+		tweenableStateChanged(tweenable, tweenTypes);
+	}
+
+	void tweenableStateChanged(Tweenable tweenable, Set<Integer> tweenTypes) {
 		String tweenableName = namesMap.get(tweenable);
 		int currentTime = wnd.getTimeCursorPosition();
 
-		String propertyName = editor.getProperty(tweenable.getClass(), tweenType).getName();
-		Element elem = model.getElement(tweenableName + "/" + propertyName);
-		Node node = getNodeAtTime(elem, currentTime);
-		NodeData nodeData = (NodeData) node.getUserData();
+		for (int tweenType : tweenTypes) {
+			String propertyName = editor.getProperty(tweenable.getClass(), tweenType).getName();
+			Element elem = model.getElement(tweenableName + "/" + propertyName);
+			Node node = getNodeAtTime(elem, currentTime);
+			NodeData nodeData = (NodeData) node.getUserData();
 
-		tweenable.getTweenValues(tweenType, buffer);
-		nodeData.setTargets(buffer);
+			tweenable.getTweenValues(tweenType, buffer);
+			nodeData.setTargets(buffer);
+		}
 
 		resetTweens();
 		wnd.updateTargetsValues();
@@ -212,19 +230,32 @@ public class TweenStudio {
 			Tweenable tweenable = elemData.getTweenable();
 			int tweenType = elemData.getTweenType();
 
+			elem.sortNodes();
 			createTweens(elem, tweenable, tweenType);
 			setToInitialState(tweenable, tweenType);
 		}
 
-		int accTime = 0, delta = 100, duration = model.getDuration();
-		while (accTime <= duration + delta) {
-			accTime += delta;
-			tweenManager.update(delta);
+		int time = -1, lastTime = 0, duration = model.getDuration();
+		while (true) {
+			int t1 = TimelineHelper.getNextTime(model, time, NodePart.START);
+			int t2 = TimelineHelper.getNextTime(model, time, NodePart.END);
+			if (t1 == t2 && t1 == duration) break;
+			if (t1 == t2) time = t1;
+			if (t1 < t2) {if (t1 > time) time = t1; else time = t2;}
+			if (t2 < t1) {if (t2 > time) time = t2; else time = t1;}
+
+			int delta = time - lastTime;
+			lastTime = time;
+
+			tweenManager.update(delta-1);
+			tweenManager.update(+2);
+			tweenManager.update(-1);
 		}
 
 		int currentTime = wnd.getTimeCursorPosition();
-		tweenManager.update(-accTime-1);
-		tweenManager.update(currentTime+2);
+		tweenManager.update(-duration-1);
+		tweenManager.update(+currentTime+2);
+		tweenManager.update(-1);
 	}
 
 	private void createTweens(Element elem, Tweenable tweenable, int tweenType) {
@@ -276,7 +307,8 @@ public class TweenStudio {
 		@Override
 		public void timeCursorPositionChanged(int oldTime, int newTime) {
 			tweenManager.update(-oldTime-1);
-			tweenManager.update(newTime+2);
+			tweenManager.update(+newTime+2);
+			tweenManager.update(-1);
 		}
 
 		@Override

@@ -1,5 +1,6 @@
 package aurelienribon.tweenstudio.ui.timeline;
 
+import aurelienribon.tweenstudio.ui.timeline.TimelineHelper.NodePart;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Element;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Node;
 import java.awt.BorderLayout;
@@ -145,10 +146,10 @@ public class TimelinePanel extends JPanel {
 			@Override public void delNodeRequested() {gridPanel.requestDelNode();}
 			@Override public void playRequested() {firePlayRequested();}
 			@Override public void pauseRequested() {firePauseRequested();}
-			@Override public void goToFirstRequested() {setTimeCursorPosition(TimelineHelper.getFirstTime(model));}
-			@Override public void goToPreviousRequested() {setTimeCursorPosition(TimelineHelper.getPreviousTime(model, getTimeCursorPosition()));}
-			@Override public void goToNextRequested() {setTimeCursorPosition(TimelineHelper.getNextTime(model, getTimeCursorPosition()));}
-			@Override public void goToLastRequested() {setTimeCursorPosition(TimelineHelper.getLastTime(model));}
+			@Override public void goToFirstRequested() {setTimeCursorPosition(TimelineHelper.getFirstTime(model, NodePart.END));}
+			@Override public void goToPreviousRequested() {setTimeCursorPosition(TimelineHelper.getPreviousTime(model, getTimeCursorPosition(), NodePart.END));}
+			@Override public void goToNextRequested() {setTimeCursorPosition(TimelineHelper.getNextTime(model, getTimeCursorPosition(), NodePart.END));}
+			@Override public void goToLastRequested() {setTimeCursorPosition(TimelineHelper.getLastTime(model, NodePart.END));}
 		});
 
 		namesPanel.setCallback(new NamesPanel.Callback() {

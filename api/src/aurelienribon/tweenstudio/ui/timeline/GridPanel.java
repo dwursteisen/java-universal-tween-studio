@@ -399,6 +399,7 @@ class GridPanel extends JPanel implements Scrollable {
 		if (selectedNode != node) {
 			selectedNode = node;
 			repaint();
+			if (node != null) setCurrentTime(node.getEnd());
 			callback.selectedNodeChanged(selectedNode);
 		}
 	}
@@ -417,8 +418,7 @@ class GridPanel extends JPanel implements Scrollable {
 			lastTime = getTimeFromX(e.getX());
 
 			if (getLineFromY(e.getY()) < 0) {
-				currentTime = lastTime;
-				repaint();
+				setCurrentTime(lastTime);
 
 			} else {
 				setSelectedElement(mouseOverElement);
@@ -440,12 +440,15 @@ class GridPanel extends JPanel implements Scrollable {
 				setCurrentTime(newTime);
 
 			} else if (mouseOverNode != null && selectedNode != null && e.isShiftDown()) {
-				selectedNode.setDuration(Math.max(0, selectedNode.getDuration() + deltaTime));
+				deltaTime = selectedNode.getStart() + deltaTime >= 0 ? deltaTime : -selectedNode.getStart();
+				deltaTime = selectedNode.getDuration() - deltaTime >= 0 ? deltaTime : +selectedNode.getDuration();
+				selectedNode.setStart(Math.max(0, selectedNode.getStart() + deltaTime));
+				selectedNode.setDuration(Math.max(0, selectedNode.getDuration() - deltaTime));
 				repaint();
 
 			} else if (mouseOverNode != null && selectedNode != null && !e.isShiftDown()) {
 				selectedNode.setStart(Math.max(0, selectedNode.getStart() + deltaTime));
-				repaint();
+				setCurrentTime(selectedNode.getEnd());
 			}
 		}
 
