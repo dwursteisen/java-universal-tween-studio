@@ -70,9 +70,11 @@ public class LibGdxTweenStudioEditorX extends LibGdxTweenStudioEditor {
 		super.render();
 
 		GL10 gl = Gdx.gl10;
+		gl.glEnable(GL10.GL_BLEND);
+
 		camera.apply(gl);
 		if (selectedSprite != null) drawBoundingBox(gl, selectedSprite, new Color(0.2f, 0.2f, 0.8f, 1.0f));
-		if (mouseOverSprite != null) drawBoundingBox(gl, mouseOverSprite, new Color(0.2f, 0.2f, 0.8f, 0.5f));
+		if (mouseOverSprite != null) drawBoundingBox(gl, mouseOverSprite, new Color(0.2f, 0.2f, 0.8f, 0.3f));
 
 		spriteBatch.getProjectionMatrix().setToOrtho2D(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 		spriteBatch.begin();
