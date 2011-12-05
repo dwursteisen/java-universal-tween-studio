@@ -1,5 +1,6 @@
 package aurelienribon.tweenstudiotest;
 
+import aurelienribon.tweenengine.Tween;
 import aurelienribon.tweenstudio.TweenStudio;
 import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Gdx;
@@ -21,6 +22,10 @@ public class App implements ApplicationListener {
 		camera = new OrthographicCamera(10, 10/ratio);
 		spriteBatch = new SpriteBatch();
 		createSprites();
+
+		// Tween Engine classic initialization
+		Tween.setPoolEnabled(true);
+		Tween.registerAccessor(Sprite.class, new SpriteTweenAccessor());
 
 		// Registration of the editor/player (only needed once per application)
 		TweenStudio.registerEditor(new LibGdxTweenStudioEditorX());

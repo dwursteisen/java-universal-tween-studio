@@ -17,7 +17,7 @@ public class InitialState {
 			int count = property.getCombinedTweensCount();
 			float[] values = new float[count];
 
-			TweenAccessor accessor = Tween.getDefaultAccessor(target.getClass());
+			TweenAccessor accessor = Tween.getRegisteredAccessor(target.getClass());
 			accessor.getValues(target, tweenType, values);
 			
 			map.put(tweenType, values);

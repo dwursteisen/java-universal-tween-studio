@@ -145,7 +145,7 @@ public class TweenStudio {
 			Node node = getNodeAtTime(elem, currentTime);
 			NodeData nodeData = (NodeData) node.getUserData();
 
-			TweenAccessor accessor = Tween.getDefaultAccessor(target.getClass());
+			TweenAccessor accessor = Tween.getRegisteredAccessor(target.getClass());
 			accessor.getValues(target, tweenType, buffer);
 			nodeData.setTargets(buffer);
 		}
@@ -161,7 +161,7 @@ public class TweenStudio {
 	private void initializeProperties(Editor editor) {
 		for (Object target : targets) {
 			List<Property> properties = editor.getProperties(target.getClass());
-			TweenAccessor accessor = Tween.getDefaultAccessor(target.getClass());
+			TweenAccessor accessor = Tween.getRegisteredAccessor(target.getClass());
 
 			for (Property property : properties) {
 				int cnt = accessor.getValues(target, property.getTweenType(), buffer);
@@ -279,7 +279,7 @@ public class TweenStudio {
 		Property property = editor.getProperty(elemData.getTarget().getClass(), elemData.getTweenType());
 
 		NodeData nodeData = new NodeData(property.getCombinedTweensCount());
-		TweenAccessor accessor = Tween.getDefaultAccessor(elemData.getTarget().getClass());
+		TweenAccessor accessor = Tween.getRegisteredAccessor(elemData.getTarget().getClass());
 		accessor.getValues(elemData.getTarget(), elemData.getTweenType(), nodeData.getTargets());
 		node.setUserData(nodeData);
 	}
@@ -288,7 +288,7 @@ public class TweenStudio {
 		InitialState initState = initialStatesMap.get(target);
 		float[] initValues = initState.getValues(tweenType);
 
-		TweenAccessor accessor = Tween.getDefaultAccessor(target.getClass());
+		TweenAccessor accessor = Tween.getRegisteredAccessor(target.getClass());
 		accessor.setValues(target, tweenType, initValues);
 	}
 

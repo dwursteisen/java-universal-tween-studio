@@ -3,6 +3,7 @@ package aurelienribon.tweenstudiotest;
 import aurelienribon.tweenstudio.Editor;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
+import com.badlogic.gdx.graphics.g2d.Sprite;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -15,10 +16,10 @@ import java.io.Writer;
 public class LibGdxTweenStudioEditor extends Editor {
 	@Override
 	public void initialize() {
-		registerProperty(SpriteTweenAccessor.class, SpriteTweenAccessor.POSITION_XY, "position");
-		registerProperty(SpriteTweenAccessor.class, SpriteTweenAccessor.ROTATION, "rotation");
-		registerProperty(SpriteTweenAccessor.class, SpriteTweenAccessor.OPACITY, "opacity");
-		registerProperty(SpriteTweenAccessor.class, SpriteTweenAccessor.SCALE_XY, "scale");
+		registerProperty(Sprite.class, SpriteTweenAccessor.POSITION_XY, "position");
+		registerProperty(Sprite.class, SpriteTweenAccessor.ROTATION, "rotation");
+		registerProperty(Sprite.class, SpriteTweenAccessor.OPACITY, "opacity");
+		registerProperty(Sprite.class, SpriteTweenAccessor.SCALE_XY, "scale");
 	}
 
 	@Override
