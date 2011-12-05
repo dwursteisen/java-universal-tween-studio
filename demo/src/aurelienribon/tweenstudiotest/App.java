@@ -33,7 +33,7 @@ public class App implements ApplicationListener {
 		LibGdxTweenStudioEditorX editor = (LibGdxTweenStudioEditorX) TweenStudio.getRegisteredEditor(LibGdxTweenStudioEditorX.class);
 		editor.setCamera(camera);
 
-		// Registration of the Tweenables we want to animate
+		// Registration of the targets we want to animate
 		tweenStudio.registerTarget(sprites[0], "Logo LibGDX");
 		tweenStudio.registerTarget(sprites[1], "Logo Tween Engine");
 		tweenStudio.registerTarget(sprites[2], "Logo Tween");

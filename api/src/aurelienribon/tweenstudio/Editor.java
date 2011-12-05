@@ -33,20 +33,20 @@ public abstract class Editor {
 		propertiesMap.get(clazz).add(new Property(tweenType, propertyName));
 	}
 
-	protected void fireStateChanged(Object tweenable, int tweenType) {
-		studio.targetStateChanged(tweenable, tweenType);
+	protected void fireStateChanged(Object target, int tweenType) {
+		studio.targetStateChanged(target, tweenType);
 	}
 
-	protected void fireStateChanged(Object tweenable, Set<Integer> tweenTypes) {
-		studio.targetStateChanged(tweenable, tweenTypes);
+	protected void fireStateChanged(Object target, Set<Integer> tweenTypes) {
+		studio.targetStateChanged(target, tweenTypes);
 	}
 
 	protected List<Object> getRegisteredTargets() {
 		return studio.getTargets();
 	}
 
-	protected String getRegisteredName(Object tweenable) {
-		return studio.getName(tweenable);
+	protected String getRegisteredName(Object target) {
+		return studio.getName(target);
 	}
 
 	// -------------------------------------------------------------------------

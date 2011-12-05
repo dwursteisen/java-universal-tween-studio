@@ -136,12 +136,12 @@ public class TweenStudio {
 	}
 
 	void targetStateChanged(Object target, Set<Integer> tweenTypes) {
-		String tweenableName = namesMap.get(target);
+		String name = namesMap.get(target);
 		int currentTime = wnd.getTimeCursorPosition();
 
 		for (int tweenType : tweenTypes) {
 			String propertyName = editor.getProperty(target.getClass(), tweenType).getName();
-			Element elem = model.getElement(tweenableName + "/" + propertyName);
+			Element elem = model.getElement(name + "/" + propertyName);
 			Node node = getNodeAtTime(elem, currentTime);
 			NodeData nodeData = (NodeData) node.getUserData();
 
@@ -173,9 +173,9 @@ public class TweenStudio {
 	private void initializeInitialStates(Editor editor) {
 		initialStatesMap = new HashMap<Object, InitialState>();
 
-		for (Object tweenable : targets) {
-			InitialState state = new InitialState(editor, tweenable);
-			initialStatesMap.put(tweenable, state);
+		for (Object target : targets) {
+			InitialState state = new InitialState(editor, target);
+			initialStatesMap.put(target, state);
 		}
 	}
 
@@ -185,14 +185,14 @@ public class TweenStudio {
 			@Override public void stateChanged() {if (wnd != null) resetTweens();}
 		});
 
-		for (Object tweenable : targets) {
-			List<Property> properties = editor.getProperties(tweenable.getClass());
-			Element elem = model.addElement(namesMap.get(tweenable));
+		for (Object target : targets) {
+			List<Property> properties = editor.getProperties(target.getClass());
+			Element elem = model.addElement(namesMap.get(target));
 			elem.setSelectable(false);
 
 			for (Property property : properties) {
-				elem = model.addElement(namesMap.get(tweenable) + "/" + property.getName());
-				elem.setUserData(new ElementData(tweenable, property.getTweenType()));
+				elem = model.addElement(namesMap.get(target) + "/" + property.getName());
+				elem.setUserData(new ElementData(target, property.getTweenType()));
 			}
 		}
 	}
@@ -229,12 +229,12 @@ public class TweenStudio {
 			if (!elem.isSelectable()) continue;
 
 			ElementData elemData = (ElementData) elem.getUserData();
-			Object tweenable = elemData.getTarget();
+			Object target = elemData.getTarget();
 			int tweenType = elemData.getTweenType();
 
 			elem.sortNodes();
-			createTweens(elem, tweenable, tweenType);
-			setToInitialState(tweenable, tweenType);
+			createTweens(elem, target, tweenType);
+			setToInitialState(target, tweenType);
 		}
 
 		int time = -1, lastTime = 0, duration = model.getDuration();
