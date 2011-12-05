@@ -1,6 +1,5 @@
 package aurelienribon.tweenstudiotest;
 
-import aurelienribon.tweenengine.Tweenable;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.InputAdapter;
@@ -53,9 +52,9 @@ public class LibGdxTweenStudioEditorX extends LibGdxTweenStudioEditor {
 
 		sprites.clear();
 
-		for (Tweenable tweenable : getRegisteredTweenables())
-			if (tweenable instanceof SpriteTweenable)
-				sprites.add(((SpriteTweenable)tweenable).getSprite());
+		for (Object target : getRegisteredTargets())
+			if (target instanceof Sprite)
+				sprites.add((Sprite) target);
 	}
 
 	@Override
@@ -80,11 +79,11 @@ public class LibGdxTweenStudioEditorX extends LibGdxTweenStudioEditor {
 		spriteBatch.begin();
 		font.setColor(Color.BLUE);
 		if (selectedSprite != null) {
-			String name = getRegisteredName(getTweenable(selectedSprite));
+			String name = getRegisteredName(selectedSprite);
 			font.draw(spriteBatch, "Selected: " + name, 5, Gdx.graphics.getHeight());
 		}
 		if (mouseOverSprite != null) {
-			String name = getRegisteredName(getTweenable(mouseOverSprite));
+			String name = getRegisteredName(mouseOverSprite);
 			font.draw(spriteBatch, "Mouseover :" + name, 5, Gdx.graphics.getHeight() - 20);
 		}
 		spriteBatch.end();
@@ -127,7 +126,7 @@ public class LibGdxTweenStudioEditorX extends LibGdxTweenStudioEditor {
 		@Override
 		public boolean touchUp(int x, int y, int pointer, int button) {
 			if (selectedSprite != null)
-				fireStateChanged(getTweenable(selectedSprite), tweenTypes);
+				fireStateChanged(selectedSprite, tweenTypes);
 			tweenTypes.clear();
 			return true;
 		}
@@ -171,29 +170,20 @@ public class LibGdxTweenStudioEditorX extends LibGdxTweenStudioEditor {
 	// Helpers
 	// -------------------------------------------------------------------------
 
-	private Tweenable getTweenable(Sprite sp) {
-		for (Tweenable tweenable : getRegisteredTweenables())
-			if (tweenable instanceof SpriteTweenable)
-				if (((SpriteTweenable)tweenable).getSprite() == sp)
-					return tweenable;
-		assert false;
-		return null;
-	}
-
 	private int getTweenType() {
-		if (Gdx.input.isKeyPressed(Keys.R)) return SpriteTweenable.ROTATION;
-		if (Gdx.input.isKeyPressed(Keys.S)) return SpriteTweenable.SCALE_XY;
-		if (Gdx.input.isKeyPressed(Keys.O)) return SpriteTweenable.OPACITY;
-		return SpriteTweenable.POSITION_XY;
+		if (Gdx.input.isKeyPressed(Keys.R)) return SpriteTweenAccessor.ROTATION;
+		if (Gdx.input.isKeyPressed(Keys.S)) return SpriteTweenAccessor.SCALE_XY;
+		if (Gdx.input.isKeyPressed(Keys.O)) return SpriteTweenAccessor.OPACITY;
+		return SpriteTweenAccessor.POSITION_XY;
 	}
 
 	private void apply(Sprite sp, int tweenType, Vector2 screenDelta) {
 		Vector2 worldDelta = screenToWorld(screenDelta).sub(screenToWorld(new Vector2(0, 0)));
 		switch (tweenType) {
-			case SpriteTweenable.POSITION_XY: sp.translate(worldDelta.x, worldDelta.y); break;
-			case SpriteTweenable.ROTATION: sp.rotate(screenDelta.x); break;
-			case SpriteTweenable.SCALE_XY: sp.scale(screenDelta.x/20); break;
-			case SpriteTweenable.OPACITY:
+			case SpriteTweenAccessor.POSITION_XY: sp.translate(worldDelta.x, worldDelta.y); break;
+			case SpriteTweenAccessor.ROTATION: sp.rotate(screenDelta.x); break;
+			case SpriteTweenAccessor.SCALE_XY: sp.scale(screenDelta.x/20); break;
+			case SpriteTweenAccessor.OPACITY:
 				Color c = sp.getColor();
 				float ca = c.a + screenDelta.x/100;
 				ca = Math.min(ca, 1);

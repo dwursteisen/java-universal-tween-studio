@@ -1,8 +1,8 @@
 package aurelienribon.tweenstudio;
 
 import aurelienribon.tweenengine.Tween;
+import aurelienribon.tweenengine.TweenAccessor;
 import aurelienribon.tweenengine.TweenManager;
-import aurelienribon.tweenengine.Tweenable;
 import aurelienribon.tweenstudio.ui.MainWindow;
 import aurelienribon.tweenstudio.ui.timeline.TimelineHelper;
 import aurelienribon.tweenstudio.ui.timeline.TimelineHelper.NodePart;
@@ -45,14 +45,14 @@ public class TweenStudio {
 
 	// -------------------------------------------------------------------------
 
-	private final List<Tweenable> tweenables = new ArrayList<Tweenable>(5);
-	private final Map<Tweenable, String> namesMap = new HashMap<Tweenable, String>(5);
+	private final List<Object> targets = new ArrayList<Object>(5);
+	private final Map<Object, String> namesMap = new HashMap<Object, String>(5);
 	private final TweenManager tweenManager = new TweenManager();
 	private final float[] buffer = new float[Tween.MAX_COMBINED_TWEENS];
 
 	private Editor editor;
 	private String filepath;
-	private Map<Tweenable, InitialState> initialStatesMap;
+	private Map<Object, InitialState> initialStatesMap;
 	private TimelineModel model;
 	private MainWindow wnd;
 	private TweenManager editorTweenManager;
@@ -64,9 +64,9 @@ public class TweenStudio {
 	// Public API
 	// -------------------------------------------------------------------------
 
-	public void registerTweenable(Tweenable tweenable, String name) {
-		tweenables.add(tweenable);
-		namesMap.put(tweenable, name);
+	public void registerTarget(Object target, String name) {
+		targets.add(target);
+		namesMap.put(target, name);
 	}
 
 	public void play(Class<? extends Player> playerClass, String filepath) {
@@ -121,31 +121,32 @@ public class TweenStudio {
 	// Package API
 	// -------------------------------------------------------------------------
 
-	List<Tweenable> getTweenables() {
-		return tweenables;
+	List<Object> getTargets() {
+		return targets;
 	}
 
-	String getName(Tweenable tweenable) {
-		return namesMap.get(tweenable);
+	String getName(Object target) {
+		return namesMap.get(target);
 	}
 
-	void tweenableStateChanged(Tweenable tweenable, int tweenType) {
+	void targetStateChanged(Object target, int tweenType) {
 		Set<Integer> tweenTypes = new HashSet<Integer>();
 		tweenTypes.add(tweenType);
-		tweenableStateChanged(tweenable, tweenTypes);
+		targetStateChanged(target, tweenTypes);
 	}
 
-	void tweenableStateChanged(Tweenable tweenable, Set<Integer> tweenTypes) {
-		String tweenableName = namesMap.get(tweenable);
+	void targetStateChanged(Object target, Set<Integer> tweenTypes) {
+		String tweenableName = namesMap.get(target);
 		int currentTime = wnd.getTimeCursorPosition();
 
 		for (int tweenType : tweenTypes) {
-			String propertyName = editor.getProperty(tweenable.getClass(), tweenType).getName();
+			String propertyName = editor.getProperty(target.getClass(), tweenType).getName();
 			Element elem = model.getElement(tweenableName + "/" + propertyName);
 			Node node = getNodeAtTime(elem, currentTime);
 			NodeData nodeData = (NodeData) node.getUserData();
 
-			tweenable.getTweenValues(tweenType, buffer);
+			TweenAccessor accessor = Tween.getDefaultAccessor(target.getClass());
+			accessor.getValues(target, tweenType, buffer);
 			nodeData.setTargets(buffer);
 		}
 
@@ -158,20 +159,21 @@ public class TweenStudio {
 	// -------------------------------------------------------------------------
 
 	private void initializeProperties(Editor editor) {
-		for (Tweenable tweenable : tweenables) {
-			List<Property> properties = editor.getProperties(tweenable.getClass());
+		for (Object target : targets) {
+			List<Property> properties = editor.getProperties(target.getClass());
+			TweenAccessor accessor = Tween.getDefaultAccessor(target.getClass());
 
 			for (Property property : properties) {
-				int cnt = tweenable.getTweenValues(property.getTweenType(), buffer);
+				int cnt = accessor.getValues(target, property.getTweenType(), buffer);
 				property.setCombinedTweensCount(cnt);
 			}
 		}
 	}
 
 	private void initializeInitialStates(Editor editor) {
-		initialStatesMap = new HashMap<Tweenable, InitialState>();
+		initialStatesMap = new HashMap<Object, InitialState>();
 
-		for (Tweenable tweenable : tweenables) {
+		for (Object tweenable : targets) {
 			InitialState state = new InitialState(editor, tweenable);
 			initialStatesMap.put(tweenable, state);
 		}
@@ -183,7 +185,7 @@ public class TweenStudio {
 			@Override public void stateChanged() {if (wnd != null) resetTweens();}
 		});
 
-		for (Tweenable tweenable : tweenables) {
+		for (Object tweenable : targets) {
 			List<Property> properties = editor.getProperties(tweenable.getClass());
 			Element elem = model.addElement(namesMap.get(tweenable));
 			elem.setSelectable(false);
@@ -227,7 +229,7 @@ public class TweenStudio {
 			if (!elem.isSelectable()) continue;
 
 			ElementData elemData = (ElementData) elem.getUserData();
-			Tweenable tweenable = elemData.getTweenable();
+			Object tweenable = elemData.getTarget();
 			int tweenType = elemData.getTweenType();
 
 			elem.sortNodes();
@@ -258,13 +260,14 @@ public class TweenStudio {
 		tweenManager.update(-1);
 	}
 
-	private void createTweens(Element elem, Tweenable tweenable, int tweenType) {
+	private void createTweens(Element elem, Object target, int tweenType) {
 		for (Node node : elem.getNodes()) {
 			if (node.getUserData() == null) createNodeData(node);
 			NodeData nodeData = (NodeData) node.getUserData();
 			
-			Tween.to(tweenable, tweenType, node.getDuration(), nodeData.getEquation())
+			Tween.to(target, tweenType, node.getDuration())
 				.target(nodeData.getTargets())
+				.ease(nodeData.getEquation())
 				.delay(node.getStart())
 				.repeat(0, Integer.MAX_VALUE - node.getEnd())
 				.addToManager(tweenManager);
@@ -273,17 +276,20 @@ public class TweenStudio {
 
 	private void createNodeData(Node node) {
 		ElementData elemData = (ElementData) node.getParent().getUserData();
-		Property property = editor.getProperty(elemData.getTweenable().getClass(), elemData.getTweenType());
+		Property property = editor.getProperty(elemData.getTarget().getClass(), elemData.getTweenType());
 
 		NodeData nodeData = new NodeData(property.getCombinedTweensCount());
-		elemData.getTweenable().getTweenValues(elemData.getTweenType(), nodeData.getTargets());
+		TweenAccessor accessor = Tween.getDefaultAccessor(elemData.getTarget().getClass());
+		accessor.getValues(elemData.getTarget(), elemData.getTweenType(), nodeData.getTargets());
 		node.setUserData(nodeData);
 	}
 
-	private void setToInitialState(Tweenable tweenable, int tweenType) {
-		InitialState initState = initialStatesMap.get(tweenable);
+	private void setToInitialState(Object target, int tweenType) {
+		InitialState initState = initialStatesMap.get(target);
 		float[] initValues = initState.getValues(tweenType);
-		tweenable.onTweenUpdated(tweenType, initValues);
+
+		TweenAccessor accessor = Tween.getDefaultAccessor(target.getClass());
+		accessor.setValues(target, tweenType, initValues);
 	}
 
 	private Node getNodeAtTime(Element elem, int time) {

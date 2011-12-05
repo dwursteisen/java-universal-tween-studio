@@ -13,7 +13,6 @@ public class App implements ApplicationListener {
 	private OrthographicCamera camera;
 	private SpriteBatch spriteBatch;
 	private Sprite[] sprites;
-	private SpriteTweenable[] spriteTweenables;
 	private TweenStudio tweenStudio;
 
 	@Override
@@ -35,13 +34,13 @@ public class App implements ApplicationListener {
 		editor.setCamera(camera);
 
 		// Registration of the Tweenables we want to animate
-		tweenStudio.registerTweenable(spriteTweenables[0], "Logo LibGDX");
-		tweenStudio.registerTweenable(spriteTweenables[1], "Logo Tween Engine");
-		tweenStudio.registerTweenable(spriteTweenables[2], "Logo Tween");
-		tweenStudio.registerTweenable(spriteTweenables[3], "Logo Studio");
-		tweenStudio.registerTweenable(spriteTweenables[4], "Wave 1");
-		tweenStudio.registerTweenable(spriteTweenables[5], "Wave 2");
-		tweenStudio.registerTweenable(spriteTweenables[6], "Wave 3");
+		tweenStudio.registerTarget(sprites[0], "Logo LibGDX");
+		tweenStudio.registerTarget(sprites[1], "Logo Tween Engine");
+		tweenStudio.registerTarget(sprites[2], "Logo Tween");
+		tweenStudio.registerTarget(sprites[3], "Logo Studio");
+		tweenStudio.registerTarget(sprites[4], "Wave 1");
+		tweenStudio.registerTarget(sprites[5], "Wave 2");
+		tweenStudio.registerTarget(sprites[6], "Wave 3");
 
 		// ...then spawn it when you want !
 		tweenStudio.edit(LibGdxTweenStudioEditorX.class, "data/anim.tweens");
@@ -51,7 +50,6 @@ public class App implements ApplicationListener {
 		TextureAtlas atlas = new TextureAtlas(Gdx.files.internal("data/pack"));
 
 		sprites = new Sprite[7];
-		spriteTweenables = new SpriteTweenable[7];
 
 		sprites[0] = atlas.createSprite("logoLibgdx");
 		sprites[1] = atlas.createSprite("logoTweenEngine");
@@ -65,7 +63,6 @@ public class App implements ApplicationListener {
 			float ratio = sprites[i].getWidth() / sprites[i].getHeight();
 			sprites[i].setSize(5, 5/ratio);
 			sprites[i].setOrigin(sprites[i].getWidth()/2, sprites[i].getHeight()/2);
-			spriteTweenables[i] = new SpriteTweenable(sprites[i]);
 		}
 	}
 

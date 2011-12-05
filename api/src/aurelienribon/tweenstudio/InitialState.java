@@ -1,6 +1,7 @@
 package aurelienribon.tweenstudio;
 
-import aurelienribon.tweenengine.Tweenable;
+import aurelienribon.tweenengine.Tween;
+import aurelienribon.tweenengine.TweenAccessor;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -10,12 +11,15 @@ import java.util.Map;
 public class InitialState {
 	private final Map<Integer, float[]> map = new HashMap<Integer, float[]>();
 
-	public InitialState(Editor editor, Tweenable tweenable) {
-		for (Property property : editor.getProperties(tweenable.getClass())) {
+	public InitialState(Editor editor, Object target) {
+		for (Property property : editor.getProperties(target.getClass())) {
 			int tweenType = property.getTweenType();
 			int count = property.getCombinedTweensCount();
 			float[] values = new float[count];
-			tweenable.getTweenValues(tweenType, values);
+
+			TweenAccessor accessor = Tween.getDefaultAccessor(target.getClass());
+			accessor.getValues(target, tweenType, values);
+			
 			map.put(tweenType, values);
 		}
 	}
