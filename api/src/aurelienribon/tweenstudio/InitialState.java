@@ -13,8 +13,8 @@ public class InitialState {
 
 	public InitialState(Editor editor, Object target) {
 		for (Property property : editor.getProperties(target.getClass())) {
-			int tweenType = property.getTweenType();
-			int count = property.getCombinedTweensCount();
+			int tweenType = property.getId();
+			int count = property.getAttributesCount();
 			float[] values = new float[count];
 
 			TweenAccessor accessor = Tween.getRegisteredAccessor(target.getClass());

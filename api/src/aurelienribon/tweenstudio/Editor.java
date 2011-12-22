@@ -28,8 +28,7 @@ public abstract class Editor {
 	// -------------------------------------------------------------------------
 
 	protected void registerProperty(Class clazz, int tweenType, String propertyName) {
-		if (!propertiesMap.containsKey(clazz))
-			propertiesMap.put(clazz, new ArrayList<Property>(5));
+		if (!propertiesMap.containsKey(clazz)) propertiesMap.put(clazz, new ArrayList<Property>(5));
 		propertiesMap.get(clazz).add(new Property(tweenType, propertyName));
 	}
 
@@ -61,7 +60,7 @@ public abstract class Editor {
 	Property getProperty(Class clazz, int tweenType) {
 		List<Property> properties = getProperties(clazz);
 		for (Property property : properties)
-			if (property.getTweenType() == tweenType)
+			if (property.getId() == tweenType)
 				return property;
 		assert false;
 		return null;

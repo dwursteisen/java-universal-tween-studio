@@ -6,14 +6,14 @@ package aurelienribon.tweenstudio;
 public class Property {
 	private final int id;
 	private final String name;
-	private int combinedTweensCount = -1;
+	private int attrsCnt = -1;
 
 	public Property(int tweenType, String name) {
 		this.id = tweenType;
 		this.name = name;
 	}
 
-	public int getTweenType() {
+	public int getId() {
 		return id;
 	}
 
@@ -21,11 +21,11 @@ public class Property {
 		return name;
 	}
 
-	public int getCombinedTweensCount() {
-		return combinedTweensCount;
+	public int getAttributesCount() {
+		return attrsCnt;
 	}
 
-	public void setCombinedTweensCount(int combinedTweensCount) {
-		this.combinedTweensCount = combinedTweensCount;
+	public void setAttributesCount(int count) {
+		this.attrsCnt = count;
 	}
 }

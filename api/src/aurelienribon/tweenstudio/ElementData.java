@@ -5,11 +5,11 @@ package aurelienribon.tweenstudio;
  */
 public class ElementData {
 	private final Object target;
-	private final int tweenType;
+	private final int id;
 
 	public ElementData(Object target, int tweenType) {
 		this.target = target;
-		this.tweenType = tweenType;
+		this.id = tweenType;
 	}
 
 	public Object getTarget() {
@@ -17,6 +17,6 @@ public class ElementData {
 	}
 
 	public int getTweenType() {
-		return tweenType;
+		return id;
 	}
 }

@@ -1,8 +1,8 @@
 package aurelienribon.tweenstudio;
 
+import aurelienribon.tweenengine.Timeline;
 import aurelienribon.tweenengine.Tween;
 import aurelienribon.tweenengine.TweenAccessor;
-import aurelienribon.tweenengine.TweenManager;
 import aurelienribon.tweenstudio.ui.MainWindow;
 import aurelienribon.tweenstudio.ui.timeline.TimelineHelper;
 import aurelienribon.tweenstudio.ui.timeline.TimelineHelper.NodePart;
@@ -24,6 +24,11 @@ import javax.swing.UnsupportedLookAndFeelException;
  * @author Aurelien Ribon | http://www.aurelienribon.com/
  */
 public class TweenStudio {
+
+	// -------------------------------------------------------------------------
+	// Static API
+	// -------------------------------------------------------------------------
+
 	private static Map<Class<? extends Editor>, Editor> editors = new HashMap<Class<? extends Editor>, Editor>(1);
 	private static Map<Class<? extends Player>, Player> players = new HashMap<Class<? extends Player>, Player>(1);
 
@@ -44,20 +49,22 @@ public class TweenStudio {
 	}
 
 	// -------------------------------------------------------------------------
+	// Attributes
+	// -------------------------------------------------------------------------
 
+	// Always needed
 	private final List<Object> targets = new ArrayList<Object>(5);
 	private final Map<Object, String> namesMap = new HashMap<Object, String>(5);
-	private final TweenManager tweenManager = new TweenManager();
 	private final float[] buffer = new float[Tween.MAX_COMBINED_TWEENS];
+	private Timeline timeline;
 
+	// Only needed in editor mode
 	private Editor editor;
 	private String filepath;
 	private Map<Object, InitialState> initialStatesMap;
 	private TimelineModel model;
 	private MainWindow wnd;
-	private TweenManager editorTweenManager;
-
-	private long playStartTime;
+	private int playTime;
 	private int playDuration;
 
 	// -------------------------------------------------------------------------
@@ -70,22 +77,19 @@ public class TweenStudio {
 	}
 
 	public void play(Class<? extends Player> playerClass, String filepath) {
-		if (!players.containsKey(playerClass))
-			throw new RuntimeException("No such player registered");
+		if (!players.containsKey(playerClass)) throw new RuntimeException("No such player registered");
 
 		Player player = players.get(playerClass);
 		String fileContent = player.getFileContent(filepath);
-		ImportExportHelper.stringToTweens(fileContent, tweenManager);
+		timeline = ImportExportHelper.stringToTimeline(fileContent);
 	}
 
 	public void edit(Class<? extends Editor> editorClass, String filepath) {
-		if (!editors.containsKey(editorClass))
-			throw new RuntimeException("No such editor registered");
+		if (!editors.containsKey(editorClass)) throw new RuntimeException("No such editor registered");
 
 		this.editor = editors.get(editorClass);
 		this.filepath = filepath;
 
-		editorTweenManager = new TweenManager();
 		editor.setStudio(this);
 		editor.initialize();
 
@@ -97,20 +101,19 @@ public class TweenStudio {
 		ImportExportHelper.stringToModel(fileContent, model);
 
 		createWindow(model);
+		createTimeline();
 	}
 
-	public void update() {
+	public void update(int deltaMillis) {
 		if (wnd.isPlaying()) {
-			int currentTime = (int) (System.currentTimeMillis() - playStartTime);
-			if (currentTime <= playDuration) {
-				wnd.setTimeCursorPosition(currentTime);
+			playTime += deltaMillis;
+			if (playTime <= playDuration) {
+				wnd.setTimeCursorPosition(playTime);
 			} else {
 				wnd.setTimeCursorPosition(playDuration);
 				wnd.setPlaying(false);
 			}
 		}
-
-		if (editorTweenManager != null) editorTweenManager.update();
 	}
 
 	public void render() {
@@ -150,12 +153,12 @@ public class TweenStudio {
 			nodeData.setTargets(buffer);
 		}
 
-		resetTweens();
+		createTimeline();
 		wnd.updateTargetsValues();
 	}
 
 	// -------------------------------------------------------------------------
-	// Helpers
+	// Helpers -- initialization
 	// -------------------------------------------------------------------------
 
 	private void initializeProperties(Editor editor) {
@@ -164,8 +167,8 @@ public class TweenStudio {
 			TweenAccessor accessor = Tween.getRegisteredAccessor(target.getClass());
 
 			for (Property property : properties) {
-				int cnt = accessor.getValues(target, property.getTweenType(), buffer);
-				property.setCombinedTweensCount(cnt);
+				int cnt = accessor.getValues(target, property.getId(), buffer);
+				property.setAttributesCount(cnt);
 			}
 		}
 	}
@@ -182,7 +185,7 @@ public class TweenStudio {
 	private void createModel(Editor editor) {
 		model = new TimelineModel();
 		model.addListener(new TimelineModel.EventListener() {
-			@Override public void stateChanged() {if (wnd != null) resetTweens();}
+			@Override public void stateChanged() {if (wnd != null) createTimeline();}
 		});
 
 		for (Object target : targets) {
@@ -192,7 +195,7 @@ public class TweenStudio {
 
 			for (Property property : properties) {
 				elem = model.addElement(namesMap.get(target) + "/" + property.getName());
-				elem.setUserData(new ElementData(target, property.getTweenType()));
+				elem.setUserData(new ElementData(target, property.getId()));
 			}
 		}
 	}
@@ -218,24 +221,31 @@ public class TweenStudio {
 				editor.dispose();
 			}
 		});
-
-		resetTweens();
 	}
 
-	private void resetTweens() {
-		tweenManager.clear();
+	// -------------------------------------------------------------------------
+	// Helpers -- timeline creation
+	// -------------------------------------------------------------------------
+
+	private void createTimeline() {
+		if (timeline != null) timeline.free();
+		timeline = Timeline.createParallel();
 
 		for (Element elem : model.getElements()) {
 			if (!elem.isSelectable()) continue;
+			elem.sortNodes();
+			
+			for (Node node : elem.getNodes())
+				if (node.getUserData() == null)
+					createNodeData(node);
 
 			ElementData elemData = (ElementData) elem.getUserData();
-			Object target = elemData.getTarget();
-			int tweenType = elemData.getTweenType();
-
-			elem.sortNodes();
-			createTweens(elem, target, tweenType);
-			setToInitialState(target, tweenType);
+			
+			createTweens(elem, elemData.getTarget(), elemData.getTweenType());
+			setToInitialState(elemData.getTarget(), elemData.getTweenType());
 		}
+
+		timeline.start();
 
 		int time = -1, lastTime = 0, duration = model.getDuration();
 		while (true) {
@@ -249,28 +259,23 @@ public class TweenStudio {
 			int delta = time - lastTime;
 			lastTime = time;
 
-			tweenManager.update(delta-1);
-			tweenManager.update(+2);
-			tweenManager.update(-1);
+			timeline.update(delta);
 		}
 
 		int currentTime = wnd.getTimeCursorPosition();
-		tweenManager.update(-duration-1);
-		tweenManager.update(+currentTime+2);
-		tweenManager.update(-1);
+		timeline.update(currentTime-duration);
 	}
 
 	private void createTweens(Element elem, Object target, int tweenType) {
 		for (Node node : elem.getNodes()) {
-			if (node.getUserData() == null) createNodeData(node);
 			NodeData nodeData = (NodeData) node.getUserData();
 			
-			Tween.to(target, tweenType, node.getDuration())
+			Tween tween = Tween.to(target, tweenType, node.getDuration())
 				.target(nodeData.getTargets())
 				.ease(nodeData.getEquation())
-				.delay(node.getStart())
-				.repeat(0, Integer.MAX_VALUE - node.getEnd())
-				.addToManager(tweenManager);
+				.delay(node.getStart());
+
+			timeline.push(tween);
 		}
 	}
 
@@ -278,7 +283,7 @@ public class TweenStudio {
 		ElementData elemData = (ElementData) node.getParent().getUserData();
 		Property property = editor.getProperty(elemData.getTarget().getClass(), elemData.getTweenType());
 
-		NodeData nodeData = new NodeData(property.getCombinedTweensCount());
+		NodeData nodeData = new NodeData(property.getAttributesCount());
 		TweenAccessor accessor = Tween.getRegisteredAccessor(elemData.getTarget().getClass());
 		accessor.getValues(elemData.getTarget(), elemData.getTweenType(), nodeData.getTargets());
 		node.setUserData(nodeData);
@@ -291,6 +296,10 @@ public class TweenStudio {
 		TweenAccessor accessor = Tween.getRegisteredAccessor(target.getClass());
 		accessor.setValues(target, tweenType, initValues);
 	}
+
+	// -------------------------------------------------------------------------
+	// Helpers -- misc
+	// -------------------------------------------------------------------------
 
 	private Node getNodeAtTime(Element elem, int time) {
 		Node node = null;
@@ -312,20 +321,18 @@ public class TweenStudio {
 	private MainWindow.Callback wndCallback = new MainWindow.Callback() {
 		@Override
 		public void timeCursorPositionChanged(int oldTime, int newTime) {
-			tweenManager.update(-oldTime-1);
-			tweenManager.update(+newTime+2);
-			tweenManager.update(-1);
+			timeline.update(newTime-oldTime);
 		}
 
 		@Override
 		public void nodeInfoChanged(Node node) {
-			resetTweens();
+			createTimeline();
 		}
 
 		@Override
 		public void playRequested() {
 			playDuration = model.getDuration();
-			playStartTime = System.currentTimeMillis();
+			playTime = 0;
 			wnd.setPlaying(true);
 		}
 

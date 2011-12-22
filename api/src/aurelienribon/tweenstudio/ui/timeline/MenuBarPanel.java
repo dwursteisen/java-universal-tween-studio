@@ -27,15 +27,15 @@ class MenuBarPanel extends JPanel {
 	private Callback callback;
 
     public MenuBarPanel(Theme theme) {
-		magBtn = new ImageButton("ic_glassPlus.png");
-		minBtn = new ImageButton("ic_glassMinus.png");
-		addNodeBtn = new ImageButton("ic_addNode.png");
-		delNodeBtn = new ImageButton("ic_delNode.png");
-		playBtn = new ImageButton("ic_play.png").addImage("ic_pause.png");
-		goToFirstBtn = new ImageButton("ic_goToFirst.png");
-		goToPreviousBtn = new ImageButton("ic_goToPrevious.png");
-		goToNextBtn = new ImageButton("ic_goToNext.png");
-		goToLastBtn = new ImageButton("ic_goToLast.png");
+		magBtn = new ImageButton(theme.COLOR_MENUBAR_BACKGROUND, "ic_glassPlus.png");
+		minBtn = new ImageButton(theme.COLOR_MENUBAR_BACKGROUND, "ic_glassMinus.png");
+		addNodeBtn = new ImageButton(theme.COLOR_MENUBAR_BACKGROUND, "ic_addNode.png");
+		delNodeBtn = new ImageButton(theme.COLOR_MENUBAR_BACKGROUND, "ic_delNode.png");
+		playBtn = new ImageButton(theme.COLOR_MENUBAR_BACKGROUND, "ic_play.png").addImage("ic_pause.png");
+		goToFirstBtn = new ImageButton(theme.COLOR_MENUBAR_BACKGROUND, "ic_goToFirst.png");
+		goToPreviousBtn = new ImageButton(theme.COLOR_MENUBAR_BACKGROUND, "ic_goToPrevious.png");
+		goToNextBtn = new ImageButton(theme.COLOR_MENUBAR_BACKGROUND, "ic_goToNext.png");
+		goToLastBtn = new ImageButton(theme.COLOR_MENUBAR_BACKGROUND, "ic_goToLast.png");
 
 		magBtn.addActionListener(new ActionListener() {
 			@Override public void actionPerformed(ActionEvent e) {callback.magnifyRequested();}

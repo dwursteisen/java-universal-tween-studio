@@ -24,7 +24,7 @@ public class App implements ApplicationListener {
 		createSprites();
 
 		// Tween Engine classic initialization
-		Tween.setPoolEnabled(true);
+		Tween.enablePooling(true);
 		Tween.registerAccessor(Sprite.class, new SpriteTweenAccessor());
 
 		// Registration of the editor/player (only needed once per application)
@@ -73,7 +73,8 @@ public class App implements ApplicationListener {
 
 	@Override
 	public void render() {
-		tweenStudio.update();
+		int delta = (int) (Gdx.graphics.getDeltaTime() * 1000);
+		tweenStudio.update(delta);
 
 		GL10 gl = Gdx.gl10;
 		gl.glClearColor(1, 1, 1, 1);

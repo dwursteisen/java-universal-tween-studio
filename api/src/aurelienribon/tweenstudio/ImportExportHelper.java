@@ -1,7 +1,7 @@
 package aurelienribon.tweenstudio;
 
+import aurelienribon.tweenengine.Timeline;
 import aurelienribon.tweenengine.TweenEquation;
-import aurelienribon.tweenengine.TweenManager;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Element;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Node;
@@ -34,8 +34,8 @@ public class ImportExportHelper {
 		return str;
 	}
 
-	public static void stringToModel(String str, TimelineModel model) {
-		String[] lines = str.split("\n");
+	public static void stringToModel(String input, TimelineModel model) {
+		String[] lines = input.split("\n");
 
 		for (String line : lines) {
 			String[] parts = line.split(";");
@@ -44,7 +44,7 @@ public class ImportExportHelper {
 			String elementPath = parts[0] + "/" + parts[1];
 			int delay = Integer.parseInt(parts[2]);
 			int duration = Integer.parseInt(parts[3]);
-			TweenEquation equation = TweenHelper.getEquation(parts[4]);
+			TweenEquation equation = TweenEquation.parse(parts[4]);
 
 			float[] targets = new float[parts.length-5];
 			for (int i=0; i<targets.length; i++)
@@ -65,7 +65,7 @@ public class ImportExportHelper {
 		}
 	}
 
-	public static void stringToTweens(String str, TweenManager tweenManager) {
-		
+	public static Timeline stringToTimeline(String input) {
+		return null;
 	}
 }

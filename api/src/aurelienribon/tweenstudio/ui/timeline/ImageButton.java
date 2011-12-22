@@ -1,5 +1,6 @@
 package aurelienribon.tweenstudio.ui.timeline;
 
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.event.MouseAdapter;
@@ -13,6 +14,7 @@ import javax.swing.JButton;
  * @author Aurelien Ribon | http://www.aurelienribon.com/
  */
 class ImageButton extends JButton {
+	private final Color bgColor;
 	private final BufferedImage mouseOverImage;
 	private final BufferedImage mousePressedImage;
 	private final List<BufferedImage> images = new ArrayList<BufferedImage>();
@@ -22,7 +24,8 @@ class ImageButton extends JButton {
 	private boolean isMousePressed = false;
 	private int imageIdx = 0;
 
-    public ImageButton(String gfxName) {
+    public ImageButton(Color bgColor, String gfxName) {
+		this.bgColor = bgColor;
 		this.mouseOverImage = ResourcesHelper.getGfx("ic_btnMouseOver.png");
 		this.mousePressedImage = ResourcesHelper.getGfx("ic_btnMousePressed.png");
 		this.images.add(ResourcesHelper.getGfx(gfxName));
@@ -64,6 +67,9 @@ class ImageButton extends JButton {
 
 	@Override
 	protected void paintComponent(Graphics g) {
+		g.setColor(bgColor);
+		g.fillRect(0, 0, getWidth(), getHeight());
+
 		if (isMousePressed) {
 			g.drawImage(mousePressedImage, 0, 0, null);
 		} else if (isMouseOver) {
@@ -77,25 +83,25 @@ class ImageButton extends JButton {
 		@Override
 		public void mouseEntered(MouseEvent e) {
 			isMouseOver = true;
-			getParent().repaint();
+			repaint();
 		}
 
 		@Override
 		public void mouseExited(MouseEvent e) {
 			isMouseOver = false;
-			getParent().repaint();
+			repaint();
 		}
 
 		@Override
 		public void mousePressed(MouseEvent e) {
 			isMousePressed = true;
-			getParent().repaint();
+			repaint();
 		}
 
 		@Override
 		public void mouseReleased(MouseEvent e) {
 			isMousePressed = false;
-			getParent().repaint();
+			repaint();
 		}
 	};
 }
