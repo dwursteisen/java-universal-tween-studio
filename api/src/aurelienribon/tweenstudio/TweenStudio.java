@@ -251,15 +251,17 @@ public class TweenStudio {
 		while (true) {
 			int t1 = TimelineHelper.getNextTime(model, time, NodePart.START);
 			int t2 = TimelineHelper.getNextTime(model, time, NodePart.END);
-			if (t1 == t2 && t1 == duration) break;
+			if (t1 == t2 && t1 == -1) break;
+
 			if (t1 == t2) time = t1;
-			if (t1 < t2) {if (t1 > time) time = t1; else time = t2;}
-			if (t2 < t1) {if (t2 > time) time = t2; else time = t1;}
+			else if (t1 < t2) time = t1 > time ? t1 : t2;
+			else if (t2 < t1) time = t2 > time ? t2 : t1;
 
 			int delta = time - lastTime;
 			lastTime = time;
-
 			timeline.update(delta);
+
+			if (t1 == t2 && t1 == duration) break;
 		}
 
 		int currentTime = wnd.getTimeCursorPosition();
