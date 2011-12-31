@@ -5,9 +5,10 @@ import aurelienribon.tweenstudio.NodeData;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Element;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Node;
-import aurelienribon.tweenstudio.ui.timeline.TimelinePanel.EventListener;
+import aurelienribon.tweenstudio.ui.timeline.TimelinePanel.Listener;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.List;
 import javax.swing.JSpinner;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -25,12 +26,19 @@ public class MainWindow extends javax.swing.JFrame {
 		initComponents();
 		tweenAttrsPanel.setVisible(false);
 		easingCbox.addActionListener(easeListener);
-		timelinePanel.addListener(new EventListener() {
-			@Override public void selectedElementChanged(Element element) {}
-			@Override public void selectedNodeChanged(Node node) {selectedNode = node; updateTargetsValues();}
+		timelinePanel.addListener(new Listener() {
 			@Override public void playRequested() {callback.playRequested();}
 			@Override public void pauseRequested() {callback.pauseRequested();}
-			@Override public void timeCursorPositionChanged(int oldTime, int newTime) {callback.timeCursorPositionChanged(oldTime, newTime);}
+			@Override public void selectedElementChanged(Element newElem, Element oldElem) {}
+
+			@Override public void selectedNodesChanged(List<Node> newNodes, List<Node> oldNodes) {
+				selectedNode = null;
+				updateTargetsValues();
+			}
+
+			@Override public void currentTimeChanged(int newTime, int oldTime) {
+				callback.timeCursorPositionChanged(oldTime, newTime);
+			}
 		});
 
 		targetSpinners = new JSpinner[] {t1Spinner, t2Spinner, t3Spinner, t4Spinner, t5Spinner};
@@ -48,12 +56,8 @@ public class MainWindow extends javax.swing.JFrame {
 		this.callback = callback;
 	}
 
-	public int getTimeCursorPosition() {
-		return timelinePanel.getTimeCursorPosition();
-	}
-
-	public void setTimeCursorPosition(int time) {
-		timelinePanel.setTimeCursorPosition(time);
+	public int getCurrentTime() {
+		return timelinePanel.getCurrentTime();
 	}
 
 	public boolean isPlaying() {

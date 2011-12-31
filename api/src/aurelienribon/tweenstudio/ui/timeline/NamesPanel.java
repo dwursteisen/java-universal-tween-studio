@@ -21,36 +21,28 @@ class NamesPanel extends JPanel implements Scrollable {
 	private final int paddingLeft = 10;
 	private final int paddingIncremental = 30;
 	private final int lineHeight = 20;
-	
-	private TimelineModel model;
-	private Theme theme;
+
+	private final TimelinePanel parent;
 	private Callback callback;
-	private Element selectedElement;
 	private Element mouseOverElement;
 	private int vOffset;
 
-	public NamesPanel(Theme theme) {
-		this.theme = theme;
+	public NamesPanel(TimelinePanel parent) {
+		this.parent = parent;
 		addMouseListener(mouseAdapter);
 		addMouseMotionListener(mouseAdapter);
 		addMouseWheelListener(mouseAdapter);
-	}
-
-	public void setModel(TimelineModel model) {
-		this.model = model;
-	}
-
-	public void setTheme(Theme theme) {
-		this.theme = theme;
-		repaint();
 	}
 
 	public void setCallback(Callback callback) {
 		this.callback = callback;
 	}
 
-	public void setSelectedElementSilently(Element elem) {
-		this.selectedElement = elem;
+	public void modelChanged(TimelineModel model) {
+		repaint();
+	}
+
+	public void themeChanged(Theme theme) {
 		repaint();
 	}
 
@@ -61,6 +53,7 @@ class NamesPanel extends JPanel implements Scrollable {
 
 	@Override
 	public int getLength() {
+		TimelineModel model = parent.getModel();
 		int height = model != null
 			? paddingTop + UiHelper.getLinesCount(model) * lineHeight
 			: 0;
@@ -84,7 +77,6 @@ class NamesPanel extends JPanel implements Scrollable {
 	// -------------------------------------------------------------------------
 
 	public interface Callback {
-		public void selectedElementChanged(Element selectedElem);
 		public void verticalOffsetChanged(int vOffset);
 		public void scrollRequired(int amount);
 	}
@@ -95,6 +87,9 @@ class NamesPanel extends JPanel implements Scrollable {
 
 	@Override
 	protected void paintComponent(Graphics g) {
+		Theme theme = parent.getTheme();
+		TimelineModel model = parent.getModel();
+
 		Graphics2D gg = (Graphics2D) g;
 		gg.setColor(theme.COLOR_NAMESPANEL_BACKGROUND);
 		gg.fillRect(0, 0, getWidth(), getHeight());
@@ -106,17 +101,16 @@ class NamesPanel extends JPanel implements Scrollable {
 	}
 
 	private void drawSections(final Graphics2D gg) {
+		Theme theme = parent.getTheme();
+		TimelineModel model = parent.getModel();
+		Element selectedElement = parent.getSelectedElement();
+
 		int line = 0;
 		for (Element elem : model.getElements()) {
-			if (!elem.isSelectable()) {
-				gg.setColor(theme.COLOR_NAMESPANEL_SECTION_UNUSABLE);
-			} else if (elem == selectedElement) {
-				gg.setColor(theme.COLOR_NAMESPANEL_SECTION_SELECTED);
-			} else if (elem == mouseOverElement) {
-				gg.setColor(theme.COLOR_NAMESPANEL_SECTION_MOUSEOVER);
-			} else {
-				gg.setColor(theme.COLOR_NAMESPANEL_SECTION);
-			}
+			if (!elem.isSelectable()) gg.setColor(theme.COLOR_NAMESPANEL_SECTION_UNUSABLE);
+			else if (elem == selectedElement) gg.setColor(theme.COLOR_NAMESPANEL_SECTION_SELECTED);
+			else if (elem == mouseOverElement) gg.setColor(theme.COLOR_NAMESPANEL_SECTION_MOUSEOVER);
+			else gg.setColor(theme.COLOR_NAMESPANEL_SECTION);
 
 			gg.fillRect(0, line*lineHeight, getWidth(), lineHeight);
 			line += 1;
@@ -124,6 +118,9 @@ class NamesPanel extends JPanel implements Scrollable {
 	}
 
 	private void drawNames(final Graphics2D gg) {
+		Theme theme = parent.getTheme();
+		TimelineModel model = parent.getModel();
+		
 		gg.setFont(theme.FONT);
 		gg.setColor(theme.COLOR_FOREGROUND);
 
@@ -157,17 +154,16 @@ class NamesPanel extends JPanel implements Scrollable {
 	private final MouseAdapter mouseAdapter = new MouseAdapter() {
 		@Override
 		public void mousePressed(MouseEvent e) {
-			if (selectedElement != mouseOverElement) {
-				selectedElement = mouseOverElement;
-				callback.selectedElementChanged(selectedElement);
-			}
+			parent.setSelectedElement(mouseOverElement);
 			repaint();
 		}
 
 		@Override
 		public void mouseMoved(MouseEvent e) {
+			TimelineModel model = parent.getModel();
+			int evLine = getLineFromY(e.getY());
+			
 			mouseOverElement = null;
-			final int evLine = getLineFromY(e.getY());
 
 			int line = 0;
 			for (Element elem : model.getElements()) {

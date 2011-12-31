@@ -26,98 +26,44 @@ class GridPanel extends JPanel implements Scrollable {
 	private final int nodeWidth = 7;
 	private final int timeScaleLimit = 2;
 
-	private TimelineModel model;
-	private Theme theme;
+	private final TimelinePanel parent;
 	private Callback callback;
 	private float timeScale = 1;
-	private int currentTime = 0;
-	private Element selectedElement = null;
 	private Element mouseOverElement = null;
-	private Node selectedNode = null;
 	private Node mouseOverNode = null;
 	private int vOffset;
 	private int hOffset;
 	private int maxTime = 0;
-	private boolean playing = false;
 
-	public GridPanel(Theme theme) {
-		this.theme = theme;
+	public GridPanel(TimelinePanel parent) {
+		this.parent = parent;
 		addMouseListener(mouseAdapter);
 		addMouseMotionListener(mouseAdapter);
 		addMouseWheelListener(mouseAdapter);
 		addKeyListener(keyAdapter);
 		setFocusable(true);
-	}
 
-	public void setModel(TimelineModel model) {
-		this.model = model;
-		model.addListener(new TimelineModel.EventListener() {
-			@Override public void stateChanged() {
-				repaint();
-			}
+		parent.addListener(new TimelinePanel.Listener() {
+			@Override public void playRequested() {}
+			@Override public void pauseRequested() {}
+			@Override public void selectedElementChanged(Element newElem, Element oldElem) {repaint();}
+			@Override public void selectedNodesChanged(List<Node> newNodes, List<Node> oldNodes) {repaint();}
+			@Override public void currentTimeChanged(int newTime, int oldTime) {repaint();}
 		});
-	}
-
-	public void setTheme(Theme theme) {
-		this.theme = theme;
-		repaint();
 	}
 
 	public void setCallback(Callback callback) {
 		this.callback = callback;
 	}
 
-	public void setSelectedElementSilently(Element elem) {
-		if (this.selectedElement != elem) {
-			this.selectedElement = elem;
-			selectedNode = null;
-			repaint();
-		}
+	public void modelChanged(TimelineModel model) {
+		model.addListener(new TimelineModel.Listener() {
+			@Override public void stateChanged() {repaint();}
+		});
 	}
 
-	public void setCurrentTime(int newTime) {
-		if (newTime != currentTime) {
-			int oldTime = currentTime;
-			currentTime = newTime;
-			repaint();
-			callback.currentTimeChanged(oldTime, newTime);
-		}
-	}
-
-	public int getCurrentTime() {
-		return currentTime;
-	}
-
-	public void setPlaying(boolean playing) {
-		this.playing = playing;
-		if (playing) {
-			setSelectedNode(null);
-			setSelectedElement(null);
-		}
-	}
-
-	public Node requestAddNode() {
-		Node node = null;
-		if (selectedElement != null) {
-			node = selectedElement.addNode(currentTime, 0);
-			setSelectedNode(node);
-			repaint();
-		}
-		return node;
-	}
-
-	public Node requestDelNode() {
-		if (selectedNode == null) return null;
-		Node node = selectedNode;
-		for (Element elem : model.getElements()) {
-			if (elem.getNodes().contains(selectedNode)) {
-				elem.removeNode(selectedNode);
-				repaint();
-				break;
-			}
-		}
-		setSelectedNode(null);
-		return node;
+	public void themeChanged(Theme theme) {
+		repaint();
 	}
 
 	public void requestMagnification() {
@@ -163,9 +109,6 @@ class GridPanel extends JPanel implements Scrollable {
 	// -------------------------------------------------------------------------
 
 	public interface Callback {
-		public void currentTimeChanged(int oldTime, int newTime);
-		public void selectedElementChanged(Element selectedElement);
-		public void selectedNodeChanged(Node selectedNode);
 		public void lengthChanged();
 		public void scrollRequired(int amount);
 	}
@@ -176,6 +119,10 @@ class GridPanel extends JPanel implements Scrollable {
 
 	@Override
 	protected void paintComponent(Graphics g) {
+		Theme theme = parent.getTheme();
+		TimelineModel model = parent.getModel();
+		int currentTime = parent.getCurrentTime();
+		
 		Graphics2D gg = (Graphics2D)g;
 		gg.setColor(theme.COLOR_GRIDPANEL_BACKGROUND);
 		gg.fillRect(0, 0, getWidth(), getHeight());
@@ -187,11 +134,15 @@ class GridPanel extends JPanel implements Scrollable {
 		paintTimeCursor(gg);
 		paintNodes(gg);
 
-		updateMaxTime();
+		int oldMaxTime = maxTime;
+		maxTime = Math.max(model.getDuration(), currentTime);
+		if (maxTime != oldMaxTime) callback.lengthChanged();
 	}
 
 	private void paintSections(final Graphics2D gg) {
-		final int elemCnt = UiHelper.getLinesCount(model);
+		Theme theme = parent.getTheme();
+		TimelineModel model = parent.getModel();
+		int elemCnt = UiHelper.getLinesCount(model);
 
 		int line = 0;
 		for (Element elem : model.getElements()) {
@@ -207,15 +158,15 @@ class GridPanel extends JPanel implements Scrollable {
 	}
 	
 	private void paintTimeline(Graphics2D gg) {
-		gg.setFont(theme.FONT);
-		FontMetrics fm = gg.getFontMetrics();
-
+		Theme theme = parent.getTheme();
 		int minSeconds = Math.max((int) (timeScale * hOffset / oneSecondWidth), 0);
 		int maxSeconds = (int) (timeScale * getWidth() / oneSecondWidth) + minSeconds + 1;
-
 		int textOffset = -12;
 		int smallTickHeight = 5;
 		int bigTickHeight = 7;
+
+		gg.setFont(theme.FONT);
+		FontMetrics fm = gg.getFontMetrics();
 
 		for (int i=minSeconds; i<=maxSeconds; i++) {
 			int x = getXFromTime(i*1000);
@@ -242,6 +193,9 @@ class GridPanel extends JPanel implements Scrollable {
 	}
 
 	private void paintTimeCursor(Graphics2D gg) {
+		Theme theme = parent.getTheme();
+		int currentTime = parent.getCurrentTime();
+
 		int x = getXFromTime(currentTime);
 		int y = paddingTop;
 		gg.setColor(theme.COLOR_GRIDPANEL_CURSOR);
@@ -253,6 +207,10 @@ class GridPanel extends JPanel implements Scrollable {
 	}
 
 	private void paintNodesTracks(final Graphics2D gg) {
+		Theme theme = parent.getTheme();
+		TimelineModel model = parent.getModel();
+		List<Node> selectedNodes = parent.getSelectedNodes();
+
 		int line = 0;
 		for (Element elem : model.getElements()) {
 			int y = getYFromLine(line);
@@ -262,13 +220,9 @@ class GridPanel extends JPanel implements Scrollable {
 				int x1 = getXFromTime(node.getStart());
 				int x2 = getXFromTime(node.getEnd());
 
-				if (node == selectedNode) {
-					gg.setColor(theme.COLOR_GRIDPANEL_NODE_TRACK_SELECTED);
-				} else if (node == mouseOverNode) {
-					gg.setColor(theme.COLOR_GRIDPANEL_NODE_TRACK_MOUSEOVER);
-				} else {
-					gg.setColor(theme.COLOR_GRIDPANEL_NODE_TRACK);
-				}
+				if (selectedNodes.contains(node)) gg.setColor(theme.COLOR_GRIDPANEL_NODE_TRACK_SELECTED);
+				else if (node == mouseOverNode) gg.setColor(theme.COLOR_GRIDPANEL_NODE_TRACK_MOUSEOVER);
+				else gg.setColor(theme.COLOR_GRIDPANEL_NODE_TRACK);
 
 				gg.fillRect(x1, y+1, x2-x1, lineHeight-3);
 			}
@@ -292,6 +246,10 @@ class GridPanel extends JPanel implements Scrollable {
 	}
 
 	private void paintNodes(final Graphics2D gg) {
+		Theme theme = parent.getTheme();
+		TimelineModel model = parent.getModel();
+		List<Node> selectedNodes = parent.getSelectedNodes();
+
 		int line = 0;
 		for (Element elem : model.getElements()) {
 			int y = getYFromLine(line);
@@ -300,23 +258,15 @@ class GridPanel extends JPanel implements Scrollable {
 			for (Node node : nodes) {
 				int x = getXFromTime(node.getEnd());
 
-				if (node == selectedNode) {
-					gg.setColor(theme.COLOR_GRIDPANEL_NODE_FILL_SELECTED);
-				} else if (node == mouseOverNode) {
-					gg.setColor(theme.COLOR_GRIDPANEL_NODE_FILL_MOUSEOVER);
-				} else {
-					gg.setColor(theme.COLOR_GRIDPANEL_NODE_FILL);
-				}
+				if (selectedNodes.contains(node)) gg.setColor(theme.COLOR_GRIDPANEL_NODE_FILL_SELECTED);
+				else if (node == mouseOverNode) gg.setColor(theme.COLOR_GRIDPANEL_NODE_FILL_MOUSEOVER);
+				else gg.setColor(theme.COLOR_GRIDPANEL_NODE_FILL);
 
 				gg.fillOval(x-4, y+2, nodeWidth, lineHeight-6);
 
-				if (node == selectedNode) {
-					gg.setColor(theme.COLOR_GRIDPANEL_NODE_STROKE_SELECTED);
-				} else if (node == mouseOverNode) {
-					gg.setColor(theme.COLOR_GRIDPANEL_NODE_STROKE_MOUSEOVER);
-				} else {
-					gg.setColor(theme.COLOR_GRIDPANEL_NODE_STROKE);
-				}
+				if (selectedNodes.contains(node)) gg.setColor(theme.COLOR_GRIDPANEL_NODE_STROKE_SELECTED);
+				else if (node == mouseOverNode) gg.setColor(theme.COLOR_GRIDPANEL_NODE_STROKE_MOUSEOVER);
+				else gg.setColor(theme.COLOR_GRIDPANEL_NODE_STROKE);
 
 				gg.drawOval(x-4, y+2, nodeWidth, lineHeight-6);
 			}
@@ -380,52 +330,34 @@ class GridPanel extends JPanel implements Scrollable {
 		return null;
 	}
 
-	private void updateMaxTime() {
-		int oldTime = maxTime;
-		maxTime = Math.max(model.getDuration(), currentTime);
-		if (maxTime != oldTime) callback.lengthChanged();
-	}
-
-	private void setSelectedElement(Element elem) {
-		if (selectedElement != elem) {
-			selectedElement = elem;
-			setSelectedNode(null);
-			repaint();
-			callback.selectedElementChanged(selectedElement);
-		}
-	}
-
-	private void setSelectedNode(Node node) {
-		if (selectedNode != node) {
-			selectedNode = node;
-			repaint();
-			if (node != null) setCurrentTime(node.getEnd());
-			callback.selectedNodeChanged(selectedNode);
-		}
-	}
-
 	// -------------------------------------------------------------------------
-	// Input
+	// Input -- Mouse
 	// -------------------------------------------------------------------------
 
 	private final MouseAdapter mouseAdapter = new MouseAdapter() {
+		private final int MODE_DRAW_SELECTION = 1;
+		private final int MODE_DRAG_CURSOR = 2;
+		private final int MODE_DRAG_NODES = 3;
 		private int lastTime;
 
 		@Override
 		public void mousePressed(MouseEvent e) {
-			if (model == null || playing) return;
+			TimelineModel model = parent.getModel();
+			if (model == null || parent.isPlaying()) return;
 
 			lastTime = getTimeFromX(e.getX());
 
-			if (getLineFromY(e.getY()) < 0) {
+			if (e.getButton() == MouseEvent.BUTTON1) {
+				if (getLineFromY(e.getY()) < 0) {
+					setCurrentTime(lastTime);
+				} else {
+					setSelectedElement(mouseOverElement);
+					setSelectedNode(mouseOverNode);
+				}
+
+			} else if (e.getButton() == MouseEvent.BUTTON2) {
 				setCurrentTime(lastTime);
-
-			} else {
-				setSelectedElement(mouseOverElement);
-				setSelectedNode(mouseOverNode);
 			}
-
-			requestFocusInWindow();
 		}
 
 		@Override
@@ -501,6 +433,10 @@ class GridPanel extends JPanel implements Scrollable {
 			callback.scrollRequired(e.getWheelRotation() * 40);
 		}
 	};
+	
+	// -------------------------------------------------------------------------
+	// Input -- Keyboard
+	// -------------------------------------------------------------------------
 
 	private final KeyAdapter keyAdapter = new KeyAdapter() {
 		@Override

@@ -12,15 +12,19 @@ import javax.swing.JPanel;
 class ScrollBar extends JPanel {
 	public enum Orientation {VERTICAL, HORIZONTAL}
 
+	private final TimelinePanel parent;
 	private final int padding = 2;
 	private Scrollable scrollable = null;
 	private Orientation orientation = Orientation.VERTICAL;
-	private Theme theme;
 
-	public ScrollBar(Theme theme) {
-		this.theme = theme;
+	public ScrollBar(TimelinePanel parent) {
+		this.parent = parent;
 		addMouseListener(mouseAdapter);
 		addMouseMotionListener(mouseAdapter);
+	}
+
+	public void themeChanged(Theme theme) {
+		repaint();
 	}
 
 	public void setScrollable(Scrollable scrollable) {
@@ -29,11 +33,6 @@ class ScrollBar extends JPanel {
 
 	public void setOrientation(Orientation orientation) {
 		this.orientation = orientation;
-	}
-
-	public void setTheme(Theme theme) {
-		this.theme = theme;
-		repaint();
 	}
 
 	public void scroll(int amount) {
@@ -72,14 +71,14 @@ class ScrollBar extends JPanel {
 	}
 
 	private void paintContainer(Graphics2D gg) {
-		gg.setColor(theme.COLOR_SCROLLBAR_CONTAINER_FILL);
+		gg.setColor(parent.getTheme().COLOR_SCROLLBAR_CONTAINER_FILL);
 		gg.fillRect(0, 0, getWidth(), getHeight());
 	}
 
 	private void paintSelector(Graphics2D gg) {
 		int selectorLength = getSelectorLength();
 		int selectorPos = getSelectorPos();
-		gg.setColor(theme.COLOR_SCROLLBAR_SELECTOR);
+		gg.setColor(parent.getTheme().COLOR_SCROLLBAR_SELECTOR);
 		if (orientation == Orientation.VERTICAL) {
 			gg.fillRect(padding, selectorPos - selectorLength/2, getWidth()-padding*2, selectorLength);
 		} else {

@@ -1,8 +1,11 @@
 package aurelienribon.tweenstudio.ui.timeline;
 
+import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Element;
+import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Node;
 import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.List;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JLabel;
@@ -26,7 +29,9 @@ class MenuBarPanel extends JPanel {
 	private final int bigMargin = 20;
 	private Callback callback;
 
-    public MenuBarPanel(Theme theme) {
+    public MenuBarPanel(final TimelinePanel parent) {
+		Theme theme = parent.getTheme();
+
 		magBtn = new ImageButton(theme.COLOR_MENUBAR_BACKGROUND, "ic_glassPlus.png");
 		minBtn = new ImageButton(theme.COLOR_MENUBAR_BACKGROUND, "ic_glassMinus.png");
 		addNodeBtn = new ImageButton(theme.COLOR_MENUBAR_BACKGROUND, "ic_addNode.png");
@@ -46,11 +51,25 @@ class MenuBarPanel extends JPanel {
 		});
 
 		addNodeBtn.addActionListener(new ActionListener() {
-			@Override public void actionPerformed(ActionEvent e) {callback.addNodeRequested();}
+			@Override public void actionPerformed(ActionEvent e) {
+				Element elem = parent.getSelectedElement();
+				if (elem != null) {
+					Node node = elem.addNode(parent.getCurrentTime(), 0);
+					parent.clearSelectedNodes();
+					parent.addSelectedNode(node);
+					repaint();
+				}
+			}
 		});
 
 		delNodeBtn.addActionListener(new ActionListener() {
-			@Override public void actionPerformed(ActionEvent e) {callback.delNodeRequested();}
+			@Override public void actionPerformed(ActionEvent e) {
+				List<Node> nodes = parent.getSelectedNodes();
+				parent.clearSelectedNodes();
+				for (Node node : nodes)
+					node.getParent().removeNode(node);
+				repaint();
+			}
 		});
 
 		playBtn.addActionListener(new ActionListener() {
@@ -106,7 +125,7 @@ class MenuBarPanel extends JPanel {
 		timeLbl.setText(str);
 	}
 
-	public void setTheme(Theme theme) {
+	public void themeChanged(Theme theme) {
 		timeLbl.setForeground(theme.COLOR_FOREGROUND);
 		timeLbl.setFont(theme.FONT);
 		setBackground(theme.COLOR_MENUBAR_BACKGROUND);
@@ -132,8 +151,6 @@ class MenuBarPanel extends JPanel {
 	public interface Callback {
 		public void magnifyRequested();
 		public void minifyRequested();
-		public void addNodeRequested();
-		public void delNodeRequested();
 		public void playRequested();
 		public void pauseRequested();
 		public void goToFirstRequested();

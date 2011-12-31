@@ -140,7 +140,7 @@ public class TweenStudio {
 
 	void targetStateChanged(Object target, Set<Integer> tweenTypes) {
 		String name = namesMap.get(target);
-		int currentTime = wnd.getTimeCursorPosition();
+		int currentTime = wnd.getCurrentTime();
 
 		for (int tweenType : tweenTypes) {
 			String propertyName = editor.getProperty(target.getClass(), tweenType).getName();
@@ -184,7 +184,7 @@ public class TweenStudio {
 
 	private void createModel(Editor editor) {
 		model = new TimelineModel();
-		model.addListener(new TimelineModel.EventListener() {
+		model.addListener(new TimelineModel.Listener() {
 			@Override public void stateChanged() {if (wnd != null) createTimeline();}
 		});
 
@@ -264,7 +264,7 @@ public class TweenStudio {
 			if (t1 == t2 && t1 == duration) break;
 		}
 
-		int currentTime = wnd.getTimeCursorPosition();
+		int currentTime = wnd.getCurrentTime();
 		timeline.update(currentTime-duration);
 	}
 

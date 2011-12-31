@@ -7,6 +7,10 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import javax.swing.JPanel;
@@ -26,64 +30,108 @@ public class TimelinePanel extends JPanel {
 
 	private Theme theme;
 	private TimelineModel model;
-	private boolean playing;
+
+	private final List<Node> selectedNodes = new ArrayList<Node>();
+	private Element selectedElement = null;
+	private int currentTime = 0;
+	private boolean isPlaying = false;
 
 	public TimelinePanel() {
 		this.theme = new Theme(null);
 
-		menuBarPanel = new MenuBarPanel(theme);
-		namesPanel = new NamesPanel(theme);
-		gridPanel = new GridPanel(theme);
-		vScrollBar = new ScrollBar(theme);
-		hScrollBar = new ScrollBar(theme);
+		menuBarPanel = new MenuBarPanel(this);
+		namesPanel = new NamesPanel(this);
+		gridPanel = new GridPanel(this);
+		vScrollBar = new ScrollBar(this);
+		hScrollBar = new ScrollBar(this);
 		cornerPanel = new JPanel();
 
 		buildLayout();
 		addEventListeners();
     }
 
+	// -------------------------------------------------------------------------
+	// Public API
+	// -------------------------------------------------------------------------
+
 	public void setModel(TimelineModel model) {
 		this.model = model;
-		gridPanel.setModel(model);
-		namesPanel.setModel(model);
+		gridPanel.modelChanged(model);
+		namesPanel.modelChanged(model);
+	}
+
+	public TimelineModel getModel() {
+		return model;
 	}
 
 	public void setTheme(Theme theme) {
 		this.theme = theme;
-		menuBarPanel.setTheme(theme);
-		namesPanel.setTheme(theme);
-		gridPanel.setTheme(theme);
-		vScrollBar.setTheme(theme);
-		hScrollBar.setTheme(theme);
+		menuBarPanel.themeChanged(theme);
+		namesPanel.themeChanged(theme);
+		gridPanel.themeChanged(theme);
+		vScrollBar.themeChanged(theme);
+		hScrollBar.themeChanged(theme);
 		cornerPanel.setBackground(theme.COLOR_GRIDPANEL_BACKGROUND);
-		repaint();
 	}
 
 	public Theme getTheme() {
 		return theme;
 	}
 
-	public int getTimeCursorPosition() {
-		return gridPanel.getCurrentTime();
-	}
-
-	public void setTimeCursorPosition(int millis) {
-		gridPanel.setCurrentTime(millis);
+	public void setPlaying(boolean isPlaying) {
+		this.isPlaying = isPlaying;
+		if (isPlaying) menuBarPanel.setPauseBtnVisible();
+		else menuBarPanel.setPlayBtnVisible();
 	}
 
 	public boolean isPlaying() {
-		return playing;
+		return isPlaying;
 	}
 
-	public void setPlaying(boolean playing) {
-		this.playing = playing;
-		gridPanel.setPlaying(playing);
-		
-		if (playing) {
-			menuBarPanel.setPauseBtnVisible();
-		} else {
-			menuBarPanel.setPlayBtnVisible();
+	public void setSelectedElement(Element elem) {
+		Element oldElem = selectedElement;
+		selectedElement = elem;
+		if (oldElem != elem) fireSelectedElementChanged(elem, oldElem);
+	}
+
+	public Element getSelectedElement() {
+		return selectedElement;
+	}
+
+	public void addSelectedNode(Node node) {
+		assert node != null;
+		if (!selectedNodes.contains(node)) {
+			List<Node> oldNodes = Collections.unmodifiableList(selectedNodes);
+			selectedNodes.add(node);
+			List<Node> newNodes = Collections.unmodifiableList(selectedNodes);
+			fireSelectedNodesChanged(newNodes, oldNodes);
 		}
+	}
+
+	public void clearSelectedNodes() {
+		if (!selectedNodes.isEmpty()) {
+			List<Node> oldNodes = Collections.unmodifiableList(selectedNodes);
+			selectedNodes.clear();
+			List<Node> newNodes = Collections.unmodifiableList(selectedNodes);
+			fireSelectedNodesChanged(newNodes, oldNodes);
+		}
+	}
+
+	public List<Node> getSelectedNodes() {
+		return Collections.unmodifiableList(selectedNodes);
+	}
+
+	public void setCurrentTime(int time) {
+		if (time != currentTime) {
+			int oldTime = currentTime;
+			currentTime = time;
+			menuBarPanel.setTime(time);
+			fireCurrentTimeChanged(time, oldTime);
+		}
+	}
+
+	public int getCurrentTime() {
+		return currentTime;
 	}
 
 	// -------------------------------------------------------------------------
@@ -132,9 +180,6 @@ public class TimelinePanel extends JPanel {
 		});
 
 		gridPanel.setCallback(new GridPanel.Callback() {
-			@Override public void currentTimeChanged(int oldTime, int newTime) {menuBarPanel.setTime(newTime); fireTimeCursorPositionChanged(oldTime, newTime);}
-			@Override public void selectedElementChanged(Element selectedElement) {namesPanel.setSelectedElementSilently(selectedElement); fireSelectedElementChanged(selectedElement);}
-			@Override public void selectedNodeChanged(Node selectedNode) {fireSelectedNodeChanged(selectedNode);}
 			@Override public void lengthChanged() {hScrollBar.repaint();}
 			@Override public void scrollRequired(int amount) {vScrollBar.scroll(amount);}
 		});
@@ -142,18 +187,15 @@ public class TimelinePanel extends JPanel {
 		menuBarPanel.setCallback(new MenuBarPanel.Callback() {
 			@Override public void magnifyRequested() {gridPanel.requestMagnification();}
 			@Override public void minifyRequested() {gridPanel.requestMinification();}
-			@Override public void addNodeRequested() {gridPanel.requestAddNode();}
-			@Override public void delNodeRequested() {gridPanel.requestDelNode();}
 			@Override public void playRequested() {firePlayRequested();}
 			@Override public void pauseRequested() {firePauseRequested();}
-			@Override public void goToFirstRequested() {setTimeCursorPosition(TimelineHelper.getFirstTime(model, NodePart.END));}
-			@Override public void goToPreviousRequested() {setTimeCursorPosition(TimelineHelper.getPreviousTime(model, getTimeCursorPosition(), NodePart.END));}
-			@Override public void goToNextRequested() {setTimeCursorPosition(TimelineHelper.getNextTime(model, getTimeCursorPosition(), NodePart.END));}
-			@Override public void goToLastRequested() {setTimeCursorPosition(TimelineHelper.getLastTime(model, NodePart.END));}
+			@Override public void goToFirstRequested() {setCurrentTime(TimelineHelper.getFirstTime(model, NodePart.END));}
+			@Override public void goToPreviousRequested() {setCurrentTime(TimelineHelper.getPreviousTime(model, getCurrentTime(), NodePart.END));}
+			@Override public void goToNextRequested() {setCurrentTime(TimelineHelper.getNextTime(model, getCurrentTime(), NodePart.END));}
+			@Override public void goToLastRequested() {setCurrentTime(TimelineHelper.getLastTime(model, NodePart.END));}
 		});
 
 		namesPanel.setCallback(new NamesPanel.Callback() {
-			@Override public void selectedElementChanged(Element selectedElem) {gridPanel.setSelectedElementSilently(selectedElem);fireSelectedElementChanged(selectedElem);}
 			@Override public void verticalOffsetChanged(int vOffset) {gridPanel.setVerticalOffset(vOffset);}
 			@Override public void scrollRequired(int amount) {vScrollBar.scroll(amount);}
 		});
@@ -163,39 +205,39 @@ public class TimelinePanel extends JPanel {
 	// Events
 	// -------------------------------------------------------------------------
 
-	private final List<EventListener> listeners = new CopyOnWriteArrayList<EventListener>();
-	public void addListener(EventListener listener) {listeners.add(listener);}
+	private final List<Listener> listeners = new CopyOnWriteArrayList<Listener>();
+	public void addListener(Listener listener) {listeners.add(listener);}
 
-	public interface EventListener {
-		public void selectedElementChanged(Element element);
-		public void selectedNodeChanged(Node node);
+	public interface Listener {
 		public void playRequested();
 		public void pauseRequested();
-		public void timeCursorPositionChanged(int oldTime, int newTime);
-	}
-
-	private void fireSelectedElementChanged(Element selectedElement) {
-		for (EventListener listener : listeners)
-			listener.selectedElementChanged(selectedElement);
-	}
-
-	private void fireSelectedNodeChanged(Node selectedNode) {
-		for (EventListener listener : listeners)
-			listener.selectedNodeChanged(selectedNode);
+		public void selectedElementChanged(Element newElem, Element oldElem);
+		public void selectedNodesChanged(List<Node> newNodes, List<Node> oldNodes);
+		public void currentTimeChanged(int newTime, int oldTime);
 	}
 
 	private void firePlayRequested() {
-		for (EventListener listener : listeners)
+		for (Listener listener : listeners)
 			listener.playRequested();
 	}
 
 	private void firePauseRequested() {
-		for (EventListener listener : listeners)
+		for (Listener listener : listeners)
 			listener.pauseRequested();
 	}
 
-	private void fireTimeCursorPositionChanged(int oldTime, int newTime) {
-		for (EventListener listener : listeners)
-			listener.timeCursorPositionChanged(oldTime, newTime);
+	private void fireSelectedElementChanged(Element newElem, Element oldElem) {
+		for (Listener listener : listeners)
+			listener.selectedElementChanged(newElem, oldElem);
+	}
+
+	private void fireSelectedNodesChanged(List<Node> newNodes, List<Node> oldNodes) {
+		for (Listener listener : listeners)
+			listener.selectedNodesChanged(newNodes, oldNodes);
+	}
+
+	private void fireCurrentTimeChanged(int newTime, int oldTime) {
+		for (Listener listener : listeners)
+			listener.currentTimeChanged(newTime, oldTime);
 	}
 }

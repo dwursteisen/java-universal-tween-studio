@@ -88,15 +88,15 @@ public class TimelineModel {
 	// Events
 	// -------------------------------------------------------------------------
 
-	private final List<EventListener> listeners = new CopyOnWriteArrayList<EventListener>();
-	public void addListener(EventListener listener) {listeners.add(listener);}
+	private final List<Listener> listeners = new CopyOnWriteArrayList<Listener>();
+	public void addListener(Listener listener) {listeners.add(listener);}
 
-	public interface EventListener {
+	public interface Listener {
 		public void stateChanged();
 	}
 
 	private void fireStateChanged() {
-		for (EventListener listener : listeners)
+		for (Listener listener : listeners)
 			listener.stateChanged();
 	}
 
@@ -105,7 +105,7 @@ public class TimelineModel {
 	// -------------------------------------------------------------------------
 
 	public static class Element {
-		private final TimelineModel timelineModel;
+		private final TimelineModel model;
 		private final Element parent;
 		private final String name;
 		private final List<Element> children = new ArrayList<Element>(0);
@@ -115,14 +115,14 @@ public class TimelineModel {
 		private Object userData = null;
 
 		public Element(TimelineModel timelineModel, Element parent, String name) {
-			this.timelineModel = timelineModel;
+			this.model = timelineModel;
 			this.parent = parent;
 			this.name = name;
 			this.level = parent != null ? parent.getLevel() + 1 : -1;
 		}
 
 		public TimelineModel getTimelineModel() {
-			return timelineModel;
+			return model;
 		}
 
 		public Element getParent() {
@@ -153,7 +153,7 @@ public class TimelineModel {
 		}
 
 		public Element addChild(String name) {
-			Element child = new Element(timelineModel, this, name);
+			Element child = new Element(model, this, name);
 			children.add(child);
 			return child;
 		}
@@ -161,13 +161,13 @@ public class TimelineModel {
 		public Node addNode(int start, int duration) {
 			Node node = new Node(this, start, duration);
 			nodes.add(node);
-			timelineModel.fireStateChanged();
+			model.fireStateChanged();
 			return node;
 		}
 
 		public void removeNode(Node node) {
 			nodes.remove(node);
-			timelineModel.fireStateChanged();
+			model.fireStateChanged();
 		}
 
 		public boolean isSelectable() {
