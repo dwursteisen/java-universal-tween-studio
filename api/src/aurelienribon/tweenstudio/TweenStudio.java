@@ -5,7 +5,6 @@ import aurelienribon.tweenengine.Tween;
 import aurelienribon.tweenengine.TweenAccessor;
 import aurelienribon.tweenstudio.ui.MainWindow;
 import aurelienribon.tweenstudio.ui.timeline.TimelineHelper;
-import aurelienribon.tweenstudio.ui.timeline.TimelineHelper.NodePart;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Element;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Node;
@@ -108,9 +107,9 @@ public class TweenStudio {
 		if (wnd.isPlaying()) {
 			playTime += deltaMillis;
 			if (playTime <= playDuration) {
-				wnd.setTimeCursorPosition(playTime);
+				wnd.setCurrentTime(playTime);
 			} else {
-				wnd.setTimeCursorPosition(playDuration);
+				wnd.setCurrentTime(playDuration);
 				wnd.setPlaying(false);
 			}
 		}
@@ -145,7 +144,7 @@ public class TweenStudio {
 		for (int tweenType : tweenTypes) {
 			String propertyName = editor.getProperty(target.getClass(), tweenType).getName();
 			Element elem = model.getElement(name + "/" + propertyName);
-			Node node = getNodeAtTime(elem, currentTime);
+			Node node = getNodeOrCreate(elem, currentTime);
 			NodeData nodeData = (NodeData) node.getUserData();
 
 			TweenAccessor accessor = Tween.getRegisteredAccessor(target.getClass());
@@ -233,7 +232,6 @@ public class TweenStudio {
 
 		for (Element elem : model.getElements()) {
 			if (!elem.isSelectable()) continue;
-			elem.sortNodes();
 			
 			for (Node node : elem.getNodes())
 				if (node.getUserData() == null)
@@ -247,35 +245,33 @@ public class TweenStudio {
 
 		timeline.start();
 
-		int time = -1, lastTime = 0, duration = model.getDuration();
+		int time = -1, lastTime = 0, acc = 0;
+
 		while (true) {
-			int t1 = TimelineHelper.getNextTime(model, time, NodePart.START);
-			int t2 = TimelineHelper.getNextTime(model, time, NodePart.END);
-			if (t1 == t2 && t1 == -1) break;
+			time = TimelineHelper.getNextTime(model.getRoot(), time, true);
+			if (time < 0) break;
 
-			if (t1 == t2) time = t1;
-			else if (t1 < t2) time = t1 > time ? t1 : t2;
-			else if (t2 < t1) time = t2 > time ? t2 : t1;
+			timeline.update(time - lastTime);
 
-			int delta = time - lastTime;
+			acc += time - lastTime;
 			lastTime = time;
-			timeline.update(delta);
-
-			if (t1 == t2 && t1 == duration) break;
 		}
 
-		int currentTime = wnd.getCurrentTime();
-		timeline.update(currentTime-duration);
+		assert acc == model.getDuration();
+		timeline.update(wnd.getCurrentTime() - acc);
 	}
 
 	private void createTweens(Element elem, Object target, int tweenType) {
 		for (Node node : elem.getNodes()) {
 			NodeData nodeData = (NodeData) node.getUserData();
+
+			int duration = TimelineHelper.getDuration(node);
+			int delay = node.getTime() - duration;
 			
-			Tween tween = Tween.to(target, tweenType, node.getDuration())
+			Tween tween = Tween.to(target, tweenType, duration)
 				.target(nodeData.getTargets())
 				.ease(nodeData.getEquation())
-				.delay(node.getStart());
+				.delay(delay);
 
 			timeline.push(tween);
 		}
@@ -303,16 +299,17 @@ public class TweenStudio {
 	// Helpers -- misc
 	// -------------------------------------------------------------------------
 
-	private Node getNodeAtTime(Element elem, int time) {
+	private Node getNodeOrCreate(Element elem, int time) {
 		Node node = null;
+
 		for (Node n : elem.getNodes()) {
-			if (n.getEnd() == time) {
+			if (n.getTime() == time) {
 				node = n;
 				break;
 			}
 		}
 
-		if (node == null) node = elem.addNode(time, 0);
+		if (node == null) node = elem.addNode(time);
 		return node;
 	}
 

@@ -1,6 +1,7 @@
 package aurelienribon.tweenstudio.ui.timeline;
 
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Element;
+import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Node;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
@@ -8,6 +9,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.awt.image.BufferedImage;
+import java.util.List;
 import javax.swing.JPanel;
 
 /**
@@ -21,6 +23,7 @@ class NamesPanel extends JPanel implements Scrollable {
 	private final int paddingLeft = 10;
 	private final int paddingIncremental = 30;
 	private final int lineHeight = 20;
+	private final int lineGap = 1;
 
 	private final TimelinePanel parent;
 	private Callback callback;
@@ -32,6 +35,14 @@ class NamesPanel extends JPanel implements Scrollable {
 		addMouseListener(mouseAdapter);
 		addMouseMotionListener(mouseAdapter);
 		addMouseWheelListener(mouseAdapter);
+
+		parent.addListener(new TimelinePanel.Listener() {
+			@Override public void playRequested() {}
+			@Override public void pauseRequested() {}
+			@Override public void selectedElementChanged(Element newElem, Element oldElem) {repaint();}
+			@Override public void selectedNodesChanged(List<Node> newNodes, List<Node> oldNodes) {}
+			@Override public void currentTimeChanged(int newTime, int oldTime) {}
+		});
 	}
 
 	public void setCallback(Callback callback) {
@@ -55,9 +66,9 @@ class NamesPanel extends JPanel implements Scrollable {
 	public int getLength() {
 		TimelineModel model = parent.getModel();
 		int height = model != null
-			? paddingTop + UiHelper.getLinesCount(model) * lineHeight
+			? paddingTop + getLineCount(model.getRoot()) * (lineHeight + lineGap)
 			: 0;
-		return Math.max(0, height) + lineHeight;
+		return Math.max(0, height) + lineHeight + lineGap;
 	}
 
 	@Override
@@ -107,12 +118,14 @@ class NamesPanel extends JPanel implements Scrollable {
 
 		int line = 0;
 		for (Element elem : model.getElements()) {
-			if (!elem.isSelectable()) gg.setColor(theme.COLOR_NAMESPANEL_SECTION_UNUSABLE);
-			else if (elem == selectedElement) gg.setColor(theme.COLOR_NAMESPANEL_SECTION_SELECTED);
-			else if (elem == mouseOverElement) gg.setColor(theme.COLOR_NAMESPANEL_SECTION_MOUSEOVER);
-			else gg.setColor(theme.COLOR_NAMESPANEL_SECTION);
+			if (elem == selectedElement) {
+				gg.setColor(theme.COLOR_NAMESPANEL_SECTION_SELECTED);
+				gg.fillRect(0, line*(lineHeight+lineGap), getWidth(), lineHeight);
+			} else if (elem == mouseOverElement) {
+				gg.setColor(theme.COLOR_NAMESPANEL_SECTION_MOUSEOVER);
+				gg.fillRect(0, line*(lineHeight+lineGap), getWidth(), lineHeight);
+			}
 
-			gg.fillRect(0, line*lineHeight, getWidth(), lineHeight);
 			line += 1;
 		}
 	}
@@ -128,7 +141,7 @@ class NamesPanel extends JPanel implements Scrollable {
 		for (Element elem : model.getElements()) {
 			int level = elem.getLevel();
 			int x = paddingLeft + level*paddingIncremental;
-			int y = line*lineHeight-5;
+			int y = line*(lineHeight+lineGap)-5;
 			Image img = elem.getChildren().isEmpty() ? imgIdxNone : imgIdxClosed;
 
 			gg.drawImage(img, x, y + 7, null);
@@ -136,15 +149,6 @@ class NamesPanel extends JPanel implements Scrollable {
 
 			line += 1;
 		}
-	}
-
-	// -------------------------------------------------------------------------
-	// Helpers
-	// -------------------------------------------------------------------------
-
-	private int getLineFromY(int y) {
-		if (y < paddingTop) return -1;
-		return (y - paddingTop) / lineHeight;
 	}
 
 	// -------------------------------------------------------------------------
@@ -188,4 +192,21 @@ class NamesPanel extends JPanel implements Scrollable {
 			callback.scrollRequired(e.getWheelRotation() * 40);
 		}
 	};
+
+	// -------------------------------------------------------------------------
+	// Helpers
+	// -------------------------------------------------------------------------
+
+	private int getLineFromY(int y) {
+		y += vOffset;
+		if (y < paddingTop) return -1;
+		return (y - paddingTop) / (lineHeight + lineGap);
+	}
+
+	private int getLineCount(Element elem) {
+		int cnt = 1;
+		for (Element child : elem.getChildren())
+			cnt += getLineCount(child);
+		return cnt;
+	}
 }

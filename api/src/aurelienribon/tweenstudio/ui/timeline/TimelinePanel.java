@@ -1,14 +1,11 @@
 package aurelienribon.tweenstudio.ui.timeline;
 
-import aurelienribon.tweenstudio.ui.timeline.TimelineHelper.NodePart;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Element;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Node;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -37,7 +34,7 @@ public class TimelinePanel extends JPanel {
 	private boolean isPlaying = false;
 
 	public TimelinePanel() {
-		this.theme = new Theme(null);
+		this.theme = new Theme();
 
 		menuBarPanel = new MenuBarPanel(this);
 		namesPanel = new NamesPanel(this);
@@ -106,6 +103,22 @@ public class TimelinePanel extends JPanel {
 			List<Node> newNodes = Collections.unmodifiableList(selectedNodes);
 			fireSelectedNodesChanged(newNodes, oldNodes);
 		}
+	}
+
+	public void removeSelectedNode(Node node) {
+		assert node != null;
+		if (selectedNodes.contains(node)) {
+			List<Node> oldNodes = Collections.unmodifiableList(selectedNodes);
+			selectedNodes.remove(node);
+			List<Node> newNodes = Collections.unmodifiableList(selectedNodes);
+			fireSelectedNodesChanged(newNodes, oldNodes);
+		}
+	}
+
+	public void setSelectedNode(Node node) {
+		assert node != null;
+		clearSelectedNodes();
+		addSelectedNode(node);
 	}
 
 	public void clearSelectedNodes() {
@@ -189,10 +202,6 @@ public class TimelinePanel extends JPanel {
 			@Override public void minifyRequested() {gridPanel.requestMinification();}
 			@Override public void playRequested() {firePlayRequested();}
 			@Override public void pauseRequested() {firePauseRequested();}
-			@Override public void goToFirstRequested() {setCurrentTime(TimelineHelper.getFirstTime(model, NodePart.END));}
-			@Override public void goToPreviousRequested() {setCurrentTime(TimelineHelper.getPreviousTime(model, getCurrentTime(), NodePart.END));}
-			@Override public void goToNextRequested() {setCurrentTime(TimelineHelper.getNextTime(model, getCurrentTime(), NodePart.END));}
-			@Override public void goToLastRequested() {setCurrentTime(TimelineHelper.getLastTime(model, NodePart.END));}
 		});
 
 		namesPanel.setCallback(new NamesPanel.Callback() {

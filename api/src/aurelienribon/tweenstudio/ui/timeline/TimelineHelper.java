@@ -2,54 +2,83 @@ package aurelienribon.tweenstudio.ui.timeline;
 
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Element;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Node;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * @author Aurelien Ribon | http://www.aurelienribon.com/
  */
 public class TimelineHelper {
-	public static enum NodePart {START, END}
+	public static int getFirstTime(Element elem, boolean testChildren) {
+		int t = -1;
 
-	public static int getFirstTime(TimelineModel model, NodePart nodePart) {
-		int time = -1;
-		for (Element elem : model.getElements()) {
-			for (Node node : elem.getNodes()) {
-				int t = nodePart == NodePart.START ? node.getStart() : node.getEnd();
-				time = time == -1 ? t : Math.min(time, t);
+		for (Node node : elem.getNodes())
+			t = t == -1 ? node.getTime() : Math.min(t, node.getTime());
+
+		if (testChildren) {
+			for (Element child : elem.getChildren()) {
+				int childT = getFirstTime(child, true);
+				if (childT != -1) t = t == -1 ? childT : Math.min(t, childT);
 			}
 		}
-		return time == -1 ? 0 : time;
+
+		return t;
 	}
 
-	public static int getPreviousTime(TimelineModel model, int currentTime, NodePart nodePart) {
-		int time = -1;
-		for (Element elem : model.getElements())  {
-			for (Node node : elem.getNodes()) {
-				int t = nodePart == NodePart.START ? node.getStart() : node.getEnd();
-				if (t < currentTime) time = Math.max(time, t);
+	public static int getPreviousTime(Element elem, int time, boolean testChildren) {
+		int t = -1;
+
+		for (Node node : elem.getNodes())
+			if (node.getTime() < time)
+				t = t == -1 ? node.getTime() : Math.max(t, node.getTime());
+
+		if (testChildren) {
+			for (Element child : elem.getChildren()) {
+				int childT = getPreviousTime(child, time, true);
+				if (childT != -1) t = t == -1 ? childT : Math.max(t, childT);
 			}
 		}
-		return time == -1 ? currentTime : time;
+
+		return t;
 	}
 
-	public static int getNextTime(TimelineModel model, int currentTime, NodePart nodePart) {
-		int time = Integer.MAX_VALUE;
-		for (Element elem : model.getElements()) {
-			for (Node node : elem.getNodes()) {
-				int t = nodePart == NodePart.START ? node.getStart() : node.getEnd();
-				if (t > currentTime) time = Math.min(time, t);
+	public static int getNextTime(Element elem, int time, boolean testChildren) {
+		int t = -1;
+
+		for (Node node : elem.getNodes())
+			if (node.getTime() > time)
+				t = t == -1 ? node.getTime() : Math.min(t, node.getTime());
+
+		if (testChildren) {
+			for (Element child : elem.getChildren()) {
+				int childT = getNextTime(child, time, true);
+				if (childT != -1) t = t == -1 ? childT : Math.min(t, childT);
 			}
 		}
-		return time == Integer.MAX_VALUE ? currentTime : time;
+
+		return t;
 	}
 
-	public static int getLastTime(TimelineModel model, NodePart nodePart) {
-		int time = 0;
-		for (Element elem : model.getElements()) {
-			for (Node node : elem.getNodes()) {
-				int t = nodePart == NodePart.START ? node.getStart() : node.getEnd();
-				time = Math.max(time, t);
+	public static int getLastTime(Element elem, boolean testChildren) {
+		int t = -1;
+
+		for (Node node : elem.getNodes())
+			t = t == -1 ? node.getTime() : Math.max(t, node.getTime());
+
+		if (testChildren) {
+			for (Element child : elem.getChildren()) {
+				int childT = getLastTime(child, true);
+				if (childT != -1) t = t == -1 ? childT : Math.max(t, childT);
 			}
 		}
-		return time;
+
+		return t;
+	}
+
+	public static int getDuration(Node node) {
+		if (!node.isLinked()) return 0;
+		int t = getPreviousTime(node.getParent(), node.getTime(), false);
+		return t == -1 ? node.getTime() : node.getTime() - t;
 	}
 }

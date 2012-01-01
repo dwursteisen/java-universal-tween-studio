@@ -2,16 +2,22 @@ package aurelienribon.tweenstudio.ui.timeline;
 
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Element;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Node;
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.RenderingHints;
+import java.awt.Stroke;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
+import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JPanel;
 
@@ -23,17 +29,20 @@ class GridPanel extends JPanel implements Scrollable {
 	private final int paddingTop = 30;
 	private final int paddingLeft = 15;
 	private final int lineHeight = 20;
-	private final int nodeWidth = 7;
-	private final int timeScaleLimit = 2;
+	private final int lineGap = 1;
+	private final int linePadding = 3;
+	private final int nodeWidth = 8;
 
 	private final TimelinePanel parent;
 	private Callback callback;
 	private float timeScale = 1;
 	private Element mouseOverElement = null;
 	private Node mouseOverNode = null;
+	private boolean isOverTrack = false;
 	private int vOffset;
 	private int hOffset;
 	private int maxTime = 0;
+	private Rectangle selectionRect = null;
 
 	public GridPanel(TimelinePanel parent) {
 		this.parent = parent;
@@ -124,15 +133,19 @@ class GridPanel extends JPanel implements Scrollable {
 		int currentTime = parent.getCurrentTime();
 		
 		Graphics2D gg = (Graphics2D)g;
+		gg.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		
 		gg.setColor(theme.COLOR_GRIDPANEL_BACKGROUND);
 		gg.fillRect(0, 0, getWidth(), getHeight());
+		
 		if (model == null) return;
 
 		paintSections(gg);
 		paintNodesTracks(gg);
+		paintNodes(gg);
 		paintTimeline(gg);
 		paintTimeCursor(gg);
-		paintNodes(gg);
+		paintSelectionRect(gg);
 
 		int oldMaxTime = maxTime;
 		maxTime = Math.max(model.getDuration(), currentTime);
@@ -142,103 +155,45 @@ class GridPanel extends JPanel implements Scrollable {
 	private void paintSections(final Graphics2D gg) {
 		Theme theme = parent.getTheme();
 		TimelineModel model = parent.getModel();
-		int elemCnt = UiHelper.getLinesCount(model);
 
 		int line = 0;
 		for (Element elem : model.getElements()) {
-			if (elem.isSelectable()) {
-				gg.setColor(theme.COLOR_GRIDPANEL_SECTION);
-			} else {
-				gg.setColor(theme.COLOR_GRIDPANEL_SECTION_UNUSABLE);
-			}
+			int y = getYFromLine(line);
+			
+			if (elem.isSelectable()) gg.setColor(theme.COLOR_GRIDPANEL_SECTION);
+			else gg.setColor(theme.COLOR_GRIDPANEL_SECTION_UNUSABLE);
 
-			gg.fillRect(0, paddingTop-vOffset+lineHeight*line, getWidth(), line != elemCnt-1 ? lineHeight-1 : lineHeight);
+			gg.fillRect(0, y, getWidth(), lineHeight);
 			line += 1;
 		}
-	}
-	
-	private void paintTimeline(Graphics2D gg) {
-		Theme theme = parent.getTheme();
-		int minSeconds = Math.max((int) (timeScale * hOffset / oneSecondWidth), 0);
-		int maxSeconds = (int) (timeScale * getWidth() / oneSecondWidth) + minSeconds + 1;
-		int textOffset = -12;
-		int smallTickHeight = 5;
-		int bigTickHeight = 7;
-
-		gg.setFont(theme.FONT);
-		FontMetrics fm = gg.getFontMetrics();
-
-		for (int i=minSeconds; i<=maxSeconds; i++) {
-			int x = getXFromTime(i*1000);
-
-			String str = String.valueOf(i);
-			gg.setColor(theme.COLOR_FOREGROUND);
-			gg.drawString(str, x - fm.stringWidth(str)/2, paddingTop + textOffset);
-
-			if (timeScale < timeScaleLimit) {
-				gg.setColor(theme.COLOR_GRIDPANEL_TIMELINE);
-				gg.drawRect(x-1, paddingTop - bigTickHeight, 2, getHeight());
-				for (int ii=1; ii<10; ii++) {
-					int xx = getXFromTime(ii*100 + i*1000);
-					gg.drawLine(xx, paddingTop - (ii == 5 ? bigTickHeight : smallTickHeight), xx, paddingTop-1);
-				}
-
-			} else {
-				gg.setColor(theme.COLOR_GRIDPANEL_TIMELINE);
-				gg.drawLine(x, paddingTop - bigTickHeight, x, getHeight());
-				int xx = getXFromTime(5*100 + i*1000);
-				gg.drawLine(xx, paddingTop - bigTickHeight, xx, paddingTop-1);
-			}
-		}
-	}
-
-	private void paintTimeCursor(Graphics2D gg) {
-		Theme theme = parent.getTheme();
-		int currentTime = parent.getCurrentTime();
-
-		int x = getXFromTime(currentTime);
-		int y = paddingTop;
-		gg.setColor(theme.COLOR_GRIDPANEL_CURSOR);
-		gg.fillPolygon(
-			new int[] {x - 8, x, x + 8},
-			new int[] {y - 9, y, y - 9},
-			3);
-		gg.fillRect(x - 1, y - 5, 3, getHeight());
 	}
 
 	private void paintNodesTracks(final Graphics2D gg) {
 		Theme theme = parent.getTheme();
 		TimelineModel model = parent.getModel();
-		List<Node> selectedNodes = parent.getSelectedNodes();
 
 		int line = 0;
+
 		for (Element elem : model.getElements()) {
-			int y = getYFromLine(line);
+			int y = getYFromLine(line), lastX = getXFromTime(0);
 			List<Node> nodes = elem.getNodes();
 
 			for (Node node : nodes) {
-				int x1 = getXFromTime(node.getStart());
-				int x2 = getXFromTime(node.getEnd());
+				int x1 = lastX;
+				int x2 = getXFromTime(node.getTime());
+				lastX = x2;
 
-				if (selectedNodes.contains(node)) gg.setColor(theme.COLOR_GRIDPANEL_NODE_TRACK_SELECTED);
-				else if (node == mouseOverNode) gg.setColor(theme.COLOR_GRIDPANEL_NODE_TRACK_MOUSEOVER);
-				else gg.setColor(theme.COLOR_GRIDPANEL_NODE_TRACK);
-
-				gg.fillRect(x1, y+1, x2-x1, lineHeight-3);
-			}
-
-			for (int i=0, n=nodes.size(); i<n; i++) {
-				Node n1 = nodes.get(i);
-				for (int j=i+1; j<n; j++) {
-					Node n2 = nodes.get(j);
-					int[] ovl = getOverlap(n1, n2);
-					if (ovl != null) {
-						int x3 = getXFromTime(ovl[0]);
-						int x4 = getXFromTime(ovl[1]);
-						gg.setColor(Color.RED);
-						gg.fillRect(x3, y+1, x4-x3, lineHeight-3);
-					}
+				if (node.isLinked()) {
+					gg.setColor(isOverTrack && elem == mouseOverElement
+						? theme.COLOR_GRIDPANEL_TRACK_MOUSEOVER
+						: theme.COLOR_GRIDPANEL_TRACK);
+				} else {
+					gg.setColor(isOverTrack && elem == mouseOverElement
+						? theme.COLOR_GRIDPANEL_TRACK_UNLINKED_MOUSEOVER
+						: theme.COLOR_GRIDPANEL_TRACK_UNLINKED);
 				}
+
+				gg.fillRect(x1, y+linePadding, x2-x1, lineHeight-linePadding*2);
 			}
 
 			line += 1;
@@ -251,180 +206,271 @@ class GridPanel extends JPanel implements Scrollable {
 		List<Node> selectedNodes = parent.getSelectedNodes();
 
 		int line = 0;
+		
 		for (Element elem : model.getElements()) {
 			int y = getYFromLine(line);
 			List<Node> nodes = elem.getNodes();
 
 			for (Node node : nodes) {
-				int x = getXFromTime(node.getEnd());
+				int x = getXFromTime(node.getTime());
 
-				if (selectedNodes.contains(node)) gg.setColor(theme.COLOR_GRIDPANEL_NODE_FILL_SELECTED);
-				else if (node == mouseOverNode) gg.setColor(theme.COLOR_GRIDPANEL_NODE_FILL_MOUSEOVER);
-				else gg.setColor(theme.COLOR_GRIDPANEL_NODE_FILL);
+				Color fill = theme.COLOR_GRIDPANEL_NODE_FILL;
+				Color stroke = theme.COLOR_GRIDPANEL_NODE_STROKE;
 
-				gg.fillOval(x-4, y+2, nodeWidth, lineHeight-6);
-
-				if (selectedNodes.contains(node)) gg.setColor(theme.COLOR_GRIDPANEL_NODE_STROKE_SELECTED);
-				else if (node == mouseOverNode) gg.setColor(theme.COLOR_GRIDPANEL_NODE_STROKE_MOUSEOVER);
-				else gg.setColor(theme.COLOR_GRIDPANEL_NODE_STROKE);
-
-				gg.drawOval(x-4, y+2, nodeWidth, lineHeight-6);
-			}
-
-			for (int i=0, n=nodes.size(); i<n; i++) {
-				Node n1 = nodes.get(i);
-				int x = getXFromTime(n1.getEnd());
-				for (int j=0; j<n; j++) {
-					Node n2 = nodes.get(j);
-					if (n1 == n2) continue;
-					if ((n1.getEnd() > n2.getStart() && n1.getEnd() <= n2.getEnd()) || (n1.getEnd() == n2.getEnd())) {
-						gg.setColor(Color.RED);
-						gg.fillOval(x-4, y+2, nodeWidth, lineHeight-6);
-						gg.setColor(theme.COLOR_GRIDPANEL_NODE_STROKE);
-						gg.drawOval(x-4, y+2, nodeWidth, lineHeight-6);
-					}
+				if (selectedNodes.contains(node)) {
+					fill = theme.COLOR_GRIDPANEL_NODE_FILL_SELECTED;
+					stroke = theme.COLOR_GRIDPANEL_NODE_STROKE_SELECTED;
+				} else if (node == mouseOverNode) {
+					fill = theme.COLOR_GRIDPANEL_NODE_FILL_MOUSEOVER;
+					stroke = theme.COLOR_GRIDPANEL_NODE_STROKE_MOUSEOVER;
 				}
+
+				gg.setColor(fill);
+				gg.fillOval(x-4, y+linePadding+1, nodeWidth, lineHeight-(linePadding+1)*2-1);
+
+				gg.setColor(stroke);
+				gg.drawOval(x-4, y+linePadding+1, nodeWidth, lineHeight-(linePadding+1)*2-1);
 			}
 
 			line += 1;
 		}
 	}
 
-	// -------------------------------------------------------------------------
-	// Helpers
-	// -------------------------------------------------------------------------
+	private void paintTimeline(Graphics2D gg) {
+		Theme theme = parent.getTheme();
+		int minSeconds = Math.max((int) (timeScale * hOffset / oneSecondWidth), 0);
+		int maxSeconds = (int) (timeScale * getWidth() / oneSecondWidth) + minSeconds + 1;
+		int textOffset = -12;
+		int tickHeight = 5;
 
-	private int getTimeFromX(int x) {
-		int time = (int) ((x - paddingLeft + hOffset) * 1000f / oneSecondWidth * timeScale);
-		time = time > 0 ? time : 0;
-		if (timeScale < timeScaleLimit) {
-			time = Math.round(time / 100f) * 100;
-		} else {
-			time = Math.round(time / 500f) * 500;
+		gg.setColor(theme.COLOR_GRIDPANEL_BACKGROUND);
+		gg.fillRect(0, 0, getWidth(), paddingTop);
+
+		gg.setFont(theme.FONT);
+		FontMetrics fm = gg.getFontMetrics();
+
+		for (int i=minSeconds; i<=maxSeconds; i++) {
+			int x = getXFromTime(i*1000);
+
+			String str = String.valueOf(i);
+			gg.setColor(theme.COLOR_FOREGROUND);
+			gg.drawString(str, x - fm.stringWidth(str)/2, paddingTop + textOffset);
+
+			gg.setColor(theme.COLOR_GRIDPANEL_TIMELINE);
+			gg.fillRect(x-1, paddingTop - tickHeight, 2, getHeight());
+			for (int ii=1; ii<10; ii++) {
+				int xx = getXFromTime(ii*100 + i*1000);
+				gg.drawLine(xx, paddingTop - tickHeight, xx, paddingTop-1);
+			}
 		}
-		return Math.max(time, 0);
 	}
 
-	private int getXFromTime(int millis) {
-		return (int) (millis / 1000f * oneSecondWidth / timeScale + paddingLeft - hOffset);
+	private void paintTimeCursor(Graphics2D gg) {
+		Theme theme = parent.getTheme();
+		int currentTime = parent.getCurrentTime();
+
+		int x = getXFromTime(currentTime);
+		int y = paddingTop;
+
+		gg.setColor(theme.COLOR_GRIDPANEL_CURSOR);
+		gg.fillPolygon(new int[] {x - 8, x, x + 8}, new int[] {y - 9, y, y - 9}, 3);
+		gg.fillRect(x, y - 5, 1, getHeight());
 	}
 
-	private int getLineFromY(int y) {
-		if (y < paddingTop) return -1;
-		return (y - paddingTop + vOffset) / lineHeight;
-	}
+	private void paintSelectionRect(Graphics2D gg) {
+		if (selectionRect == null) return;
+		Theme theme = parent.getTheme();
 
-	private int getYFromLine(int line) {
-		return paddingTop - vOffset + lineHeight * line;
-	}
+		int x = Math.min(selectionRect.x, selectionRect.x + selectionRect.width);
+		int y = Math.min(selectionRect.y, selectionRect.y + selectionRect.height);
+		int w = Math.abs(selectionRect.width);
+		int h = Math.abs(selectionRect.height);
 
-	private int[] getOverlap(Node n1, Node n2) {
-		int n1s = n1.getStart();
-		int n1e = n1.getEnd();
-		int n2s = n2.getStart();
-		int n2e = n2.getEnd();
-		if (n1s <= n2s && n1e >= n2e) return new int[] {n2s, n2e};
-		if (n1s >= n2s && n1e <= n2e) return new int[] {n1s, n1e};
-		if (n1s >= n2s && n1s < n2e && n1e >= n2e) return new int[] {n1s, n2e};
-		if (n1s <= n2s && n1e <= n2e && n1e > n2s) return new int[] {n2s, n1e};
-		return null;
+		Stroke stroke = gg.getStroke();
+		gg.setStroke(new BasicStroke(3));
+
+		gg.setColor(theme.COLOR_GRIDPANEL_SELECTION_FILL);
+		gg.fillRect(x, y, w, h);
+		gg.setColor(theme.COLOR_GRIDPANEL_SELECTION_STROKE);
+		gg.drawRect(x, y, w, h);
+
+		gg.setStroke(stroke);
 	}
 
 	// -------------------------------------------------------------------------
 	// Input -- Mouse
 	// -------------------------------------------------------------------------
 
+	private enum MouseState {IDLE, DRAW_SELECTION, DRAG_CURSOR, DRAG_NODES, DRAG_TRACK}
+
 	private final MouseAdapter mouseAdapter = new MouseAdapter() {
-		private final int MODE_DRAW_SELECTION = 1;
-		private final int MODE_DRAG_CURSOR = 2;
-		private final int MODE_DRAG_NODES = 3;
+		private MouseState state;
 		private int lastTime;
 
 		@Override
 		public void mousePressed(MouseEvent e) {
-			TimelineModel model = parent.getModel();
-			if (model == null || parent.isPlaying()) return;
+			if (parent.getModel() == null || parent.isPlaying()) return;
+			if (e.getButton() != MouseEvent.BUTTON1) return;
 
-			lastTime = getTimeFromX(e.getX());
+			int eTime = getTimeFromX(e.getX());
+			int eLine = getLineFromY(e.getY());
 
-			if (e.getButton() == MouseEvent.BUTTON1) {
-				if (getLineFromY(e.getY()) < 0) {
-					setCurrentTime(lastTime);
-				} else {
-					setSelectedElement(mouseOverElement);
-					setSelectedNode(mouseOverNode);
+			if (eLine < 0) {
+				state = MouseState.DRAG_CURSOR;
+				parent.setCurrentTime(eTime);
+
+			} else if (mouseOverNode != null) {
+				state = MouseState.DRAG_NODES;
+				if (!parent.getSelectedNodes().contains(mouseOverNode)) {
+					if (e.isControlDown()) parent.addSelectedNode(mouseOverNode);
+					else parent.setSelectedNode(mouseOverNode);
 				}
-
-			} else if (e.getButton() == MouseEvent.BUTTON2) {
-				setCurrentTime(lastTime);
+				
+			} else {
+				state = MouseState.IDLE;
+				selectionRect = new Rectangle(e.getPoint());
 			}
+
+			lastTime = eTime;
+		}
+
+		@Override
+		public void mouseReleased(MouseEvent e) {
+			if (e.getButton() != MouseEvent.BUTTON1) return;
+
+			int eTime = getTimeFromX(e.getX());
+
+			switch (state) {
+				case IDLE:
+					parent.setSelectedElement(mouseOverElement);
+					parent.clearSelectedNodes();
+					parent.setCurrentTime(eTime);
+					break;
+
+				case DRAG_NODES:
+					correctTimeline();
+					parent.setCurrentTime(eTime);
+					break;
+
+				case DRAW_SELECTION:
+					if (!e.isControlDown()) parent.clearSelectedNodes();
+					
+					int rx = Math.min(selectionRect.x, selectionRect.x + selectionRect.width);
+					int ry = Math.min(selectionRect.y, selectionRect.y + selectionRect.height);
+					int rw = Math.abs(selectionRect.width);
+					int rh = Math.abs(selectionRect.height);
+					selectionRect = null;
+
+					Rectangle rect = new Rectangle(rx, ry, rw, rh);
+					int line = 0;
+
+					for (Element elem : parent.getModel().getElements()) {
+						int y = getYFromLine(line) + lineHeight/2;
+						line += 1;
+
+						for (Node node : elem.getNodes()) {
+							int x = getXFromTime(node.getTime());
+							if (rect.contains(x, y) && e.isControlDown()) {
+								if (parent.getSelectedNodes().contains(node)) parent.removeSelectedNode(node);
+								else parent.addSelectedNode(node);
+							} else if (rect.contains(x, y)) {
+								parent.addSelectedNode(node);
+							}
+						}
+					}
+					break;
+			}
+			
+			repaint();
 		}
 
 		@Override
 		public void mouseDragged(MouseEvent e) {
-			if (model == null || playing) return;
+			if (parent.getModel() == null || parent.isPlaying()) return;
 
-			int newTime = getTimeFromX(e.getX());
-			int deltaTime = newTime - lastTime;
-			lastTime = newTime;
+			int eTime = getTimeFromX(e.getX());
+			int deltaTime = eTime - lastTime;
 
-			if (getLineFromY(e.getY()) < 0) {
-				setCurrentTime(newTime);
-
-			} else if (mouseOverNode != null && selectedNode != null && e.isShiftDown()) {
-				deltaTime = selectedNode.getStart() + deltaTime >= 0 ? deltaTime : -selectedNode.getStart();
-				deltaTime = selectedNode.getDuration() - deltaTime >= 0 ? deltaTime : +selectedNode.getDuration();
-				selectedNode.setStart(Math.max(0, selectedNode.getStart() + deltaTime));
-				selectedNode.setDuration(Math.max(0, selectedNode.getDuration() - deltaTime));
-				repaint();
-
-			} else if (mouseOverNode != null && selectedNode != null && !e.isShiftDown()) {
-				selectedNode.setStart(Math.max(0, selectedNode.getStart() + deltaTime));
-				setCurrentTime(selectedNode.getEnd());
+			if (state == MouseState.IDLE && isOverTrack) {
+				state = MouseState.DRAG_TRACK;
+			} else if (state == MouseState.IDLE) {
+				state = MouseState.DRAW_SELECTION;
 			}
+
+			switch (state) {
+				case DRAG_CURSOR:
+					parent.setCurrentTime(eTime);
+					break;
+
+				case DRAG_NODES:
+					if (deltaTime < 0) deltaTime = Math.max(deltaTime, -getMinTime(parent.getSelectedNodes()));
+					for (Node n : parent.getSelectedNodes()) n.setTime(n.getTime() + deltaTime);
+					break;
+
+				case DRAG_TRACK:
+					if (deltaTime < 0) deltaTime = Math.max(deltaTime, -getMinTime(mouseOverElement.getNodes()));
+					for (Node n : mouseOverElement.getNodes()) n.setTime(n.getTime() + deltaTime);
+					break;
+
+				case DRAW_SELECTION:
+					selectionRect.setSize(e.getX() - selectionRect.x, e.getY() - selectionRect.y);
+					break;
+			}
+			
+			repaint();
+			lastTime = eTime;
 		}
 
 		@Override
 		public void mouseMoved(final MouseEvent e) {
-			if (model == null || playing) return;
+			if (parent.getModel() == null || parent.isPlaying()) return;
 
-			int evTime = getTimeFromX(e.getX());
-			int evLine = getLineFromY(e.getY());
+			int eTime = getTimeFromX(e.getX());
+			int eLine = getLineFromY(e.getY());
 
-			Node oldMouseOverNode = mouseOverNode;
-			Element oldMouseOverElement = mouseOverElement;
+			Node oldNode = mouseOverNode;
+			Element oldElement = mouseOverElement;
 			mouseOverNode = null;
 			mouseOverElement = null;
+			isOverTrack = false;
 
 			int line = 0;
-			for (Element elem : model.getElements()) {
-				if (evLine == line && elem.isSelectable()) {
+			
+			for (Element elem : parent.getModel().getElements()) {
+				if (eLine == line && elem.isSelectable()) {
 					mouseOverElement = elem;
-					for (Node node : elem.getNodes()) {
-						if (evTime >= node.getStart() && evTime <= node.getEnd()) {
-							mouseOverNode = node;
-							break;
-						}
-					}
+					break;
 				}
 
 				line += 1;
 			}
 
-			if (oldMouseOverNode != mouseOverNode
-			|| oldMouseOverElement != mouseOverElement)
-				repaint();
+			if (mouseOverElement != null) {
+				for (Node node : mouseOverElement.getNodes()) {
+					if (eTime == node.getTime()) {
+						mouseOverNode = node;
+						break;
+					}
+				}
+			}
+			
+			if (mouseOverElement != null && mouseOverNode == null && mouseOverElement.getNodes().size() > 1) {
+				Node n = mouseOverElement.getNodes().get(mouseOverElement.getNodes().size()-1);
+				isOverTrack = 0 <= eTime && eTime <= n.getTime();
+			}
 
-			setCursor(mouseOverNode != null 
+			if (oldNode != mouseOverNode || oldElement != mouseOverElement) repaint();
+
+			setCursor(isOverTrack
 				? Cursor.getPredefinedCursor(Cursor.E_RESIZE_CURSOR)
 				: Cursor.getDefaultCursor());
 		}
 
 		@Override
 		public void mouseExited(MouseEvent e) {
-			if (model == null || playing) return;
-
+			mouseOverElement = null;
 			mouseOverNode = null;
+			isOverTrack = false;
 			repaint();
 		}
 
@@ -441,12 +487,78 @@ class GridPanel extends JPanel implements Scrollable {
 	private final KeyAdapter keyAdapter = new KeyAdapter() {
 		@Override
 		public void keyPressed(KeyEvent e) {
-			if (model == null || playing) return;
+			if (parent.getModel() == null || parent.isPlaying()) return;
 			
 			switch (e.getKeyCode()) {
-				case KeyEvent.VK_ENTER: requestAddNode(); break;
-				case KeyEvent.VK_DELETE: requestDelNode(); break;
+				case KeyEvent.VK_ENTER:
+					Element elem = parent.getSelectedElement();
+					if (elem != null) {
+						Node node = elem.addNode(parent.getCurrentTime());
+						parent.clearSelectedNodes();
+						parent.addSelectedNode(node);
+					}
+					break;
+
+				case KeyEvent.VK_DELETE:
+					List<Node> nodes = new ArrayList<Node>(parent.getSelectedNodes());
+					parent.clearSelectedNodes();
+					for (Node node : nodes) node.getParent().removeNode(node);
+					break;
 			}
 		}
 	};
+
+	// -------------------------------------------------------------------------
+	// Helpers
+	// -------------------------------------------------------------------------
+
+	private int getTimeFromX(int x) {
+		int time = (int) ((x - paddingLeft + hOffset) * 1000f / oneSecondWidth * timeScale);
+		time = time > 0 ? time : 0;
+		time = Math.round(time / 100f) * 100;
+		return Math.max(time, 0);
+	}
+
+	private int getXFromTime(int millis) {
+		return (int) (millis / 1000f * oneSecondWidth / timeScale + paddingLeft - hOffset);
+	}
+
+	private int getLineFromY(int y) {
+		if (y < paddingTop) return -1;
+		return (y - paddingTop + vOffset) / (lineHeight + lineGap);
+	}
+
+	private int getYFromLine(int line) {
+		return paddingTop - vOffset + (lineHeight + lineGap) * line;
+	}
+
+	private int getMinTime(List<Node> nodes) {
+		int t = -1;
+		for (Node n : nodes)
+			t = t == -1 ? n.getTime() : Math.min(t, n.getTime());
+		return t;
+	}
+
+	private void correctTimeline() {
+		for (Element elem : parent.getModel().getElements()) {
+			List<Node> nodes = new ArrayList<Node>();
+
+			for (int i=0; i<elem.getNodes().size(); i++) {
+				Node n1 = elem.getNodes().get(i);
+				boolean isAlone = true;
+
+				for (int j=i+1; j<elem.getNodes().size(); j++) {
+					Node n2 = elem.getNodes().get(j);
+					if (n1.getTime() == n2.getTime()) {
+						isAlone = false;
+						break;
+					}
+				}
+
+				if (isAlone) nodes.add(n1);
+			}
+
+			elem.setNodes(nodes);
+		}
+	}
 }

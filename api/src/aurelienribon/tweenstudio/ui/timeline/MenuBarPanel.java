@@ -5,6 +5,7 @@ import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Node;
 import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
 import java.util.List;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -43,53 +44,69 @@ class MenuBarPanel extends JPanel {
 		goToLastBtn = new ImageButton(theme.COLOR_MENUBAR_BACKGROUND, "ic_goToLast.png");
 
 		magBtn.addActionListener(new ActionListener() {
-			@Override public void actionPerformed(ActionEvent e) {callback.magnifyRequested();}
+			@Override public void actionPerformed(ActionEvent e) {
+				callback.magnifyRequested();
+			}
 		});
 
 		minBtn.addActionListener(new ActionListener() {
-			@Override public void actionPerformed(ActionEvent e) {callback.minifyRequested();}
+			@Override public void actionPerformed(ActionEvent e) {
+				callback.minifyRequested();
+			}
 		});
 
 		addNodeBtn.addActionListener(new ActionListener() {
 			@Override public void actionPerformed(ActionEvent e) {
 				Element elem = parent.getSelectedElement();
 				if (elem != null) {
-					Node node = elem.addNode(parent.getCurrentTime(), 0);
+					Node node = elem.addNode(parent.getCurrentTime());
 					parent.clearSelectedNodes();
 					parent.addSelectedNode(node);
-					repaint();
 				}
 			}
 		});
 
 		delNodeBtn.addActionListener(new ActionListener() {
 			@Override public void actionPerformed(ActionEvent e) {
-				List<Node> nodes = parent.getSelectedNodes();
+				List<Node> nodes = new ArrayList<Node>(parent.getSelectedNodes());
 				parent.clearSelectedNodes();
-				for (Node node : nodes)
-					node.getParent().removeNode(node);
-				repaint();
+				for (Node node : nodes) node.getParent().removeNode(node);
 			}
 		});
 
 		playBtn.addActionListener(new ActionListener() {
-			@Override public void actionPerformed(ActionEvent e) {if (playBtn.getImageIdx() == 0) callback.playRequested(); else callback.pauseRequested();}
+			@Override public void actionPerformed(ActionEvent e) {
+				if (playBtn.getImageIdx() == 0) callback.playRequested();
+				else callback.pauseRequested();
+			}
 		});
 
 		goToFirstBtn.addActionListener(new ActionListener() {
-			@Override public void actionPerformed(ActionEvent e) {callback.goToFirstRequested();}
+			@Override public void actionPerformed(ActionEvent e) {
+				int time = TimelineHelper.getFirstTime(parent.getModel().getRoot(), true);
+				if (time > -1) parent.setCurrentTime(time);
+			}
 		});
 
 		goToPreviousBtn.addActionListener(new ActionListener() {
-			@Override public void actionPerformed(ActionEvent e) {callback.goToPreviousRequested();}
+			@Override public void actionPerformed(ActionEvent e) {
+				int time = TimelineHelper.getPreviousTime(parent.getModel().getRoot(), parent.getCurrentTime(), true);
+				if (time > -1) parent.setCurrentTime(time);
+			}
 		});
 
 		goToNextBtn.addActionListener(new ActionListener() {
-			@Override public void actionPerformed(ActionEvent e) {callback.goToNextRequested();}
+			@Override public void actionPerformed(ActionEvent e) {
+				int time = TimelineHelper.getNextTime(parent.getModel().getRoot(), parent.getCurrentTime(), true);
+				if (time > -1) parent.setCurrentTime(time);
+			}
 		});
 
 		goToLastBtn.addActionListener(new ActionListener() {
-			@Override public void actionPerformed(ActionEvent e) {callback.goToLastRequested();}
+			@Override public void actionPerformed(ActionEvent e) {
+				int time = TimelineHelper.getLastTime(parent.getModel().getRoot(), true);
+				if (time > -1) parent.setCurrentTime(time);
+			}
 		});
 
 		timeLbl = new JLabel();
@@ -153,9 +170,5 @@ class MenuBarPanel extends JPanel {
 		public void minifyRequested();
 		public void playRequested();
 		public void pauseRequested();
-		public void goToFirstRequested();
-		public void goToPreviousRequested();
-		public void goToNextRequested();
-		public void goToLastRequested();
 	}
 }

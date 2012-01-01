@@ -20,7 +20,7 @@ public class ImportExportHelper {
 				NodeData nodeData = (NodeData) node.getUserData();
 
 				str += elem.getParent().getName() + ";" + elem.getName() + ";"
-					+ node.getStart() + ";" + node.getDuration() + ";"
+					+ node.getTime() + ";" + node.isLinked() + ";"
 					+ nodeData.getEquation().toString();
 
 				for (int i=0; i<nodeData.getTargets().length; i++) {
@@ -42,8 +42,8 @@ public class ImportExportHelper {
 			if (parts.length < 5) continue;
 
 			String elementPath = parts[0] + "/" + parts[1];
-			int delay = Integer.parseInt(parts[2]);
-			int duration = Integer.parseInt(parts[3]);
+			int time = Integer.parseInt(parts[2]);
+			boolean isLinked = Boolean.parseBoolean(parts[3]);
 			TweenEquation equation = TweenEquation.parse(parts[4]);
 
 			float[] targets = new float[parts.length-5];
@@ -56,7 +56,8 @@ public class ImportExportHelper {
 				nodeData.setEquation(equation);
 				nodeData.setTargets(targets);
 
-				Node node = elem.addNode(delay, duration);
+				Node node = elem.addNode(time);
+				node.setLinked(isLinked);
 				node.setUserData(nodeData);
 
 			} else {

@@ -60,6 +60,10 @@ public class MainWindow extends javax.swing.JFrame {
 		return timelinePanel.getCurrentTime();
 	}
 
+	public void setCurrentTime(int time) {
+		timelinePanel.setCurrentTime(time);
+	}
+
 	public boolean isPlaying() {
 		return timelinePanel.isPlaying();
 	}

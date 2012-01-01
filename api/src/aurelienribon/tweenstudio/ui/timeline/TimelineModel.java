@@ -2,6 +2,7 @@ package aurelienribon.tweenstudio.ui.timeline;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -10,7 +11,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public class TimelineModel {
     private final Element root = new Element(this, null, "root");
-	private int duration = 0;
 
 	// -------------------------------------------------------------------------
 	// public API
@@ -66,10 +66,10 @@ public class TimelineModel {
 	}
 
 	public int getDuration() {
-		duration = 0;
+		int duration = 0;
 		for (Element elem : getElements())
 			for (Node n : elem.getNodes())
-				duration = Math.max(duration, n.getEnd());
+				duration = Math.max(duration, n.getTime());
 		return duration;
 	}
 
@@ -101,7 +101,7 @@ public class TimelineModel {
 	}
 
 	// -------------------------------------------------------------------------
-	// Inner classes
+	// Inner classes -- Element
 	// -------------------------------------------------------------------------
 
 	public static class Element {
@@ -158,15 +158,22 @@ public class TimelineModel {
 			return child;
 		}
 
-		public Node addNode(int start, int duration) {
-			Node node = new Node(this, start, duration);
+		public Node addNode(int time) {
+			Node node = new Node(this, time);
 			nodes.add(node);
+			sortNodes();
 			model.fireStateChanged();
 			return node;
 		}
 
 		public void removeNode(Node node) {
 			nodes.remove(node);
+			model.fireStateChanged();
+		}
+
+		public void setNodes(List<Node> nodes) {
+			this.nodes.clear();
+			this.nodes.addAll(nodes);
 			model.fireStateChanged();
 		}
 
@@ -186,66 +193,52 @@ public class TimelineModel {
 			this.userData = userData;
 		}
 
-		public void sortNodes() {
-			List<Node> unsortedNodes = new ArrayList<Node>(nodes);
-			List<Node> sortedNodes = new ArrayList<Node>();
-
-			while (!unsortedNodes.isEmpty()) {
-				Node firstNode = unsortedNodes.get(0);
-				for (Node n : unsortedNodes) {
-					boolean test1 = n.getStart() < firstNode.getStart();
-					boolean test2 = n.getStart() == firstNode.getStart() && n.getEnd() < firstNode.getEnd();
-					if (test1 || test2) firstNode = n;
+		private void sortNodes() {
+			Collections.sort(nodes, new Comparator<Node>() {
+				@Override public int compare(Node o1, Node o2) {
+					return o1.getTime() - o2.getTime();
 				}
-				unsortedNodes.remove(firstNode);
-				sortedNodes.add(firstNode);
-			}
-
-			nodes.clear();
-			nodes.addAll(sortedNodes);
+			});
 		}
 	}
 
+	// -------------------------------------------------------------------------
+	// Inner classes -- Node
+	// -------------------------------------------------------------------------
+
 	public static class Node {
 		private final Element parent;
-		private int start;
-		private int duration;
+		private int time;
+		private boolean isLinked = true;
 		private Object userData = null;
 
-		public Node(Element parent, int delay, int duration) {
+		public Node(Element parent, int time) {
 			this.parent = parent;
-			this.start = delay;
-			this.duration = duration;
+			this.time = time;
 		}
 
-		public int getStart() {
-			return start;
-		}
-
-		public int getDuration() {
-			return duration;
-		}
-
-		public int getEnd() {
-			return start + duration;
+		public int getTime() {
+			return time;
 		}
 
 		public Element getParent() {
 			return parent;
 		}
 
-		public void setStart(int start) {
-			if (this.start != start) {
-				this.start = start;
+		public void setTime(int time) {
+			if (this.time != time) {
+				this.time = time;
+				parent.sortNodes();
 				parent.getTimelineModel().fireStateChanged();
 			}
 		}
 
-		public void setDuration(int duration) {
-			if (this.duration != duration) {
-				this.duration = duration;
-				parent.getTimelineModel().fireStateChanged();
-			}
+		public boolean isLinked() {
+			return isLinked;
+		}
+
+		public void setLinked(boolean isLinked) {
+			this.isLinked = isLinked;
 		}
 
 		public Object getUserData() {
