@@ -304,6 +304,7 @@ class GridPanel extends JPanel implements Scrollable {
 
 	private final MouseAdapter mouseAdapter = new MouseAdapter() {
 		private MouseState state;
+		private boolean isPressed = false;
 		private int lastTime;
 
 		@Override
@@ -330,6 +331,7 @@ class GridPanel extends JPanel implements Scrollable {
 				selectionRect = new Rectangle(e.getPoint());
 			}
 
+			isPressed = true;
 			lastTime = eTime;
 		}
 
@@ -378,7 +380,8 @@ class GridPanel extends JPanel implements Scrollable {
 					}
 					break;
 			}
-			
+
+			isPressed = false;
 			repaint();
 		}
 
@@ -466,10 +469,12 @@ class GridPanel extends JPanel implements Scrollable {
 
 		@Override
 		public void mouseExited(MouseEvent e) {
-			mouseOverElement = null;
-			mouseOverNode = null;
-			isOverTrack = false;
-			repaint();
+			if (!isPressed) {
+				mouseOverElement = null;
+				mouseOverNode = null;
+				isOverTrack = false;
+				repaint();
+			}
 		}
 
 		@Override

@@ -1,12 +1,4 @@
-Logo LibGDX;position;1900;true;Linear.INOUT;2.5;2.3437498
-Logo LibGDX;position;3000;true;Linear.INOUT;2.5;2.3437498
-Logo LibGDX;position;3800;true;Linear.INOUT;2.5;2.3437498
-Logo LibGDX;position;4500;true;Linear.INOUT;2.5;2.3437498
-Logo LibGDX;rotation;2600;true;Linear.INOUT;0.0
-Logo LibGDX;rotation;3400;true;Linear.INOUT;0.0
-Logo LibGDX;rotation;4100;true;Linear.INOUT;0.0
-Logo LibGDX;opacity;3100;true;Linear.INOUT;0.99607843
-Logo LibGDX;opacity;4000;true;Linear.INOUT;0.99607843
-Logo LibGDX;scale;1100;true;Linear.INOUT;1.0;1.0
-Logo LibGDX;scale;2200;true;Linear.INOUT;1.0;1.0
-Logo LibGDX;scale;4900;true;Quad.IN;1.0;1.0
+Logo LibGDX;position;1000;true;Linear.INOUT;-1.3437457;3.9375494
+Logo LibGDX;position;2000;true;Linear.INOUT;1.1250043;-3.1561878
+Logo LibGDX;rotation;1000;true;Linear.INOUT;-64.0
+Logo LibGDX;rotation;2000;true;Linear.INOUT;0.0

@@ -5,18 +5,18 @@ package aurelienribon.tweenstudio;
  */
 public class ElementData {
 	private final Object target;
-	private final int id;
+	private final Property property;
 
-	public ElementData(Object target, int tweenType) {
+	public ElementData(Object target, Property property) {
 		this.target = target;
-		this.id = tweenType;
+		this.property = property;
 	}
 
 	public Object getTarget() {
 		return target;
 	}
 
-	public int getTweenType() {
-		return id;
+	public Property getProperty() {
+		return property;
 	}
 }

@@ -2,9 +2,6 @@ package aurelienribon.tweenstudio.ui.timeline;
 
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Element;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Node;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 /**
  * @author Aurelien Ribon | http://www.aurelienribon.com/
@@ -80,5 +77,19 @@ public class TimelineHelper {
 		if (!node.isLinked()) return 0;
 		int t = getPreviousTime(node.getParent(), node.getTime(), false);
 		return t == -1 ? node.getTime() : node.getTime() - t;
+	}
+
+	public static Node getNodeOrCreate(Element elem, int time) {
+		Node node = null;
+
+		for (Node n : elem.getNodes()) {
+			if (n.getTime() == time) {
+				node = n;
+				break;
+			}
+		}
+
+		if (node == null) node = elem.addNode(time);
+		return node;
 	}
 }

@@ -143,7 +143,7 @@ public class TweenStudio {
 		for (int tweenType : tweenTypes) {
 			String propertyName = editor.getProperty(target.getClass(), tweenType).getName();
 			Element elem = model.getElement(name + "/" + propertyName);
-			Node node = getNodeOrCreate(elem, currentTime);
+			Node node = TimelineHelper.getNodeOrCreate(elem, currentTime);
 			NodeData nodeData = (NodeData) node.getUserData();
 
 			TweenAccessor accessor = Tween.getRegisteredAccessor(target.getClass());
@@ -178,11 +178,11 @@ public class TweenStudio {
 			List<Property> properties = editor.getProperties(target.getClass());
 			Element elem = model.addElement(namesMap.get(target));
 			elem.setSelectable(false);
-			elem.setUserData(new ElementData(target, -1));
+			elem.setUserData(new ElementData(target, null));
 
 			for (Property property : properties) {
 				elem = model.addElement(namesMap.get(target) + "/" + property.getName());
-				elem.setUserData(new ElementData(target, property.getId()));
+				elem.setUserData(new ElementData(target, property));
 			}
 		}
 	}
@@ -226,8 +226,8 @@ public class TweenStudio {
 
 			ElementData elemData = (ElementData) elem.getUserData();
 			
-			createTweens(elem, elemData.getTarget(), elemData.getTweenType());
-			setToInitialState(elemData.getTarget(), elemData.getTweenType());
+			createTweens(elem, elemData.getTarget(), elemData.getProperty().getId());
+			setToInitialState(elemData.getTarget(), elemData.getProperty().getId());
 		}
 
 		timeline.start();
@@ -266,11 +266,11 @@ public class TweenStudio {
 
 	private void createNodeData(Node node) {
 		ElementData elemData = (ElementData) node.getParent().getUserData();
-		Property property = editor.getProperty(elemData.getTarget().getClass(), elemData.getTweenType());
+		Property property = elemData.getProperty();
 
 		NodeData nodeData = new NodeData(property.getFields().length);
 		TweenAccessor accessor = Tween.getRegisteredAccessor(elemData.getTarget().getClass());
-		accessor.getValues(elemData.getTarget(), elemData.getTweenType(), nodeData.getTargets());
+		accessor.getValues(elemData.getTarget(), property.getId(), nodeData.getTargets());
 		node.setUserData(nodeData);
 	}
 
@@ -280,24 +280,6 @@ public class TweenStudio {
 
 		TweenAccessor accessor = Tween.getRegisteredAccessor(target.getClass());
 		accessor.setValues(target, tweenType, initValues);
-	}
-
-	// -------------------------------------------------------------------------
-	// Helpers -- misc
-	// -------------------------------------------------------------------------
-
-	private Node getNodeOrCreate(Element elem, int time) {
-		Node node = null;
-
-		for (Node n : elem.getNodes()) {
-			if (n.getTime() == time) {
-				node = n;
-				break;
-			}
-		}
-
-		if (node == null) node = elem.addNode(time);
-		return node;
 	}
 
 	// -------------------------------------------------------------------------
