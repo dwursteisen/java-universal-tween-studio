@@ -6,11 +6,12 @@ package aurelienribon.tweenstudio;
 public class Property {
 	private final int id;
 	private final String name;
-	private int attrsCnt = -1;
+	private final Field[] fields;
 
-	public Property(int tweenType, String name) {
+	public Property(int tweenType, String name, Field... fields) {
 		this.id = tweenType;
 		this.name = name;
+		this.fields = fields;
 	}
 
 	public int getId() {
@@ -21,11 +22,30 @@ public class Property {
 		return name;
 	}
 
-	public int getAttributesCount() {
-		return attrsCnt;
+	public Field[] getFields() {
+		return fields;
 	}
 
-	public void setAttributesCount(int count) {
-		this.attrsCnt = count;
+	// -------------------------------------------------------------------------
+
+	public static class Field {
+		public final String name;
+		public final float min;
+		public final float max;
+		public final float step;
+
+		public Field(String name, float step) {
+			this.name = name;
+			this.min = -9999999;
+			this.max = +9999999;
+			this.step = step;
+		}
+
+		public Field(String name, float min, float max, float step) {
+			this.name = name;
+			this.min = min;
+			this.max = max;
+			this.step = step;
+		}
 	}
 }

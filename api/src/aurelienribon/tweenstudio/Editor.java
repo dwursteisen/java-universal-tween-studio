@@ -1,5 +1,6 @@
 package aurelienribon.tweenstudio;
 
+import aurelienribon.tweenstudio.Property.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -14,7 +15,7 @@ public abstract class Editor {
 	private TweenStudio studio;
 
 	// -------------------------------------------------------------------------
-	// Abstract
+	// Public API
 	// -------------------------------------------------------------------------
 
 	public abstract void initialize();
@@ -23,13 +24,27 @@ public abstract class Editor {
 	public abstract void setFileContent(String filepath, String content);
 	public abstract String getFileContent(String filepath);
 
+	public List<Property> getProperties(Class clazz) {
+		assert propertiesMap.containsKey(clazz);
+		return propertiesMap.get(clazz);
+	}
+
+	public Property getProperty(Class clazz, int tweenType) {
+		List<Property> properties = getProperties(clazz);
+		for (Property property : properties)
+			if (property.getId() == tweenType)
+				return property;
+		assert false;
+		return null;
+	}
+
 	// -------------------------------------------------------------------------
-	// Protected
+	// Protected API
 	// -------------------------------------------------------------------------
 
-	protected void registerProperty(Class clazz, int tweenType, String propertyName) {
+	protected void registerProperty(Class clazz, int tweenType, String propertyName, Field... fields) {
 		if (!propertiesMap.containsKey(clazz)) propertiesMap.put(clazz, new ArrayList<Property>(5));
-		propertiesMap.get(clazz).add(new Property(tweenType, propertyName));
+		propertiesMap.get(clazz).add(new Property(tweenType, propertyName, fields));
 	}
 
 	protected void fireStateChanged(Object target, int tweenType) {
@@ -51,20 +66,6 @@ public abstract class Editor {
 	// -------------------------------------------------------------------------
 	// Package-protected
 	// -------------------------------------------------------------------------
-
-	List<Property> getProperties(Class clazz) {
-		assert propertiesMap.containsKey(clazz);
-		return propertiesMap.get(clazz);
-	}
-
-	Property getProperty(Class clazz, int tweenType) {
-		List<Property> properties = getProperties(clazz);
-		for (Property property : properties)
-			if (property.getId() == tweenType)
-				return property;
-		assert false;
-		return null;
-	}
 
 	void setStudio(TweenStudio studio) {
 		this.studio = studio;

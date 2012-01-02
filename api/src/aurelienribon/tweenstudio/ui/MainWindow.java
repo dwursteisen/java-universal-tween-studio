@@ -1,15 +1,31 @@
 package aurelienribon.tweenstudio.ui;
 
+import aurelienribon.tweenengine.Tween;
+import aurelienribon.tweenengine.TweenAccessor;
 import aurelienribon.tweenengine.TweenEquation;
+import aurelienribon.tweenstudio.Editor;
+import aurelienribon.tweenstudio.ElementData;
 import aurelienribon.tweenstudio.NodeData;
+import aurelienribon.tweenstudio.Property;
+import aurelienribon.tweenstudio.Property.Field;
+import aurelienribon.tweenstudio.ui.timeline.Theme;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Element;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Node;
 import aurelienribon.tweenstudio.ui.timeline.TimelinePanel.Listener;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.BorderLayout;
+import java.awt.CardLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.util.List;
+import javax.swing.Box;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
 import javax.swing.JSpinner;
+import javax.swing.SpinnerNumberModel;
+import javax.swing.border.EmptyBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
@@ -17,43 +33,40 @@ import javax.swing.event.ChangeListener;
  * @author Aurelien Ribon | http://www.aurelienribon.com
  */
 public class MainWindow extends javax.swing.JFrame {
-	private final EaseChangeListener easeListener = new EaseChangeListener();
-	private final JSpinner[] targetSpinners;
+	private final Theme theme = new Theme();
+	private Editor editor;
 	private Callback callback;
-	private Node selectedNode;
 
 	public MainWindow() {
 		initComponents();
-		tweenAttrsPanel.setVisible(false);
-		easingCbox.addActionListener(easeListener);
+
+		easingCbox.addItemListener(easeListener);
+		timelinePanel.setTheme(theme);
+
 		timelinePanel.addListener(new Listener() {
 			@Override public void playRequested() {callback.playRequested();}
 			@Override public void pauseRequested() {callback.pauseRequested();}
-			@Override public void selectedElementChanged(Element newElem, Element oldElem) {}
-
-			@Override public void selectedNodesChanged(List<Node> newNodes, List<Node> oldNodes) {
-				selectedNode = null;
-				updateTargetsValues();
-			}
-
+			@Override public void selectedElementChanged(Element newElem, Element oldElem) {updatePropertiesPanel();}
+			@Override public void selectedNodesChanged(List<Node> newNodes, List<Node> oldNodes) {updatePropertiesPanel();}
 			@Override public void currentTimeChanged(int newTime, int oldTime) {
-				callback.timeCursorPositionChanged(oldTime, newTime);
+				updatePropertiesPanel();
+				callback.currentTimeChanged(newTime, oldTime);
 			}
 		});
-
-		targetSpinners = new JSpinner[] {t1Spinner, t2Spinner, t3Spinner, t4Spinner, t5Spinner};
 	}
 
 	// -------------------------------------------------------------------------
 	// Public API
 	// -------------------------------------------------------------------------
 
-	public void setTimelineModel(TimelineModel model) {
-		timelinePanel.setModel(model);
-	}
-
-	public void setCallback(Callback callback) {
+	public void initialize(Editor editor, TimelineModel model, Callback callback) {
+		this.editor = editor;
 		this.callback = callback;
+		timelinePanel.setModel(model);
+
+		model.addListener(new TimelineModel.Listener() {
+			@Override public void stateChanged() {updatePropertiesPanel();}
+		});
 	}
 
 	public int getCurrentTime() {
@@ -72,20 +85,83 @@ public class MainWindow extends javax.swing.JFrame {
 		timelinePanel.setPlaying(playing);
 	}
 
-	public void updateTargetsValues() {
-		updateTargetsValues(selectedNode);
+	public void updatePropertiesPanel() {
+		CardLayout cl = (CardLayout) propertiesPanel.getLayout();
+
+		if (!timelinePanel.getSelectedNodes().isEmpty()) {
+			cl.show(propertiesPanel, "tweenCard");
+			updateTweenCard();
+
+		} else if (timelinePanel.getSelectedElement() != null) {
+			cl.show(propertiesPanel, "objectCard");
+			updateObjectCard();
+
+		} else {
+			cl.show(propertiesPanel, "nothingCard");
+		}
 	}
 
 	// -------------------------------------------------------------------------
 	// Helpers
 	// -------------------------------------------------------------------------
 
-	private void updateTargetsValues(Node node) {
+	private void updateTweenCard() {
+		TweenEquation commonEq = null;
+		for (Node node : timelinePanel.getSelectedNodes()) {
+			NodeData nodeData = (NodeData) node.getUserData();
+			TweenEquation eq = nodeData.getEquation();
+			if (commonEq == null) commonEq = eq;
+			if (eq != commonEq) {commonEq = null; break;}
+		}
+
+		easingCbox.setEditable(true);
+		easingCbox.setSelectedItem(commonEq != null ? commonEq.toString() : "---");
+		easingCbox.setEditable(false);
+	}
+
+	private void updateObjectCard() {
+		objectPanel.removeAll();
+		objectPanel.add(Box.createVerticalStrut(10));
+
+		Element elem = timelinePanel.getSelectedElement();
+		ElementData elemData = (ElementData) elem.getUserData();
+
+		for (Property property : editor.getProperties(elemData.getTarget().getClass())) {
+			float[] values = new float[property.getFields().length];
+			TweenAccessor accessor = Tween.getRegisteredAccessor(elemData.getTarget().getClass());
+			accessor.getValues(elemData.getTarget(), property.getId(), values);
+
+			for (int i=0; i<property.getFields().length; i++) {
+				Field field = property.getFields()[i];
+				
+				JLabel label = new JLabel(field.name + ": ");
+				label.setForeground(Color.WHITE);
+				label.setHorizontalAlignment(JLabel.RIGHT);
+
+				SpinnerNumberModel model = new SpinnerNumberModel(values[i], field.min, field.max, field.step);
+				JSpinner spinner = new JSpinner(model);
+				spinner.setPreferredSize(new Dimension(70, 20));
+
+				JPanel panel = new JPanel(new BorderLayout());
+				panel.setBorder(new EmptyBorder(0, 10, 2, 10));
+				panel.setOpaque(false);
+				panel.add(label, BorderLayout.CENTER);
+				panel.add(spinner, BorderLayout.EAST);
+
+				objectPanel.add(panel);
+			}
+		}
+
+		objectPanel.add(Box.createVerticalStrut(10));
+		objectPanel.revalidate();
+	}
+
+	/*private void updateTargetsValues(Node node) {
 		easeListener.setNode(node);
 		showTargets(0);
 
 		if (node == null) {
-			tweenAttrsPanel.setVisible(false);
+			tweenPanel.setVisible(false);
 			return;
 		}
 
@@ -93,7 +169,7 @@ public class MainWindow extends javax.swing.JFrame {
 		float[] values = nodeData.getTargets();
 		TweenEquation equation = nodeData.getEquation();
 
-		tweenAttrsPanel.setVisible(true);
+		tweenPanel.setVisible(true);
 		easingCbox.setSelectedItem(equation.toString());
 		showTargets(values.length);
 
@@ -103,45 +179,21 @@ public class MainWindow extends javax.swing.JFrame {
 			targetSpinners[i].addChangeListener(new TargetChangeListener(node, i));
 			targetSpinners[i].setValue(values[i]);
 		}
-	}
+	}*/
 
-	private void showTargets(int cnt) {
-		t1Lbl.setVisible(cnt >= 1);
-		t1Spinner.setVisible(cnt >= 1);
-		t2Lbl.setVisible(cnt >= 2);
-		t2Spinner.setVisible(cnt >= 2);
-		t3Lbl.setVisible(cnt >= 3);
-		t3Spinner.setVisible(cnt >= 3);
-		t4Lbl.setVisible(cnt >= 4);
-		t4Spinner.setVisible(cnt >= 4);
-		t5Lbl.setVisible(cnt >= 5);
-		t5Spinner.setVisible(cnt >= 5);
-	}
-
-	private class EaseChangeListener implements ActionListener {
-		private Node node;
-
-		public void setNode(Node node) {
-			this.node = node;
-		}
-
-		@Override
-		public void actionPerformed(ActionEvent e) {
-			assert node != null;
-
+	private final ItemListener easeListener = new ItemListener() {
+		@Override public void itemStateChanged(ItemEvent e) {
 			String name = (String) easingCbox.getSelectedItem();
-			if (name.startsWith("-")) {
-				easingCbox.setSelectedIndex(0);
-				name = "Linear.INOUT";
+			if (!name.startsWith("-")) {
+				TweenEquation equation = TweenEquation.parse(name);
+				for (Node node : timelinePanel.getSelectedNodes()) {
+					NodeData nodeData = (NodeData) node.getUserData();
+					nodeData.setEquation(equation);
+					callback.nodeInfoChanged(node);
+				}
 			}
-
-			TweenEquation equation = TweenEquation.parse(name);
-
-			NodeData nodeData = (NodeData) node.getUserData();
-			nodeData.setEquation(equation);
-			callback.nodeInfoChanged(node);
 		}
-	}
+	};
 
 	private class TargetChangeListener implements ChangeListener {
 		private final Node node;
@@ -168,7 +220,7 @@ public class MainWindow extends javax.swing.JFrame {
 	// -------------------------------------------------------------------------
 
 	public interface Callback {
-		public void timeCursorPositionChanged(int oldTime, int newTime);
+		public void currentTimeChanged(int newTime, int oldTime);
 		public void nodeInfoChanged(Node node);
 		public void playRequested();
 		public void pauseRequested();
@@ -183,29 +235,20 @@ public class MainWindow extends javax.swing.JFrame {
         jPanel2 = new javax.swing.JPanel();
         jLabel1 = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
-        tweenAttrsPanel = new javax.swing.JPanel();
-        jLabel4 = new javax.swing.JLabel();
-        jLabel5 = new javax.swing.JLabel();
+        propertiesPanel = new javax.swing.JPanel();
+        jPanel3 = new javax.swing.JPanel();
+        jPanel4 = new javax.swing.JPanel();
+        tweenPanel = new javax.swing.JPanel();
         jLabel3 = new javax.swing.JLabel();
         easingCbox = new javax.swing.JComboBox();
-        startLbl = new javax.swing.JLabel();
-        durationLbl = new javax.swing.JLabel();
-        t1Lbl = new javax.swing.JLabel();
-        t1Spinner = new javax.swing.JSpinner();
-        t2Lbl = new javax.swing.JLabel();
-        t2Spinner = new javax.swing.JSpinner();
-        t3Lbl = new javax.swing.JLabel();
-        t3Spinner = new javax.swing.JSpinner();
-        t4Lbl = new javax.swing.JLabel();
-        t4Spinner = new javax.swing.JSpinner();
-        t5Lbl = new javax.swing.JLabel();
-        t5Spinner = new javax.swing.JSpinner();
+        jPanel5 = new javax.swing.JPanel();
+        objectPanel = new javax.swing.JPanel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setTitle("Tween Studio");
         getContentPane().add(timelinePanel, java.awt.BorderLayout.CENTER);
 
-        jPanel1.setBackground(new java.awt.Color(102, 102, 102));
+        jPanel1.setBackground(theme.COLOR_GRIDPANEL_BACKGROUND);
 
         jPanel2.setOpaque(false);
 
@@ -223,8 +266,8 @@ public class MainWindow extends javax.swing.JFrame {
             .addGroup(jPanel2Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel1, javax.swing.GroupLayout.DEFAULT_SIZE, 187, Short.MAX_VALUE)
-                    .addComponent(jLabel2, javax.swing.GroupLayout.DEFAULT_SIZE, 187, Short.MAX_VALUE))
+                    .addComponent(jLabel1, javax.swing.GroupLayout.DEFAULT_SIZE, 170, Short.MAX_VALUE)
+                    .addComponent(jLabel2, javax.swing.GroupLayout.DEFAULT_SIZE, 170, Short.MAX_VALUE))
                 .addContainerGap())
         );
         jPanel2Layout.setVerticalGroup(
@@ -236,123 +279,101 @@ public class MainWindow extends javax.swing.JFrame {
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
-        tweenAttrsPanel.setBorder(javax.swing.BorderFactory.createTitledBorder(null, "Selected tween attributes", javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION, javax.swing.border.TitledBorder.DEFAULT_POSITION, new java.awt.Font("Tahoma", 0, 11), new java.awt.Color(255, 255, 255))); // NOI18N
-        tweenAttrsPanel.setOpaque(false);
+        propertiesPanel.setOpaque(false);
+        propertiesPanel.setLayout(new java.awt.CardLayout());
 
-        jLabel4.setForeground(new java.awt.Color(255, 255, 255));
-        jLabel4.setText("Start time:");
+        jPanel3.setOpaque(false);
 
-        jLabel5.setForeground(new java.awt.Color(255, 255, 255));
-        jLabel5.setText("Duration:");
+        javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
+        jPanel3.setLayout(jPanel3Layout);
+        jPanel3Layout.setHorizontalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 170, Short.MAX_VALUE)
+        );
+        jPanel3Layout.setVerticalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 276, Short.MAX_VALUE)
+        );
+
+        propertiesPanel.add(jPanel3, "nothingCard");
+
+        jPanel4.setOpaque(false);
+
+        tweenPanel.setBackground(theme.COLOR_GRIDPANEL_SECTION);
+        aurelienribon.utils.swing.GroupBorder groupBorder1 = new aurelienribon.utils.swing.GroupBorder();
+        groupBorder1.setTitle("Tween properties");
+        tweenPanel.setBorder(groupBorder1);
+        tweenPanel.setForeground(new java.awt.Color(255, 255, 255));
+        tweenPanel.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        tweenPanel.setOpaque(false);
 
         jLabel3.setForeground(new java.awt.Color(255, 255, 255));
         jLabel3.setText("Easing:");
 
+        easingCbox.setMaximumRowCount(12);
         easingCbox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Linear.INOUT", "----------", "Quad.IN", "Quad.OUT", "Quad.INOUT", "----------", "Cubic.IN", "Cubic.OUT", "Cubic.INOUT", "----------", "Quart.IN", "Quart.OUT", "Quart.INOUT", "----------", "Quint.IN", "Quint.OUT", "Quint.INOUT", "----------", "Circ.IN", "Circ.OUT", "Circ.INOUT", "----------", "Sine.IN", "Sine.OUT", "Sine.INOUT", "----------", "Expo.IN", "Expo.OUT", "Expo.INOUT", "----------", "Back.IN", "Back.OUT", "Back.INOUT", "----------", "Bounce.IN", "Bounce.OUT", "Bounce.INOUT", "----------", "Elastic.IN", "Elastic.OUT", "Elastic.INOUT" }));
 
-        startLbl.setForeground(new java.awt.Color(255, 255, 255));
-        startLbl.setText("---");
-
-        durationLbl.setForeground(new java.awt.Color(255, 255, 255));
-        durationLbl.setText("---");
-
-        t1Lbl.setForeground(new java.awt.Color(255, 255, 255));
-        t1Lbl.setText("Target 1:");
-
-        t1Spinner.setModel(new javax.swing.SpinnerNumberModel(Float.valueOf(0.0f), null, null, Float.valueOf(1.0f)));
-
-        t2Lbl.setForeground(new java.awt.Color(255, 255, 255));
-        t2Lbl.setText("Target 2:");
-
-        t2Spinner.setModel(new javax.swing.SpinnerNumberModel(Float.valueOf(0.0f), null, null, Float.valueOf(1.0f)));
-
-        t3Lbl.setForeground(new java.awt.Color(255, 255, 255));
-        t3Lbl.setText("Target 3:");
-
-        t3Spinner.setModel(new javax.swing.SpinnerNumberModel(Float.valueOf(0.0f), null, null, Float.valueOf(1.0f)));
-
-        t4Lbl.setForeground(new java.awt.Color(255, 255, 255));
-        t4Lbl.setText("Target 4:");
-
-        t4Spinner.setModel(new javax.swing.SpinnerNumberModel(Float.valueOf(0.0f), null, null, Float.valueOf(1.0f)));
-
-        t5Lbl.setForeground(new java.awt.Color(255, 255, 255));
-        t5Lbl.setText("Target 5:");
-
-        t5Spinner.setModel(new javax.swing.SpinnerNumberModel(Float.valueOf(0.0f), null, null, Float.valueOf(1.0f)));
-
-        javax.swing.GroupLayout tweenAttrsPanelLayout = new javax.swing.GroupLayout(tweenAttrsPanel);
-        tweenAttrsPanel.setLayout(tweenAttrsPanelLayout);
-        tweenAttrsPanelLayout.setHorizontalGroup(
-            tweenAttrsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(tweenAttrsPanelLayout.createSequentialGroup()
-                .addGroup(tweenAttrsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(tweenAttrsPanelLayout.createSequentialGroup()
-                        .addContainerGap()
-                        .addGroup(tweenAttrsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(jLabel5)
-                            .addComponent(jLabel4)
-                            .addComponent(jLabel3)
-                            .addComponent(t1Lbl)))
-                    .addGroup(tweenAttrsPanelLayout.createSequentialGroup()
-                        .addGap(16, 16, 16)
-                        .addComponent(t2Lbl))
-                    .addGroup(tweenAttrsPanelLayout.createSequentialGroup()
-                        .addGap(16, 16, 16)
-                        .addGroup(tweenAttrsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(t3Lbl)
-                            .addComponent(t4Lbl)))
-                    .addGroup(tweenAttrsPanelLayout.createSequentialGroup()
-                        .addGap(16, 16, 16)
-                        .addComponent(t5Lbl)))
+        javax.swing.GroupLayout tweenPanelLayout = new javax.swing.GroupLayout(tweenPanel);
+        tweenPanel.setLayout(tweenPanelLayout);
+        tweenPanelLayout.setHorizontalGroup(
+            tweenPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(tweenPanelLayout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jLabel3)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(tweenAttrsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(t5Spinner, javax.swing.GroupLayout.DEFAULT_SIZE, 98, Short.MAX_VALUE)
-                    .addComponent(t4Spinner, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 98, Short.MAX_VALUE)
-                    .addComponent(t3Spinner, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 98, Short.MAX_VALUE)
-                    .addComponent(t2Spinner, javax.swing.GroupLayout.DEFAULT_SIZE, 98, Short.MAX_VALUE)
-                    .addComponent(durationLbl)
-                    .addComponent(startLbl)
-                    .addComponent(easingCbox, javax.swing.GroupLayout.Alignment.TRAILING, 0, 98, Short.MAX_VALUE)
-                    .addComponent(t1Spinner, javax.swing.GroupLayout.DEFAULT_SIZE, 98, Short.MAX_VALUE))
+                .addComponent(easingCbox, 0, 111, Short.MAX_VALUE)
                 .addContainerGap())
         );
-        tweenAttrsPanelLayout.setVerticalGroup(
-            tweenAttrsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(tweenAttrsPanelLayout.createSequentialGroup()
-                .addGroup(tweenAttrsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel4)
-                    .addComponent(startLbl))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(tweenAttrsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel5)
-                    .addComponent(durationLbl))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(tweenAttrsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+        tweenPanelLayout.setVerticalGroup(
+            tweenPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(tweenPanelLayout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(tweenPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel3)
                     .addComponent(easingCbox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(tweenAttrsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(t1Lbl)
-                    .addComponent(t1Spinner, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(tweenAttrsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(t2Lbl)
-                    .addComponent(t2Spinner, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(tweenAttrsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(t3Lbl)
-                    .addComponent(t3Spinner, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(tweenAttrsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(t4Lbl)
-                    .addComponent(t4Spinner, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(tweenAttrsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(t5Lbl)
-                    .addComponent(t5Spinner, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
+
+        javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
+        jPanel4.setLayout(jPanel4Layout);
+        jPanel4Layout.setHorizontalGroup(
+            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(tweenPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+        );
+        jPanel4Layout.setVerticalGroup(
+            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel4Layout.createSequentialGroup()
+                .addComponent(tweenPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(234, Short.MAX_VALUE))
+        );
+
+        propertiesPanel.add(jPanel4, "tweenCard");
+
+        jPanel5.setOpaque(false);
+
+        objectPanel.setBackground(theme.COLOR_GRIDPANEL_SECTION);
+        aurelienribon.utils.swing.GroupBorder groupBorder2 = new aurelienribon.utils.swing.GroupBorder();
+        groupBorder2.setTitle("Object properties");
+        objectPanel.setBorder(groupBorder2);
+        objectPanel.setForeground(new java.awt.Color(255, 255, 255));
+        objectPanel.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        objectPanel.setOpaque(false);
+        objectPanel.setLayout(new javax.swing.BoxLayout(objectPanel, javax.swing.BoxLayout.PAGE_AXIS));
+
+        javax.swing.GroupLayout jPanel5Layout = new javax.swing.GroupLayout(jPanel5);
+        jPanel5.setLayout(jPanel5Layout);
+        jPanel5Layout.setHorizontalGroup(
+            jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(objectPanel, javax.swing.GroupLayout.DEFAULT_SIZE, 170, Short.MAX_VALUE)
+        );
+        jPanel5Layout.setVerticalGroup(
+            jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel5Layout.createSequentialGroup()
+                .addComponent(objectPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(276, Short.MAX_VALUE))
+        );
+
+        propertiesPanel.add(jPanel5, "objectCard");
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -361,7 +382,7 @@ public class MainWindow extends javax.swing.JFrame {
             .addComponent(jPanel2, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGap(10, 10, 10)
-                .addComponent(tweenAttrsPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(propertiesPanel, javax.swing.GroupLayout.DEFAULT_SIZE, 170, Short.MAX_VALUE)
                 .addGap(10, 10, 10))
         );
         jPanel1Layout.setVerticalGroup(
@@ -369,8 +390,8 @@ public class MainWindow extends javax.swing.JFrame {
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(18, 18, 18)
-                .addComponent(tweenAttrsPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(109, Short.MAX_VALUE))
+                .addComponent(propertiesPanel, javax.swing.GroupLayout.DEFAULT_SIZE, 276, Short.MAX_VALUE)
+                .addContainerGap())
         );
 
         getContentPane().add(jPanel1, java.awt.BorderLayout.EAST);
@@ -378,27 +399,18 @@ public class MainWindow extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JLabel durationLbl;
     private javax.swing.JComboBox easingCbox;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
-    private javax.swing.JLabel jLabel4;
-    private javax.swing.JLabel jLabel5;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
-    private javax.swing.JLabel startLbl;
-    private javax.swing.JLabel t1Lbl;
-    private javax.swing.JSpinner t1Spinner;
-    private javax.swing.JLabel t2Lbl;
-    private javax.swing.JSpinner t2Spinner;
-    private javax.swing.JLabel t3Lbl;
-    private javax.swing.JSpinner t3Spinner;
-    private javax.swing.JLabel t4Lbl;
-    private javax.swing.JSpinner t4Spinner;
-    private javax.swing.JLabel t5Lbl;
-    private javax.swing.JSpinner t5Spinner;
+    private javax.swing.JPanel jPanel3;
+    private javax.swing.JPanel jPanel4;
+    private javax.swing.JPanel jPanel5;
+    private javax.swing.JPanel objectPanel;
+    private javax.swing.JPanel propertiesPanel;
     private aurelienribon.tweenstudio.ui.timeline.TimelinePanel timelinePanel;
-    private javax.swing.JPanel tweenAttrsPanel;
+    private javax.swing.JPanel tweenPanel;
     // End of variables declaration//GEN-END:variables
 }

@@ -9,4 +9,4 @@ Logo LibGDX;opacity;3100;true;Linear.INOUT;0.99607843
 Logo LibGDX;opacity;4000;true;Linear.INOUT;0.99607843
 Logo LibGDX;scale;1100;true;Linear.INOUT;1.0;1.0
 Logo LibGDX;scale;2200;true;Linear.INOUT;1.0;1.0
-Logo LibGDX;scale;4900;true;Linear.INOUT;1.0;1.0
+Logo LibGDX;scale;4900;true;Quad.IN;1.0;1.0

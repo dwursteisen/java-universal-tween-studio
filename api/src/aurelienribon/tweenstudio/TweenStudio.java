@@ -92,8 +92,7 @@ public class TweenStudio {
 		editor.setStudio(this);
 		editor.initialize();
 
-		initializeProperties(editor);
-		initializeInitialStates(editor);
+		createInitialStates(editor);
 		createModel(editor);
 
 		String fileContent = editor.getFileContent(filepath);
@@ -153,26 +152,14 @@ public class TweenStudio {
 		}
 
 		createTimeline();
-		wnd.updateTargetsValues();
+		wnd.updatePropertiesPanel();
 	}
 
 	// -------------------------------------------------------------------------
 	// Helpers -- initialization
 	// -------------------------------------------------------------------------
 
-	private void initializeProperties(Editor editor) {
-		for (Object target : targets) {
-			List<Property> properties = editor.getProperties(target.getClass());
-			TweenAccessor accessor = Tween.getRegisteredAccessor(target.getClass());
-
-			for (Property property : properties) {
-				int cnt = accessor.getValues(target, property.getId(), buffer);
-				property.setAttributesCount(cnt);
-			}
-		}
-	}
-
-	private void initializeInitialStates(Editor editor) {
+	private void createInitialStates(Editor editor) {
 		initialStatesMap = new HashMap<Object, InitialState>();
 
 		for (Object target : targets) {
@@ -209,9 +196,8 @@ public class TweenStudio {
 		}
 
 		wnd = new MainWindow();
-		wnd.setTimelineModel(model);
+		wnd.initialize(editor, model, wndCallback);
 		wnd.setSize(1000, 500);
-		wnd.setCallback(wndCallback);
 		wnd.setVisible(true);
 		wnd.addWindowListener(new WindowAdapter() {
 			@Override public void windowClosing(WindowEvent e) {
@@ -281,7 +267,7 @@ public class TweenStudio {
 		ElementData elemData = (ElementData) node.getParent().getUserData();
 		Property property = editor.getProperty(elemData.getTarget().getClass(), elemData.getTweenType());
 
-		NodeData nodeData = new NodeData(property.getAttributesCount());
+		NodeData nodeData = new NodeData(property.getFields().length);
 		TweenAccessor accessor = Tween.getRegisteredAccessor(elemData.getTarget().getClass());
 		accessor.getValues(elemData.getTarget(), elemData.getTweenType(), nodeData.getTargets());
 		node.setUserData(nodeData);
@@ -319,7 +305,7 @@ public class TweenStudio {
 
 	private MainWindow.Callback wndCallback = new MainWindow.Callback() {
 		@Override
-		public void timeCursorPositionChanged(int oldTime, int newTime) {
+		public void currentTimeChanged(int oldTime, int newTime) {
 			timeline.update(newTime-oldTime);
 		}
 

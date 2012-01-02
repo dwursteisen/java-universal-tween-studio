@@ -14,8 +14,7 @@ public class InitialState {
 	public InitialState(Editor editor, Object target) {
 		for (Property property : editor.getProperties(target.getClass())) {
 			int tweenType = property.getId();
-			int count = property.getAttributesCount();
-			float[] values = new float[count];
+			float[] values = new float[property.getFields().length];
 
 			TweenAccessor accessor = Tween.getRegisteredAccessor(target.getClass());
 			accessor.getValues(target, tweenType, values);
