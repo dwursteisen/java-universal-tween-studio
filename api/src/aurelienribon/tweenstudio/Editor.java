@@ -13,23 +13,34 @@ import java.util.Set;
 public abstract class Editor {
 	private final Map<Class, List<Property>> propertiesMap = new HashMap<Class, List<Property>>();
 	private TweenStudio studio;
+	private boolean isUsed = false;
 
 	// -------------------------------------------------------------------------
 	// Public API
 	// -------------------------------------------------------------------------
 
-	public abstract void initialize();
-	public abstract void dispose();
+	protected abstract void initializeOverride();
+	protected abstract void disposeOverride();
 	public abstract void render();
-	public abstract void setFileContent(String filepath, String content);
-	public abstract String getFileContent(String filepath);
+	public abstract void selectedObjectChanged(Object obj);
+	public abstract void mouseOverObjectChanged(Object obj);
 
-	public List<Property> getProperties(Class clazz) {
+	public final void initialize() {
+		isUsed = true;
+		initializeOverride();
+	}
+
+	public final void dispose() {
+		isUsed = false;
+		disposeOverride();
+	}
+
+	public final List<Property> getProperties(Class clazz) {
 		assert propertiesMap.containsKey(clazz);
 		return propertiesMap.get(clazz);
 	}
 
-	public Property getProperty(Class clazz, int tweenType) {
+	public final Property getProperty(Class clazz, int tweenType) {
 		List<Property> properties = getProperties(clazz);
 		for (Property property : properties)
 			if (property.getId() == tweenType)
@@ -38,28 +49,40 @@ public abstract class Editor {
 		return null;
 	}
 
+	public final boolean isUsed() {
+		return isUsed;
+	}
+
 	// -------------------------------------------------------------------------
 	// Protected API
 	// -------------------------------------------------------------------------
 
-	protected void registerProperty(Class clazz, int tweenType, String propertyName, Field... fields) {
+	protected final void registerProperty(Class clazz, int tweenType, String propertyName, Field... fields) {
 		if (!propertiesMap.containsKey(clazz)) propertiesMap.put(clazz, new ArrayList<Property>(5));
 		propertiesMap.get(clazz).add(new Property(tweenType, propertyName, fields));
 	}
 
-	protected void fireStateChanged(Object target, int tweenType) {
+	protected final void fireStateChanged(Object target, int tweenType) {
 		studio.targetStateChanged(target, tweenType);
 	}
 
-	protected void fireStateChanged(Object target, Set<Integer> tweenTypes) {
+	protected final void fireStateChanged(Object target, Set<Integer> tweenTypes) {
 		studio.targetStateChanged(target, tweenTypes);
 	}
 
-	protected List<Object> getRegisteredTargets() {
+	protected final void fireSelectedObjectChanged(Object obj) {
+		studio.selectedObjectChanged(obj);
+	}
+
+	protected final void fireMouseOverObjectChanged(Object obj) {
+		studio.mouseOverObjectChanged(obj);
+	}
+
+	protected final List<Object> getRegisteredTargets() {
 		return studio.getTargets();
 	}
 
-	protected String getRegisteredName(Object target) {
+	protected final String getRegisteredName(Object target) {
 		return studio.getName(target);
 	}
 

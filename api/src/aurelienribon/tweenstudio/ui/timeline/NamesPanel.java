@@ -27,7 +27,6 @@ class NamesPanel extends JPanel implements Scrollable {
 
 	private final TimelinePanel parent;
 	private Callback callback;
-	private Element mouseOverTopElement;
 	private int vOffset;
 
 	public NamesPanel(TimelinePanel parent) {
@@ -40,6 +39,7 @@ class NamesPanel extends JPanel implements Scrollable {
 			@Override public void playRequested() {}
 			@Override public void pauseRequested() {}
 			@Override public void selectedElementChanged(Element newElem, Element oldElem) {repaint();}
+			@Override public void mouseOverElementChanged(Element newElem, Element oldElem) {repaint();}
 			@Override public void selectedNodesChanged(List<Node> newNodes, List<Node> oldNodes) {}
 			@Override public void currentTimeChanged(int newTime, int oldTime) {}
 		});
@@ -50,6 +50,7 @@ class NamesPanel extends JPanel implements Scrollable {
 	}
 
 	public void modelChanged(TimelineModel model) {
+		callback.lengthChanged();
 		repaint();
 	}
 
@@ -89,6 +90,7 @@ class NamesPanel extends JPanel implements Scrollable {
 
 	public interface Callback {
 		public void verticalOffsetChanged(int vOffset);
+		public void lengthChanged();
 		public void scrollRequired(int amount);
 	}
 
@@ -115,13 +117,14 @@ class NamesPanel extends JPanel implements Scrollable {
 		Theme theme = parent.getTheme();
 		TimelineModel model = parent.getModel();
 		Element selectedElement = parent.getSelectedElement();
+		Element mouseOverElement = parent.getMouseOverElement();
 
 		int line = 0;
 		for (Element elem : model.getElements()) {
 			if (elem.isDescendantOf(selectedElement)) {
 				gg.setColor(theme.COLOR_NAMESPANEL_SECTION_SELECTED);
 				gg.fillRect(0, line*(lineHeight+lineGap), getWidth(), lineHeight+lineGap);
-			} else if (elem.isDescendantOf(mouseOverTopElement)) {
+			} else if (elem.isDescendantOf(mouseOverElement)) {
 				gg.setColor(theme.COLOR_NAMESPANEL_SECTION_MOUSEOVER);
 				gg.fillRect(0, line*(lineHeight+lineGap), getWidth(), lineHeight+lineGap);
 			}
@@ -157,7 +160,7 @@ class NamesPanel extends JPanel implements Scrollable {
 	private final MouseAdapter mouseAdapter = new MouseAdapter() {
 		@Override
 		public void mousePressed(MouseEvent e) {
-			parent.setSelectedElement(mouseOverTopElement);
+			parent.setSelectedElement(parent.getMouseOverElement());
 			repaint();
 		}
 
@@ -166,25 +169,26 @@ class NamesPanel extends JPanel implements Scrollable {
 			TimelineModel model = parent.getModel();
 			int evLine = getLineFromY(e.getY());
 			
-			mouseOverTopElement = null;
+			Element mouseOverElement = null;
 
 			int line = 0;
 			for (Element elem : model.getElements()) {
 				if (evLine == line) {
-					mouseOverTopElement = elem;
-					while (mouseOverTopElement.getParent() != model.getRoot())
-						mouseOverTopElement = mouseOverTopElement.getParent();
+					mouseOverElement = elem;
+					while (mouseOverElement.getParent() != model.getRoot())
+						mouseOverElement = mouseOverElement.getParent();
 					break;
 				}
 				line += 1;
 			}
-			
+
+			parent.setMouseOverElement(mouseOverElement);
 			repaint();
 		}
 
 		@Override
 		public void mouseExited(MouseEvent e) {
-			mouseOverTopElement = null;
+			parent.setMouseOverElement(null);
 			repaint();
 		}
 

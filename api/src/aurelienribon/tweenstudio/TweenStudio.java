@@ -3,13 +3,18 @@ package aurelienribon.tweenstudio;
 import aurelienribon.tweenengine.Timeline;
 import aurelienribon.tweenengine.Tween;
 import aurelienribon.tweenengine.TweenAccessor;
+import aurelienribon.tweenengine.TweenManager;
 import aurelienribon.tweenstudio.ui.MainWindow;
 import aurelienribon.tweenstudio.ui.timeline.TimelineHelper;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Element;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Node;
+import aurelienribon.utils.io.FileUtils;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -28,23 +33,50 @@ public class TweenStudio {
 	// Static API
 	// -------------------------------------------------------------------------
 
-	private static Map<Class<? extends Editor>, Editor> editors = new HashMap<Class<? extends Editor>, Editor>(1);
-	private static Map<Class<? extends Player>, Player> players = new HashMap<Class<? extends Player>, Player>(1);
+	private static final Map<Class<? extends Editor>, Editor> editors = new HashMap<Class<? extends Editor>, Editor>(1);
+	private static MainWindow wnd;
 
-	public static void registerEditor(Editor editor) {
-		editors.put(editor.getClass(), editor);
-	}
-
-	public static void registerPlayer(Player player) {
-		players.put(player.getClass(), player);
+	public static void registerEditor(Class<? extends Editor> editorClass) {
+		editors.put(editorClass, null);
 	}
 
 	public static Editor getRegisteredEditor(Class<? extends Editor> editorClass) {
-		return editors.get(editorClass);
+		if (wnd != null) return getEditorOrCreate(editorClass);
+		else return editors.get(editorClass);
 	}
 
-	public static Player getRegisteredPlayer(Class<? extends Player> playerClass) {
-		return players.get(playerClass);
+	public static void spawn() {
+		try {
+			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+		} catch (ClassNotFoundException ex) {
+		} catch (InstantiationException ex) {
+		} catch (IllegalAccessException ex) {
+		} catch (UnsupportedLookAndFeelException ex) {
+		}
+
+		wnd = new MainWindow();
+		wnd.setSize(1000, 500);
+		wnd.setVisible(true);
+		wnd.addWindowListener(new WindowAdapter() {
+			@Override public void windowClosed(WindowEvent e) {
+				wnd = null;
+			}
+		});
+	}
+
+	private static Editor getEditorOrCreate(Class<? extends Editor> editorClass) {
+		Editor ed = editors.get(editorClass);
+		if (ed == null) {
+			try {
+				ed = editorClass.newInstance();
+				editors.put(editorClass, ed);
+			} catch (InstantiationException ex) {
+				throw new RuntimeException(ex.getMessage());
+			} catch (IllegalAccessException ex) {
+				throw new RuntimeException(ex.getMessage());
+			}
+		}
+		return ed;
 	}
 
 	// -------------------------------------------------------------------------
@@ -59,10 +91,8 @@ public class TweenStudio {
 
 	// Only needed in editor mode
 	private Editor editor;
-	private String filepath;
 	private Map<Object, InitialState> initialStatesMap;
 	private TimelineModel model;
-	private MainWindow wnd;
 	private int playTime;
 	private int playDuration;
 
@@ -75,47 +105,28 @@ public class TweenStudio {
 		namesMap.put(target, name);
 	}
 
-	public void play(Class<? extends Player> playerClass, String filepath) {
-		if (!players.containsKey(playerClass)) throw new RuntimeException("No such player registered");
-
-		Player player = players.get(playerClass);
-		String fileContent = player.getFileContent(filepath);
-		timeline = ImportExportHelper.stringToTimeline(fileContent);
-	}
-
-	public void edit(Class<? extends Editor> editorClass, String filepath) {
+	public void playOrEdit(Class<? extends Editor> editorClass, String animationName, File file) {
 		if (!editors.containsKey(editorClass)) throw new RuntimeException("No such editor registered");
-
-		this.editor = editors.get(editorClass);
-		this.filepath = filepath;
-
-		editor.setStudio(this);
-		editor.initialize();
-
-		createInitialStates(editor);
-		createModel(editor);
-
-		String fileContent = editor.getFileContent(filepath);
-		ImportExportHelper.stringToModel(fileContent, model);
-
-		createWindow(model);
-		createTimeline();
+		if (wnd == null) play(file);
+		else edit(editorClass, animationName, file);
 	}
 
 	public void update(int deltaMillis) {
-		if (wnd.isPlaying()) {
+		if (editor == null || !editor.isUsed()) return;
+		if (wnd != null && wnd.isPlaying()) {
 			playTime += deltaMillis;
 			if (playTime <= playDuration) {
 				wnd.setCurrentTime(playTime);
 			} else {
 				wnd.setCurrentTime(playDuration);
 				wnd.setPlaying(false);
-			}
+			}	
 		}
 	}
 
 	public void render() {
-		if (editor != null) editor.render();
+		if (editor == null || !editor.isUsed()) return;
+		editor.render();
 	}
 
 	// -------------------------------------------------------------------------
@@ -137,6 +148,8 @@ public class TweenStudio {
 	}
 
 	void targetStateChanged(Object target, Set<Integer> tweenTypes) {
+		if (wnd == null) return;
+
 		String name = namesMap.get(target);
 		int currentTime = wnd.getCurrentTime();
 
@@ -155,9 +168,44 @@ public class TweenStudio {
 		wnd.nodeDataChanged();
 	}
 
+	void selectedObjectChanged(Object obj) {
+		if (wnd == null) return;
+		wnd.selectedObjectChanged(obj);
+	}
+
+	void mouseOverObjectChanged(Object obj) {
+		if (wnd == null) return;
+		wnd.mouseOverObjectChanged(obj);
+	}
+
 	// -------------------------------------------------------------------------
 	// Helpers -- initialization
 	// -------------------------------------------------------------------------
+
+	private void play(File file) {
+		try {
+			String str = FileUtils.readFileToString(file);
+			timeline = ImportExportHelper.stringToTimeline(str);
+		} catch (FileNotFoundException ex) {
+		} catch (IOException ex) {
+		}
+	}
+
+	private void edit(Class<? extends Editor> editorClass, String animationName, File file) {
+		try {
+			editor = getEditorOrCreate(editorClass);
+			editor.setStudio(this);
+			editor.initialize();
+			createInitialStates(editor);
+			createModel(editor);
+			String fileContent = FileUtils.readFileToString(file);
+			ImportExportHelper.stringToModel(fileContent, model);
+			createTimeline();
+			wnd.initialize(editor, model, wndCallback, animationName, file);
+		} catch (FileNotFoundException ex) {
+		} catch (IOException ex) {
+		}
+	}
 
 	private void createInitialStates(Editor editor) {
 		initialStatesMap = new HashMap<Object, InitialState>();
@@ -185,28 +233,6 @@ public class TweenStudio {
 				elem.setUserData(new ElementData(target, property));
 			}
 		}
-	}
-
-	private void createWindow(final TimelineModel model) {
-		try {
-			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-		} catch (ClassNotFoundException ex) {
-		} catch (InstantiationException ex) {
-		} catch (IllegalAccessException ex) {
-		} catch (UnsupportedLookAndFeelException ex) {
-		}
-
-		wnd = new MainWindow();
-		wnd.initialize(editor, model, wndCallback);
-		wnd.setSize(1000, 500);
-		wnd.setVisible(true);
-		wnd.addWindowListener(new WindowAdapter() {
-			@Override public void windowClosing(WindowEvent e) {
-				String str = ImportExportHelper.modelToString(model);
-				editor.setFileContent(filepath, str);
-				editor.dispose();
-			}
-		});
 	}
 
 	// -------------------------------------------------------------------------

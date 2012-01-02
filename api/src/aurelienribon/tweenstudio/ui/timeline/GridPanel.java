@@ -54,7 +54,8 @@ class GridPanel extends JPanel implements Scrollable {
 		parent.addListener(new TimelinePanel.Listener() {
 			@Override public void playRequested() {}
 			@Override public void pauseRequested() {}
-			@Override public void selectedElementChanged(Element newElem, Element oldElem) {repaint();}
+			@Override public void selectedElementChanged(Element newElem, Element oldElem) {}
+			@Override public void mouseOverElementChanged(Element newElem, Element oldElem) {}
 			@Override public void selectedNodesChanged(List<Node> newNodes, List<Node> oldNodes) {repaint();}
 			@Override public void currentTimeChanged(int newTime, int oldTime) {repaint();}
 		});
@@ -68,6 +69,7 @@ class GridPanel extends JPanel implements Scrollable {
 		model.addListener(new TimelineModel.Listener() {
 			@Override public void stateChanged() {repaint();}
 		});
+		repaint();
 	}
 
 	public void themeChanged(Theme theme) {

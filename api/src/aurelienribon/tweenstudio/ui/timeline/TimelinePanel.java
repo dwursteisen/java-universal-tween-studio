@@ -30,6 +30,7 @@ public class TimelinePanel extends JPanel {
 
 	private final List<Node> selectedNodes = new ArrayList<Node>();
 	private Element selectedElement = null;
+	private Element mouseOverElement = null;
 	private int currentTime = 0;
 	private boolean isPlaying = false;
 
@@ -94,6 +95,16 @@ public class TimelinePanel extends JPanel {
 
 	public Element getSelectedElement() {
 		return selectedElement;
+	}
+
+	public void setMouseOverElement(Element elem) {
+		Element oldElem = mouseOverElement;
+		mouseOverElement = elem;
+		if (oldElem != elem) fireMouseOverElementChanged(elem, oldElem);
+	}
+
+	public Element getMouseOverElement() {
+		return mouseOverElement;
 	}
 
 	public void addSelectedNode(Node node) {
@@ -210,6 +221,7 @@ public class TimelinePanel extends JPanel {
 
 		namesPanel.setCallback(new NamesPanel.Callback() {
 			@Override public void verticalOffsetChanged(int vOffset) {gridPanel.setVerticalOffset(vOffset);}
+			@Override public void lengthChanged() {vScrollBar.repaint();}
 			@Override public void scrollRequired(int amount) {vScrollBar.scroll(amount);}
 		});
 	}
@@ -225,6 +237,7 @@ public class TimelinePanel extends JPanel {
 		public void playRequested();
 		public void pauseRequested();
 		public void selectedElementChanged(Element newElem, Element oldElem);
+		public void mouseOverElementChanged(Element newElem, Element oldElem);
 		public void selectedNodesChanged(List<Node> newNodes, List<Node> oldNodes);
 		public void currentTimeChanged(int newTime, int oldTime);
 	}
@@ -242,6 +255,11 @@ public class TimelinePanel extends JPanel {
 	private void fireSelectedElementChanged(Element newElem, Element oldElem) {
 		for (Listener listener : listeners)
 			listener.selectedElementChanged(newElem, oldElem);
+	}
+
+	private void fireMouseOverElementChanged(Element newElem, Element oldElem) {
+		for (Listener listener : listeners)
+			listener.mouseOverElementChanged(newElem, oldElem);
 	}
 
 	private void fireSelectedNodesChanged(List<Node> newNodes, List<Node> oldNodes) {

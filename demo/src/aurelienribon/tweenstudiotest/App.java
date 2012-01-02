@@ -9,6 +9,7 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
+import java.io.File;
 
 public class App implements ApplicationListener {
 	private OrthographicCamera camera;
@@ -27,16 +28,18 @@ public class App implements ApplicationListener {
 		Tween.enablePooling(true);
 		Tween.registerAccessor(Sprite.class, new SpriteTweenAccessor());
 
-		// Registration of the editor/player (only needed once per application)
-		TweenStudio.registerEditor(new LibGdxTweenStudioEditorX());
-		TweenStudio.registerPlayer(new LibGdxTweenStudioPlayer());
+		// Registration of the editor (only needed once per application)
+		TweenStudio.registerEditor(LibGdxTweenStudioEditorX.class);
+
+		// Spawn of the studio
+		TweenStudio.spawn();
 
 		// Instantiation of the studio
 		tweenStudio = new TweenStudio();
 
 		// Configuration of the editor
 		LibGdxTweenStudioEditorX editor = (LibGdxTweenStudioEditorX) TweenStudio.getRegisteredEditor(LibGdxTweenStudioEditorX.class);
-		editor.setCamera(camera);
+		if (editor != null) editor.setCamera(camera);
 
 		// Registration of the targets we want to animate
 		tweenStudio.registerTarget(sprites[0], "Logo LibGDX");
@@ -48,7 +51,7 @@ public class App implements ApplicationListener {
 		tweenStudio.registerTarget(sprites[6], "Wave 3");
 
 		// ...then spawn it when you want !
-		tweenStudio.edit(LibGdxTweenStudioEditorX.class, "data/anim.tweens");
+		tweenStudio.playOrEdit(LibGdxTweenStudioEditorX.class, "Title animation", new File("data/anim.tweens"));
 	}
 
 	private void createSprites() {

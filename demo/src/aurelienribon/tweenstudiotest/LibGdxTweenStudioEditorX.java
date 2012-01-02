@@ -44,8 +44,8 @@ public class LibGdxTweenStudioEditorX extends LibGdxTweenStudioEditor {
 	}
 
 	@Override
-	public void initialize() {
-		super.initialize();
+	protected void initializeOverride() {
+		super.initializeOverride();
 
 		oldInputProcessor = Gdx.input.getInputProcessor();
 		Gdx.input.setInputProcessor(inputProcessor);
@@ -58,16 +58,12 @@ public class LibGdxTweenStudioEditorX extends LibGdxTweenStudioEditor {
 	}
 
 	@Override
-	public void dispose() {
-		super.dispose();
-		
+	protected void disposeOverride() {
 		Gdx.input.setInputProcessor(oldInputProcessor);
 	}
 
 	@Override
 	public void render() {
-		super.render();
-
 		GL10 gl = Gdx.gl10;
 		gl.glEnable(GL10.GL_BLEND);
 
@@ -89,6 +85,16 @@ public class LibGdxTweenStudioEditorX extends LibGdxTweenStudioEditor {
 		spriteBatch.end();
 	}
 
+	@Override
+	public void selectedObjectChanged(Object obj) {
+		selectedSprite = (Sprite) obj;
+	}
+
+	@Override
+	public void mouseOverObjectChanged(Object obj) {
+		mouseOverSprite = (Sprite) obj;
+	}
+
 	// -------------------------------------------------------------------------
 	// InputProcessor
 	// -------------------------------------------------------------------------
@@ -108,6 +114,8 @@ public class LibGdxTweenStudioEditorX extends LibGdxTweenStudioEditor {
 				for (Sprite sp : sprites)
 					if (isOver(p, sp))
 						mouseOverSprite = sp;
+
+				fireMouseOverObjectChanged(mouseOverSprite);
 			}
 
 			lastX = x;
@@ -117,7 +125,11 @@ public class LibGdxTweenStudioEditorX extends LibGdxTweenStudioEditor {
 
 		@Override
 		public boolean touchDown(int x, int y, int pointer, int button) {
-			if (!selectionLocked) selectedSprite = mouseOverSprite;
+			if (!selectionLocked) {
+				selectedSprite = mouseOverSprite;
+				fireSelectedObjectChanged(selectedSprite);
+			}
+
 			lastX = x;
 			lastY = y;
 			return true;
