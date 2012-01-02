@@ -27,7 +27,7 @@ class NamesPanel extends JPanel implements Scrollable {
 
 	private final TimelinePanel parent;
 	private Callback callback;
-	private Element mouseOverElement;
+	private Element mouseOverTopElement;
 	private int vOffset;
 
 	public NamesPanel(TimelinePanel parent) {
@@ -118,12 +118,12 @@ class NamesPanel extends JPanel implements Scrollable {
 
 		int line = 0;
 		for (Element elem : model.getElements()) {
-			if (elem == selectedElement) {
+			if (elem.isDescendantOf(selectedElement)) {
 				gg.setColor(theme.COLOR_NAMESPANEL_SECTION_SELECTED);
-				gg.fillRect(0, line*(lineHeight+lineGap), getWidth(), lineHeight);
-			} else if (elem == mouseOverElement) {
+				gg.fillRect(0, line*(lineHeight+lineGap), getWidth(), lineHeight+lineGap);
+			} else if (elem.isDescendantOf(mouseOverTopElement)) {
 				gg.setColor(theme.COLOR_NAMESPANEL_SECTION_MOUSEOVER);
-				gg.fillRect(0, line*(lineHeight+lineGap), getWidth(), lineHeight);
+				gg.fillRect(0, line*(lineHeight+lineGap), getWidth(), lineHeight+lineGap);
 			}
 
 			line += 1;
@@ -139,8 +139,7 @@ class NamesPanel extends JPanel implements Scrollable {
 
 		int line = 0;
 		for (Element elem : model.getElements()) {
-			int level = elem.getLevel();
-			int x = paddingLeft + level*paddingIncremental;
+			int x = paddingLeft + (elem.getLevel()-1)*paddingIncremental;
 			int y = line*(lineHeight+lineGap)-5;
 			Image img = elem.getChildren().isEmpty() ? imgIdxNone : imgIdxClosed;
 
@@ -158,7 +157,7 @@ class NamesPanel extends JPanel implements Scrollable {
 	private final MouseAdapter mouseAdapter = new MouseAdapter() {
 		@Override
 		public void mousePressed(MouseEvent e) {
-			parent.setSelectedElement(mouseOverElement);
+			parent.setSelectedElement(mouseOverTopElement);
 			repaint();
 		}
 
@@ -167,12 +166,14 @@ class NamesPanel extends JPanel implements Scrollable {
 			TimelineModel model = parent.getModel();
 			int evLine = getLineFromY(e.getY());
 			
-			mouseOverElement = null;
+			mouseOverTopElement = null;
 
 			int line = 0;
 			for (Element elem : model.getElements()) {
-				if (evLine == line && elem.isSelectable()) {
-					mouseOverElement = elem;
+				if (evLine == line) {
+					mouseOverTopElement = elem;
+					while (mouseOverTopElement.getParent() != model.getRoot())
+						mouseOverTopElement = mouseOverTopElement.getParent();
 					break;
 				}
 				line += 1;
@@ -183,7 +184,7 @@ class NamesPanel extends JPanel implements Scrollable {
 
 		@Override
 		public void mouseExited(MouseEvent e) {
-			mouseOverElement = null;
+			mouseOverTopElement = null;
 			repaint();
 		}
 

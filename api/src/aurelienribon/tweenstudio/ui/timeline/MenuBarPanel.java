@@ -18,7 +18,6 @@ import javax.swing.JPanel;
 class MenuBarPanel extends JPanel {
 	private final ImageButton magBtn;
 	private final ImageButton minBtn;
-	private final ImageButton addNodeBtn;
 	private final ImageButton delNodeBtn;
 	private final ImageButton playBtn;
 	private final ImageButton goToFirstBtn;
@@ -35,7 +34,6 @@ class MenuBarPanel extends JPanel {
 
 		magBtn = new ImageButton(theme.COLOR_MENUBAR_BACKGROUND, "ic_glassPlus.png");
 		minBtn = new ImageButton(theme.COLOR_MENUBAR_BACKGROUND, "ic_glassMinus.png");
-		addNodeBtn = new ImageButton(theme.COLOR_MENUBAR_BACKGROUND, "ic_addNode.png");
 		delNodeBtn = new ImageButton(theme.COLOR_MENUBAR_BACKGROUND, "ic_delNode.png");
 		playBtn = new ImageButton(theme.COLOR_MENUBAR_BACKGROUND, "ic_play.png").addImage("ic_pause.png");
 		goToFirstBtn = new ImageButton(theme.COLOR_MENUBAR_BACKGROUND, "ic_goToFirst.png");
@@ -52,17 +50,6 @@ class MenuBarPanel extends JPanel {
 		minBtn.addActionListener(new ActionListener() {
 			@Override public void actionPerformed(ActionEvent e) {
 				callback.minifyRequested();
-			}
-		});
-
-		addNodeBtn.addActionListener(new ActionListener() {
-			@Override public void actionPerformed(ActionEvent e) {
-				Element elem = parent.getSelectedElement();
-				if (elem != null) {
-					Node node = elem.addNode(parent.getCurrentTime());
-					parent.clearSelectedNodes();
-					parent.addSelectedNode(node);
-				}
 			}
 		});
 
@@ -121,7 +108,6 @@ class MenuBarPanel extends JPanel {
 		btnPanel.add(magBtn); btnPanel.add(Box.createHorizontalStrut(margin));
 		btnPanel.add(minBtn); btnPanel.add(Box.createHorizontalStrut(bigMargin));
 
-		btnPanel.add(addNodeBtn); btnPanel.add(Box.createHorizontalStrut(margin));
 		btnPanel.add(delNodeBtn); btnPanel.add(Box.createHorizontalStrut(bigMargin));
 
 		btnPanel.add(timeLbl); btnPanel.add(Box.createHorizontalStrut(bigMargin));

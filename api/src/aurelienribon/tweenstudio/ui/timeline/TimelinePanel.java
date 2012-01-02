@@ -86,6 +86,7 @@ public class TimelinePanel extends JPanel {
 	}
 
 	public void setSelectedElement(Element elem) {
+		if (elem != null) clearSelectedNodes();
 		Element oldElem = selectedElement;
 		selectedElement = elem;
 		if (oldElem != elem) fireSelectedElementChanged(elem, oldElem);
@@ -96,6 +97,7 @@ public class TimelinePanel extends JPanel {
 	}
 
 	public void addSelectedNode(Node node) {
+		setSelectedElement(null);
 		assert node != null;
 		if (!selectedNodes.contains(node)) {
 			List<Node> oldNodes = Collections.unmodifiableList(selectedNodes);
@@ -106,6 +108,7 @@ public class TimelinePanel extends JPanel {
 	}
 
 	public void removeSelectedNode(Node node) {
+		setSelectedElement(null);
 		assert node != null;
 		if (selectedNodes.contains(node)) {
 			List<Node> oldNodes = Collections.unmodifiableList(selectedNodes);
@@ -116,6 +119,7 @@ public class TimelinePanel extends JPanel {
 	}
 
 	public void setSelectedNode(Node node) {
+		setSelectedElement(null);
 		assert node != null;
 		clearSelectedNodes();
 		addSelectedNode(node);

@@ -152,7 +152,7 @@ public class TweenStudio {
 		}
 
 		createTimeline();
-		wnd.updatePropertiesPanel();
+		wnd.nodeDataChanged();
 	}
 
 	// -------------------------------------------------------------------------
@@ -178,6 +178,7 @@ public class TweenStudio {
 			List<Property> properties = editor.getProperties(target.getClass());
 			Element elem = model.addElement(namesMap.get(target));
 			elem.setSelectable(false);
+			elem.setUserData(new ElementData(target, -1));
 
 			for (Property property : properties) {
 				elem = model.addElement(namesMap.get(target) + "/" + property.getName());
@@ -305,7 +306,7 @@ public class TweenStudio {
 
 	private MainWindow.Callback wndCallback = new MainWindow.Callback() {
 		@Override
-		public void currentTimeChanged(int oldTime, int newTime) {
+		public void currentTimeChanged(int newTime, int oldTime) {
 			timeline.update(newTime-oldTime);
 		}
 

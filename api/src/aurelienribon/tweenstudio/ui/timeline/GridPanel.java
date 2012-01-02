@@ -341,7 +341,6 @@ class GridPanel extends JPanel implements Scrollable {
 
 			switch (state) {
 				case IDLE:
-					parent.setSelectedElement(mouseOverElement);
 					parent.clearSelectedNodes();
 					parent.setCurrentTime(eTime);
 					break;
@@ -436,7 +435,7 @@ class GridPanel extends JPanel implements Scrollable {
 			int line = 0;
 			
 			for (Element elem : parent.getModel().getElements()) {
-				if (eLine == line && elem.isSelectable()) {
+				if (eLine == line) {
 					mouseOverElement = elem;
 					break;
 				}
@@ -489,15 +488,6 @@ class GridPanel extends JPanel implements Scrollable {
 			if (parent.getModel() == null || parent.isPlaying()) return;
 			
 			switch (e.getKeyCode()) {
-				case KeyEvent.VK_ENTER:
-					Element elem = parent.getSelectedElement();
-					if (elem != null) {
-						Node node = elem.addNode(parent.getCurrentTime());
-						parent.clearSelectedNodes();
-						parent.addSelectedNode(node);
-					}
-					break;
-
 				case KeyEvent.VK_DELETE:
 					List<Node> nodes = new ArrayList<Node>(parent.getSelectedNodes());
 					parent.clearSelectedNodes();

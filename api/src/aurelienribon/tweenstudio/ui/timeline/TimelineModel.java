@@ -118,7 +118,7 @@ public class TimelineModel {
 			this.model = timelineModel;
 			this.parent = parent;
 			this.name = name;
-			this.level = parent != null ? parent.getLevel() + 1 : -1;
+			this.level = parent != null ? parent.getLevel() + 1 : 0;
 		}
 
 		public TimelineModel getTimelineModel() {
@@ -191,6 +191,15 @@ public class TimelineModel {
 
 		public void setUserData(Object userData) {
 			this.userData = userData;
+		}
+
+		public boolean isDescendantOf(Element parent) {
+			Element elem = this;
+			while (elem.getLevel() > 0) {
+				if (elem == parent) return true;
+				elem = elem.getParent();
+			}
+			return false;
 		}
 
 		private void sortNodes() {
