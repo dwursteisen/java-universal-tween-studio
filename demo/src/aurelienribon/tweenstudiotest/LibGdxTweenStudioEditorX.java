@@ -1,5 +1,8 @@
 package aurelienribon.tweenstudiotest;
 
+import aurelienribon.tweenstudio.Editor;
+import aurelienribon.tweenstudio.Property.Field;
+import aurelienribon.tweenstudio.TweenStudio;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.InputAdapter;
@@ -11,7 +14,9 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ImmediateModeRenderer;
+import com.badlogic.gdx.graphics.glutils.ImmediateModeRenderer10;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
@@ -23,14 +28,15 @@ import java.util.Set;
 /**
  * @author Aurelien Ribon | http://www.aurelienribon.com
  */
-public class LibGdxTweenStudioEditorX extends LibGdxTweenStudioEditor {
+public class LibGdxTweenStudioEditorX extends Editor {
 	private final List<Sprite> sprites = new ArrayList<Sprite>();
-	private InputProcessor oldInputProcessor;
-	private OrthographicCamera camera;
-
-	private final ImmediateModeRenderer imr = new ImmediateModeRenderer();
+	private final ImmediateModeRenderer imr = new ImmediateModeRenderer10();
 	private final SpriteBatch spriteBatch = new SpriteBatch();
 	private final BitmapFont font = new BitmapFont();
+	private final OrthographicCamera screenCamera = new OrthographicCamera(0, 0);
+
+	private InputProcessor oldInputProcessor;
+	private OrthographicCamera worldCamera;
 	private Sprite mouseOverSprite;
 	private Sprite selectedSprite;
 	private boolean selectionLocked;
@@ -39,27 +45,40 @@ public class LibGdxTweenStudioEditorX extends LibGdxTweenStudioEditor {
 	// Public API
 	// -------------------------------------------------------------------------
 
-	public void setCamera(OrthographicCamera camera) {
-		this.camera = camera;
+	public void setup(OrthographicCamera worldCamera) {
+		this.worldCamera = worldCamera;
+		screenCamera.viewportWidth = Gdx.graphics.getWidth();
+		screenCamera.viewportHeight = Gdx.graphics.getHeight();
+		screenCamera.position.x = screenCamera.viewportWidth/2;
+		screenCamera.position.y = screenCamera.viewportHeight/2;
+		screenCamera.update();
+	}
+
+	// -------------------------------------------------------------------------
+	// Editor overrides
+	// -------------------------------------------------------------------------
+	
+	@Override
+	public void initialize() {
+		registerProperty(Sprite.class, SpriteTweenAccessor.POSITION_XY, "position", new Field("x", 1), new Field("y", 1));
+		registerProperty(Sprite.class, SpriteTweenAccessor.ROTATION, "rotation", new Field("rotation", 1));
+		registerProperty(Sprite.class, SpriteTweenAccessor.OPACITY, "opacity", new Field("opacity", 0, 1, 0.1f));
+		registerProperty(Sprite.class, SpriteTweenAccessor.SCALE_XY, "scale", new Field("scaleX", 1), new Field("scaleY", 1));
 	}
 
 	@Override
-	protected void initializeOverride() {
-		super.initializeOverride();
+	public void stateChanged(boolean isEnabled) {
+		if (isEnabled) {
+			oldInputProcessor = Gdx.input.getInputProcessor();
+			Gdx.input.setInputProcessor(inputProcessor);
 
-		oldInputProcessor = Gdx.input.getInputProcessor();
-		Gdx.input.setInputProcessor(inputProcessor);
+			sprites.clear();
+			for (Object target : TweenStudio.getRegisteredTargets())
+				if (target instanceof Sprite) sprites.add((Sprite) target);
 
-		sprites.clear();
-
-		for (Object target : getRegisteredTargets())
-			if (target instanceof Sprite)
-				sprites.add((Sprite) target);
-	}
-
-	@Override
-	protected void disposeOverride() {
-		Gdx.input.setInputProcessor(oldInputProcessor);
+		} else {
+			Gdx.input.setInputProcessor(oldInputProcessor);
+		}
 	}
 
 	@Override
@@ -67,20 +86,32 @@ public class LibGdxTweenStudioEditorX extends LibGdxTweenStudioEditor {
 		GL10 gl = Gdx.gl10;
 		gl.glEnable(GL10.GL_BLEND);
 
-		camera.apply(gl);
-		if (selectedSprite != null) drawBoundingBox(gl, selectedSprite, new Color(0.2f, 0.2f, 0.8f, 1.0f));
-		if (mouseOverSprite != null) drawBoundingBox(gl, mouseOverSprite, new Color(0.2f, 0.2f, 0.8f, 0.3f));
+		int w = Gdx.graphics.getWidth();
+		int h = Gdx.graphics.getHeight();
 
-		spriteBatch.getProjectionMatrix().setToOrtho2D(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+		if (selectedSprite != null) drawBoundingBox(worldCamera.combined, gl, selectedSprite, new Color(0.2f, 0.2f, 0.8f, 1.0f));
+		if (mouseOverSprite != null) drawBoundingBox(worldCamera.combined, gl, mouseOverSprite, new Color(0.2f, 0.2f, 0.8f, 0.3f));
+
+		drawRect(screenCamera.combined, 6, 4, w-10, h-10, new Color(0, 0, 0, 0.4f));
+		drawRect(screenCamera.combined, 5, 5, w-10, h-10, Color.RED);
+		drawRect(screenCamera.combined, 13, h-21, 10, 10, new Color(0, 0, 0, 0.4f));
+		drawRect(screenCamera.combined, 12, h-20, 10, 10, Color.RED);
+
+		int txtY = h + 11;
+
+		spriteBatch.setProjectionMatrix(screenCamera.combined);
 		spriteBatch.begin();
-		font.setColor(Color.BLUE);
+		font.setColor(Color.RED);
+		font.draw(spriteBatch, "Recording", 27, txtY-=20);
 		if (selectedSprite != null) {
-			String name = getRegisteredName(selectedSprite);
-			font.draw(spriteBatch, "Selected: " + name, 5, Gdx.graphics.getHeight());
+			String name = TweenStudio.getRegisteredName(selectedSprite);
+			font.setColor(Color.BLUE);
+			font.draw(spriteBatch, "Selected: " + name, 10, txtY-=20);
 		}
 		if (mouseOverSprite != null) {
-			String name = getRegisteredName(mouseOverSprite);
-			font.draw(spriteBatch, "Mouseover :" + name, 5, Gdx.graphics.getHeight() - 20);
+			String name = TweenStudio.getRegisteredName(mouseOverSprite);
+			font.setColor(Color.BLUE);
+			font.draw(spriteBatch, "Mouseover :" + name, 10, txtY-=20);
 		}
 		spriteBatch.end();
 	}
@@ -207,7 +238,7 @@ public class LibGdxTweenStudioEditorX extends LibGdxTweenStudioEditor {
 
 	private Vector2 screenToWorld(Vector2 v) {
 		Vector3 v3 = new Vector3(v.x, v.y, 0);
-		camera.unproject(v3);
+		worldCamera.unproject(v3);
 		return new Vector2(v3.x, v3.y);
 	}
 
@@ -236,26 +267,26 @@ public class LibGdxTweenStudioEditorX extends LibGdxTweenStudioEditor {
 		return new Vector2(newX, newY);
 	}
 	
-	private void drawBoundingBox(GL10 gl, Sprite sp, Color color) {
+	private void drawBoundingBox(Matrix4 projModelView, GL10 gl, Sprite sp, Color color) {
 		gl.glPushMatrix();
 		gl.glTranslatef(+sp.getX()+sp.getOriginX(), +sp.getY()+sp.getOriginY(), 0);
 		gl.glRotatef(sp.getRotation(), 0, 0, 1);
 		gl.glTranslatef(-sp.getX()-sp.getOriginX(), -sp.getY()-sp.getOriginY(), 0);
 
 		Rectangle bb = getBoundingBox(sp);
-		drawRect(bb.x, bb.y, bb.width, bb.height, color);
+		drawRect(projModelView, bb.x, bb.y, bb.width, bb.height, color);
 
 		if (selectionLocked) {
 			Vector2 size = screenToWorld(new Vector2(10, -10)).sub(screenToWorld(new Vector2(0, 0)));
-			drawRect(bb.x+bb.width-size.x/2, bb.y+bb.height-size.y/2, size.x, size.y, color);
+			drawRect(projModelView, bb.x+bb.width-size.x/2, bb.y+bb.height-size.y/2, size.x, size.y, color);
 		}
 
 		gl.glPopMatrix();
 	}
 
-	private void drawRect(float x, float y, float w, float h, Color c) {
+	private void drawRect(Matrix4 projModelView, float x, float y, float w, float h, Color c) {
 		Gdx.gl10.glLineWidth(2);
-		imr.begin(GL10.GL_LINE_LOOP);
+		imr.begin(projModelView, GL10.GL_LINE_LOOP);
 		imr.color(c.r, c.g, c.b, c.a); imr.vertex(x, y, 0);
 		imr.color(c.r, c.g, c.b, c.a); imr.vertex(x, y+h, 0);
 		imr.color(c.r, c.g, c.b, c.a); imr.vertex(x+w, y+h, 0);

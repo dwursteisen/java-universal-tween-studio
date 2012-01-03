@@ -1,72 +1,89 @@
 package aurelienribon.tweenstudio;
 
+import aurelienribon.tweenengine.BaseTween;
 import aurelienribon.tweenengine.Timeline;
+import aurelienribon.tweenengine.Tween;
 import aurelienribon.tweenengine.TweenEquation;
+import aurelienribon.tweenstudio.TweenStudio.DummyTweenAccessor;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Element;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Node;
+import java.util.Locale;
+import java.util.Map;
 
 /**
  * @author Aurelien Ribon | http://www.aurelienribon.com
  */
 public class ImportExportHelper {
-	public static String modelToString(TimelineModel model) {
-		String str = "";
-
-		for (Element elem : model.getElements()) {
-			if (!elem.isSelectable() || elem.getNodes().isEmpty()) continue;
-
-			for (Node node : elem.getNodes()) {
-				NodeData nodeData = (NodeData) node.getUserData();
-
-				str += elem.getParent().getName() + ";" + elem.getName() + ";"
-					+ node.getTime() + ";" + node.isLinked() + ";"
-					+ nodeData.getEquation().toString();
-
-				for (int i=0; i<nodeData.getTargets().length; i++) {
-					str += ";" + nodeData.getTargets()[i];
-				}
-
-				str += "\n";
-			}
-		}
-
-		return str;
-	}
-
-	public static void stringToModel(String input, TimelineModel model) {
-		String[] lines = input.split("\n");
+	public static Timeline stringToTimeline(String str) {
+		Timeline tl = Timeline.createParallel();
+		String[] lines = str.split("\n");
 
 		for (String line : lines) {
 			String[] parts = line.split(";");
-			if (parts.length < 5) continue;
+			if (parts.length < 6) continue;
 
-			String elementPath = parts[0] + "/" + parts[1];
-			int time = Integer.parseInt(parts[2]);
-			boolean isLinked = Boolean.parseBoolean(parts[3]);
+			Object target = new DummyTweenAccessor(parts[0]); // name instead of real target
+			int tweenType = Integer.parseInt(parts[1]);
+			int delay = Integer.parseInt(parts[2]);
+			int duration = Integer.parseInt(parts[3]);
 			TweenEquation equation = TweenEquation.parse(parts[4]);
 
 			float[] targets = new float[parts.length-5];
-			for (int i=0; i<targets.length; i++)
-				targets[i] = Float.parseFloat(parts[i+5]);
+			for (int i=0; i<targets.length; i++) targets[i] = Float.parseFloat(parts[i+5]);
 
-			Element elem = model.getElement(elementPath);
+			Tween tween = Tween.to(target, tweenType, duration)
+				.target(targets)
+				.ease(equation)
+				.delay(delay);
+			
+			tl.push(tween);
+		}
+
+		return tl;
+	}
+
+	public static void timelineToModel(Timeline timeline, TimelineModel model, Map<Object, String> targetsNamesMap, Editor editor) {
+		for (BaseTween child : timeline.getChildren()) {
+			Tween tween = (Tween) child;
+
+			String targetName = targetsNamesMap.get(tween.getTarget());
+			String propertyName = editor.getProperty(tween.getTarget().getClass(), tween.getType()).getName();
+
+			Element elem = model.getElement(targetName + "/" + propertyName);
 			if (elem != null) {
-				NodeData nodeData = new NodeData(targets.length);
-				nodeData.setEquation(equation);
-				nodeData.setTargets(targets);
+				NodeData nodeData = new NodeData(tween.getCombinedTweenCount());
+				nodeData.setEquation(tween.getEasing());
+				nodeData.setTargets(tween.getTargetValues());
 
-				Node node = elem.addNode(time);
-				node.setLinked(isLinked);
+				Node node = elem.addNode(tween.getFullDuration());
+				node.setLinked(tween.getDuration() > 0);
 				node.setUserData(nodeData);
-
 			} else {
-				System.err.println("[W] '" + elementPath + "' is not part of the configured model.");
+				System.err.println("'" + targetName + "/" + propertyName + "' was not found in the model.");
 			}
 		}
 	}
 
-	public static Timeline stringToTimeline(String input) {
-		return null;
+	public static String timelineToString(Timeline timeline, Map<Object, String> targetsNamesMap) {
+		String str = "";
+
+		for (BaseTween child : timeline.getChildren()) {
+			Tween tween = (Tween) child;
+
+			str += String.format(Locale.US, "%s;%d;%d;%d;%s",
+				targetsNamesMap.get(tween.getTarget()),
+				tween.getType(),
+				tween.getDelay(),
+				tween.getDuration(),
+				tween.getEasing().toString());
+
+			for (int i=0; i<tween.getCombinedTweenCount(); i++)
+				str += String.format(Locale.US, ";%f", tween.getTargetValues()[i]);
+
+			str += "\n";
+		}
+
+		return str;
 	}
 }

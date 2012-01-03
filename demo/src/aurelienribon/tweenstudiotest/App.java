@@ -1,6 +1,8 @@
 package aurelienribon.tweenstudiotest;
 
+import aurelienribon.tweenengine.Timeline;
 import aurelienribon.tweenengine.Tween;
+import aurelienribon.tweenengine.TweenManager;
 import aurelienribon.tweenstudio.TweenStudio;
 import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Gdx;
@@ -9,49 +11,49 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
-import java.io.File;
 
 public class App implements ApplicationListener {
+	private static final String ANIMATION_1 = "First animation";
+	private static final String ANIMATION_2 = "Second animation";
+
 	private OrthographicCamera camera;
 	private SpriteBatch spriteBatch;
 	private Sprite[] sprites;
-	private TweenStudio tweenStudio;
+	private TweenManager tweenManager;
 
 	@Override
 	public void create() {
-		float ratio = (float)Gdx.graphics.getWidth()/Gdx.graphics.getHeight();
-		camera = new OrthographicCamera(10, 10/ratio);
-		spriteBatch = new SpriteBatch();
-		createSprites();
-
-		// Tween Engine classic initialization
 		Tween.enablePooling(true);
 		Tween.registerAccessor(Sprite.class, new SpriteTweenAccessor());
 
-		// Registration of the editor (only needed once per application)
-		TweenStudio.registerEditor(LibGdxTweenStudioEditorX.class);
+		TweenStudio.enableEdition();
+		TweenStudio.loadAnimation(Gdx.files.internal("data/anim1.timeline").file(), ANIMATION_1);
+		TweenStudio.loadAnimation(Gdx.files.internal("data/anim2.timeline").file(), ANIMATION_2);
 
-		// Spawn of the studio
-		TweenStudio.spawn();
+		float ratio = (float)Gdx.graphics.getWidth()/Gdx.graphics.getHeight();
+		camera = new OrthographicCamera(10, 10/ratio);
+		spriteBatch = new SpriteBatch();
+		tweenManager = new TweenManager();
+		createSprites();
 
-		// Instantiation of the studio
-		tweenStudio = new TweenStudio();
+		TweenStudio.setCurrentEditor(LibGdxTweenStudioEditorX.class);
+		LibGdxTweenStudioEditorX editor = TweenStudio.getEditor(LibGdxTweenStudioEditorX.class);
+		if (editor != null) editor.setup(camera);
+		
+		TweenStudio.unregisterAllTargets();
+		TweenStudio.registerTarget(sprites[0], "Logo LibGDX");
+		TweenStudio.registerTarget(sprites[1], "Logo Tween Engine");
+		TweenStudio.registerTarget(sprites[2], "Logo Tween");
+		TweenStudio.registerTarget(sprites[3], "Logo Studio");
+		
+		tweenManager.add(TweenStudio.createTimeline(ANIMATION_1));
 
-		// Configuration of the editor
-		LibGdxTweenStudioEditorX editor = (LibGdxTweenStudioEditorX) TweenStudio.getRegisteredEditor(LibGdxTweenStudioEditorX.class);
-		if (editor != null) editor.setCamera(camera);
+		TweenStudio.unregisterAllTargets();
+		TweenStudio.registerTarget(sprites[4], "Wave 1");
+		TweenStudio.registerTarget(sprites[5], "Wave 2");
+		TweenStudio.registerTarget(sprites[6], "Wave 3");
 
-		// Registration of the targets we want to animate
-		tweenStudio.registerTarget(sprites[0], "Logo LibGDX");
-		tweenStudio.registerTarget(sprites[1], "Logo Tween Engine");
-		tweenStudio.registerTarget(sprites[2], "Logo Tween");
-		tweenStudio.registerTarget(sprites[3], "Logo Studio");
-		tweenStudio.registerTarget(sprites[4], "Wave 1");
-		tweenStudio.registerTarget(sprites[5], "Wave 2");
-		tweenStudio.registerTarget(sprites[6], "Wave 3");
-
-		// ...then spawn it when you want !
-		tweenStudio.playOrEdit(LibGdxTweenStudioEditorX.class, "Title animation", new File("data/anim.tweens"));
+		tweenManager.add(TweenStudio.createTimeline(ANIMATION_2));
 	}
 
 	private void createSprites() {
@@ -77,7 +79,8 @@ public class App implements ApplicationListener {
 	@Override
 	public void render() {
 		int delta = (int) (Gdx.graphics.getDeltaTime() * 1000);
-		tweenStudio.update(delta);
+		TweenStudio.update(delta);
+		tweenManager.update(delta);
 
 		GL10 gl = Gdx.gl10;
 		gl.glClearColor(1, 1, 1, 1);
@@ -89,7 +92,7 @@ public class App implements ApplicationListener {
 			sprites[i].draw(spriteBatch);
 		spriteBatch.end();
 
-		tweenStudio.render();
+		TweenStudio.render();
 	}
 
 	@Override public void resize(int w, int h) {}

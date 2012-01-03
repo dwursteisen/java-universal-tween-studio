@@ -3,6 +3,7 @@ package aurelienribon.tweenstudio;
 import aurelienribon.tweenstudio.Property.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -12,27 +13,30 @@ import java.util.Set;
  */
 public abstract class Editor {
 	private final Map<Class, List<Property>> propertiesMap = new HashMap<Class, List<Property>>();
-	private TweenStudio studio;
-	private boolean isUsed = false;
+	private boolean isEnabled = false;
+
+	// -------------------------------------------------------------------------
+	// Abstract and overridable stuff
+	// -------------------------------------------------------------------------
+
+	public abstract void initialize();
+	public void stateChanged(boolean isEnabled) {}
+	public void render() {}
+	public void selectedObjectChanged(Object obj) {}
+	public void mouseOverObjectChanged(Object obj) {}
 
 	// -------------------------------------------------------------------------
 	// Public API
 	// -------------------------------------------------------------------------
 
-	protected abstract void initializeOverride();
-	protected abstract void disposeOverride();
-	public abstract void render();
-	public abstract void selectedObjectChanged(Object obj);
-	public abstract void mouseOverObjectChanged(Object obj);
-
-	public final void initialize() {
-		isUsed = true;
-		initializeOverride();
+	public final void start() {
+		isEnabled = true;
+		stateChanged(isEnabled);
 	}
 
-	public final void dispose() {
-		isUsed = false;
-		disposeOverride();
+	public final void stop() {
+		isEnabled = false;
+		stateChanged(isEnabled);
 	}
 
 	public final List<Property> getProperties(Class clazz) {
@@ -49,8 +53,8 @@ public abstract class Editor {
 		return null;
 	}
 
-	public final boolean isUsed() {
-		return isUsed;
+	public final boolean isEnabled() {
+		return isEnabled;
 	}
 
 	// -------------------------------------------------------------------------
@@ -63,34 +67,20 @@ public abstract class Editor {
 	}
 
 	protected final void fireStateChanged(Object target, int tweenType) {
-		studio.targetStateChanged(target, tweenType);
+		Set<Integer> tweenTypes = new HashSet<Integer>();
+		tweenTypes.add(tweenType);
+		TweenStudio.targetStateChanged(target, tweenTypes);
 	}
 
 	protected final void fireStateChanged(Object target, Set<Integer> tweenTypes) {
-		studio.targetStateChanged(target, tweenTypes);
+		TweenStudio.targetStateChanged(target, tweenTypes);
 	}
 
 	protected final void fireSelectedObjectChanged(Object obj) {
-		studio.selectedObjectChanged(obj);
+		TweenStudio.selectedObjectChanged(obj);
 	}
 
 	protected final void fireMouseOverObjectChanged(Object obj) {
-		studio.mouseOverObjectChanged(obj);
-	}
-
-	protected final List<Object> getRegisteredTargets() {
-		return studio.getTargets();
-	}
-
-	protected final String getRegisteredName(Object target) {
-		return studio.getName(target);
-	}
-
-	// -------------------------------------------------------------------------
-	// Package-protected
-	// -------------------------------------------------------------------------
-
-	void setStudio(TweenStudio studio) {
-		this.studio = studio;
+		TweenStudio.mouseOverObjectChanged(obj);
 	}
 }
