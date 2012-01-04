@@ -14,7 +14,7 @@ import java.util.Map;
 /**
  * @author Aurelien Ribon | http://www.aurelienribon.com
  */
-public class ImportExportHelper {
+class ImportExportHelper {
 	public static Timeline stringToTimeline(String str) {
 		Timeline tl = Timeline.createParallel();
 		String[] lines = str.split("\n");

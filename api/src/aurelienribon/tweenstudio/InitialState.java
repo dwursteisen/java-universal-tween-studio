@@ -8,7 +8,7 @@ import java.util.Map;
 /**
  * @author Aurelien Ribon | http://www.aurelienribon.com
  */
-public class InitialState {
+class InitialState {
 	private final Map<Integer, float[]> map = new HashMap<Integer, float[]>();
 
 	public InitialState(Editor editor, Object target) {

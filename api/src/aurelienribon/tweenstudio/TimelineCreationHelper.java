@@ -13,7 +13,7 @@ import java.util.Map;
 /**
  * @author Aurelien Ribon | http://www.aurelienribon.com/
  */
-public class TimelineCreationHelper {
+class TimelineCreationHelper {
 	public static void copy(Timeline tl1, Timeline tl2) {
 		for (int i=tl2.getChildren().size()-1; i>=0; i--)
 			tl2.getChildren().remove(i);

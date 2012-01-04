@@ -42,6 +42,7 @@ public class TweenStudio {
 	private static Map<Class<? extends Editor>, Editor> editorsMap;
 	private static Map<String, File> filesMap;
 	private static Queue<AnimationDef> animationsFifo;
+	private static AnimationDef currentAnimation;
 	private static Editor nextEditor;
 
 	// -------------------------------------------------------------------------
@@ -66,20 +67,38 @@ public class TweenStudio {
 				} catch (IllegalAccessException ex) {
 				} catch (UnsupportedLookAndFeelException ex) {
 				}
+
 				editionWindow = new MainWindow(new MainWindow.Callback() {
-					@Override
-					public void editionComplete(String animationName) {
-						animationsFifo.remove();
-						if (!animationsFifo.isEmpty())
-							editionWindow.initialize(animationsFifo.element());
+					@Override public void editionComplete() {
+						currentAnimation.timeline.start();
+						currentAnimation.editor.stop();
+
+						try {
+							String str = ImportExportHelper.timelineToString(currentAnimation.timeline, currentAnimation.targetsNamesMap);
+							FileUtils.writeStringToFile(str, filesMap.get(currentAnimation.name));
+						} catch (IOException ex) {
+							throw new RuntimeException(ex.getMessage());
+						}
+
+						currentAnimation = animationsFifo.poll();
+						if (currentAnimation != null) {
+							currentAnimation.editor.start(currentAnimation);
+							editionWindow.initialize(currentAnimation);
+						}
 					}
 				});
+
 				editionWindow.setSize(width, height);
 				editionWindow.setVisible(true);
 				editionWindow.addWindowListener(new WindowAdapter() {
-					@Override
-					public void windowClosed(WindowEvent e) {
+					@Override public void windowClosed(WindowEvent e) {
 						editionWindow = null;
+						if (currentAnimation != null) {
+							currentAnimation.editor.stop();
+							currentAnimation.timeline.start();
+							while (!animationsFifo.isEmpty())
+								animationsFifo.remove().timeline.start();
+						}
 					}
 				});
 			}});
@@ -157,15 +176,19 @@ public class TweenStudio {
 		Timeline timeline = buildTimeline(timelinesMap.get(animationName), nextTargetsNamesMap);
 		
 		if (isEditionEnabled()) {
-			AnimationDef animationTuple = new AnimationDef(
+			AnimationDef anim = new AnimationDef(
 				animationName, timeline, nextEditor,
 				new ArrayList<Object>(nextTargets),
 				new HashMap<Object, String>(nextTargetsNamesMap));
 
 			TweenManager.setAutoStart(timeline, false);
 
-			animationsFifo.add(animationTuple);
-			if (animationsFifo.size() == 1) editionWindow.initialize(animationTuple);
+			animationsFifo.add(anim);
+			if (currentAnimation == null) {
+				currentAnimation = animationsFifo.poll();
+				currentAnimation.editor.start(currentAnimation);
+				editionWindow.initialize(currentAnimation);
+			}
 		}
 
 		return timeline;
@@ -183,6 +206,7 @@ public class TweenStudio {
 	}
 
 	public static void render() {
+		if (!isEditionEnabled()) return;
 		if (nextEditor == null || !nextEditor.isEnabled()) return;
 		nextEditor.render();
 	}
@@ -195,7 +219,7 @@ public class TweenStudio {
 		if (!isEditionEnabled()) return;
 		try {
 			SwingUtilities.invokeAndWait(new Runnable() {@Override public void run() {
-				String name = animationsFifo.element().targetsNamesMap.get(target);
+				String name = currentAnimation.targetsNamesMap.get(target);
 				editionWindow.targetStateChanged(target, name, tweenTypes);
 			}});
 		} catch (InterruptedException ex) {
@@ -223,11 +247,6 @@ public class TweenStudio {
 		} catch (InterruptedException ex) {
 		} catch (InvocationTargetException ex) {
 		}
-	}
-
-	static File getFile(String animationName) {
-		if (!isEditionEnabled()) return null;
-		return filesMap.get(animationName);
 	}
 
 	static class DummyTweenAccessor implements TweenAccessor {

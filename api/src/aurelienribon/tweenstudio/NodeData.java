@@ -6,7 +6,7 @@ import aurelienribon.tweenengine.equations.Linear;
 /**
  * @author Aurelien Ribon | http://www.aurelienribon.com/
  */
-public class NodeData {
+class NodeData {
 	private final float[] targets;
 	private TweenEquation equation;
 

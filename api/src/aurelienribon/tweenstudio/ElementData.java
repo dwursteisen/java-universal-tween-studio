@@ -3,7 +3,7 @@ package aurelienribon.tweenstudio;
 /**
  * @author Aurelien Ribon | http://www.aurelienribon.com
  */
-public class ElementData {
+class ElementData {
 	private final Object target;
 	private final Property property;
 

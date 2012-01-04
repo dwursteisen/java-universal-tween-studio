@@ -13,7 +13,6 @@ import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Element;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Node;
 import aurelienribon.tweenstudio.ui.timeline.TimelinePanel;
 import aurelienribon.tweenstudio.ui.timeline.TimelinePanel.Listener;
-import aurelienribon.utils.io.FileUtils;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
@@ -22,13 +21,11 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JSpinner;
 import javax.swing.SpinnerNumberModel;
@@ -39,7 +36,7 @@ import javax.swing.event.ChangeListener;
 /**
  * @author Aurelien Ribon | http://www.aurelienribon.com
  */
-public class MainWindow extends javax.swing.JFrame {
+class MainWindow extends javax.swing.JFrame {
 	// -------------------------------------------------------------------------
 	// Attributes
 	// -------------------------------------------------------------------------
@@ -79,21 +76,10 @@ public class MainWindow extends javax.swing.JFrame {
 
 		saveAndStopBtn.addActionListener(new ActionListener() {
 			@Override public void actionPerformed(ActionEvent e) {
-				try {
-					animationDef.editor.stop();
-					TimelineCreationHelper.copy(workingTimeline, animationDef.timeline);
-					String str = ImportExportHelper.timelineToString(animationDef.timeline, animationDef.targetsNamesMap);
-					FileUtils.writeStringToFile(str, TweenStudio.getFile(animationDef.name));
-					end();
-					animationDef.timeline.start();
-
-					String name = animationDef.name;
-					animationDef = null;
-					callback.editionComplete(name);
-					
-				} catch (IOException ex) {
-					JOptionPane.showMessageDialog(MainWindow.this, ex.getMessage());
-				}
+				TimelineCreationHelper.copy(workingTimeline, animationDef.timeline);
+				end();
+				animationDef = null;
+				callback.editionComplete();
 			}
 		});
 	}
@@ -154,7 +140,7 @@ public class MainWindow extends javax.swing.JFrame {
 	// -------------------------------------------------------------------------
 
 	public interface Callback {
-		public void editionComplete(String animationName);
+		public void editionComplete();
 	}
 
 	// -------------------------------------------------------------------------
@@ -177,7 +163,6 @@ public class MainWindow extends javax.swing.JFrame {
 		this.animationDef = animationDef;
 		begin();
 		animationNameField.setText(animationDef.name);
-		animationDef.editor.start(animationDef);
 
 		createInitialStates();
 		TimelineModel model = createModel();
