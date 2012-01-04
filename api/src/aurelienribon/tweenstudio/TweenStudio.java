@@ -24,6 +24,44 @@ import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
 /**
+ * The Universal Tween Studio features multiple static calls to let you either
+ * edit or play your animations directly in your applications.
+ * <br/><br/>
+ *
+ * A usage example could be as follows:
+ * <br/><br/>
+ *
+ * public class MyGame {
+ *     public static void main(String[] args) {
+ *         TweenStudio.enableEdition();
+ *         << start your game >>
+ *     }
+ *
+ *     public MyGame() {
+ *         TweenStudio.loadAnimation(new File("data/anim1.timeline"), "My title animation");
+ *
+ *         << load and create your objects >>
+ *
+ *         TweenStudio.registerEditor(MyTweenStudioEditor.class);
+ *         TweenStudio.registerTarget(sprites[0], "Player");
+ *         TweenStudio.registerTarget(sprites[1], "Enemy");
+ *         TweenStudio.registerTarget(sprites[2], "Ground");
+ *         TweenStudio.registerTarget(sprites[3], "Sun");
+ *
+ *         TweenStudio.createTimeline("My title animation").addTo(tweenManager);
+ *     }
+ *
+ *     public void update(int deltaTime) {
+ *         TweenStudio.update(deltaTime);
+ *         tweenManager.update(deltaTime);
+ *         << update your game >>
+ *     }
+ *
+ *     public void render() {
+ *         << render your game >>
+ *         TweenStudio.render();
+ *     }
+ * }
  * @author Aurelien Ribon | http://www.aurelienribon.com/
  */
 public class TweenStudio {
@@ -48,14 +86,25 @@ public class TweenStudio {
 	// Public API
 	// -------------------------------------------------------------------------
 
+	/**
+	 * Returns true if the edition window is opened.
+	 */
 	public static boolean isEditionEnabled() {
 		return editionWindow != null;
 	}
 
+	/**
+	 * Enables the edition of the application timelines. The edition window
+	 * will be spawned.
+	 */
 	public static void enableEdition() {
 		enableEdition(1000, 500);
 	}
 
+	/**
+	 * Enables the edition of the application timelines. The edition window
+	 * will be spawned. Lets you define the size of the window.
+	 */
 	public static void enableEdition(final int width, final int height) {
 		try {
 			SwingUtilities.invokeAndWait(new Runnable() {@Override public void run() {
@@ -112,27 +161,42 @@ public class TweenStudio {
 		}
 	}
 
-	public static void loadAnimation(File file, String animationName) {
+	/**
+	 * Loads the file content and create a timeline out of it. If edition is
+	 * enabled, the file path is also stored for future modification.
+	 */
+	public static void loadAnimation(File animationFile, String animationName) {
 		try {
-			String str = FileUtils.readFileToString(file);
+			String str = FileUtils.readFileToString(animationFile);
 			Timeline tl = ImportExportHelper.stringToTimeline(str);
 			timelinesMap.put(animationName, tl);
-			if (isEditionEnabled()) filesMap.put(animationName, file);
+			if (isEditionEnabled()) filesMap.put(animationName, animationFile);
 		} catch (IOException ex) {
 			throw new RuntimeException(ex);
 		}
 	}
 
+	/**
+	 * Removes the animation from memory.
+	 */
 	public static void unloadAnimation(String animationName) {
 		timelinesMap.remove(animationName);
 		if (filesMap != null) filesMap.remove(animationName);
 	}
 
+	/**
+	 * Removes every animation from memory.
+	 */
 	public static void unloadAllAnimations() {
 		timelinesMap.clear();
 		if (filesMap != null) filesMap.clear();
 	}
 
+	/**
+	 * If edition is enabled, gets an instance of the given editor class. It
+	 * may be useful if the editor needs some custom parameters depending on
+	 * the current context. Returns always null is edition is disabled.
+	 */
 	public static <T extends Editor> T getEditor(Class<T> editorClass) {
 		if (isEditionEnabled()) {
 			T edt = (T) editorsMap.get(editorClass);
@@ -150,25 +214,47 @@ public class TweenStudio {
 		return null;
 	}
 
+	/**
+	 * Registers the given editor class to be used in the future animation
+	 * editions.
+	 */
 	public static void registerEditor(Class<? extends Editor> editorClass) {
 		nextEditor = getEditor(editorClass);
 	}
 
+	/**
+	 * Registers the given object as a target of the future animations.
+	 */
 	public static void registerTarget(Object target, String name) {
 		if (!nextTargets.contains(target)) nextTargets.add(target);
 		nextTargetsNamesMap.put(target, name);
 	}
 
+	/**
+	 * Removes a target from the future animation editions.
+	 */
 	public static void unregisterTarget(Object target) {
 		nextTargets.remove(target);
 		nextTargetsNamesMap.remove(target);
 	}
 
+	/**
+	 * Removes every target from the future animation editions.
+	 */
 	public static void unregisterAllTargets() {
 		nextTargets.clear();
 		nextTargetsNamesMap.clear();
 	}
 
+	/**
+	 * Creates a {@link Timeline} from the loaded file associated to the
+	 * given animation name. If edition is enabled, the returned timeline
+	 * won't be auto-started by a manager, so you can safely directly add it to
+	 * your manager right after this call. The timeline will be started by the
+	 * studio once you'll end its edition. If edition is disabled, the returned
+	 * timeline will be already started, for consistency with the edition
+	 * behavior.
+	 */
 	public static Timeline createTimeline(String animationName) {
 		if (!timelinesMap.containsKey(animationName)) throw new RuntimeException(animationName + " is not loaded.");
 		if (isEditionEnabled() && nextEditor == null) throw new RuntimeException("No editor was set.");
@@ -189,11 +275,17 @@ public class TweenStudio {
 				currentAnimation.editor.start(currentAnimation);
 				editionWindow.initialize(currentAnimation);
 			}
+		} else {
+			timeline.start();
 		}
 
 		return timeline;
 	}
 
+	/**
+	 * Updates the edition engine. Does nothing if animation edition is
+	 * not enabled, or if there is no animation to edit.
+	 */
 	public static void update(final int deltaMillis) {
 		if (!isEditionEnabled()) return;
 		try {
@@ -205,6 +297,10 @@ public class TweenStudio {
 		}
 	}
 
+	/**
+	 * Renders the current editor painting. Does nothing if animation edition is
+	 * not enabled, or if there is no animation to edit.
+	 */
 	public static void render() {
 		if (!isEditionEnabled()) return;
 		if (nextEditor == null || !nextEditor.isEnabled()) return;
