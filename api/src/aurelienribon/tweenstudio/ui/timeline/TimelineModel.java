@@ -152,6 +152,11 @@ public class TimelineModel {
 			return Collections.unmodifiableList(nodes);
 		}
 
+		public Node getLastNode() {
+			if (nodes.isEmpty()) return null;
+			return nodes.get(nodes.size()-1);
+		}
+
 		public Element getChild(String name) {
 			for (Element child : children)
 				if (child.getName().equals(name))
