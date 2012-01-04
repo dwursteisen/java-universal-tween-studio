@@ -11,6 +11,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public class TimelineModel {
     private final Element root = new Element(this, null, "root");
+	private boolean isSilent = false;
 
 	// -------------------------------------------------------------------------
 	// public API
@@ -73,6 +74,11 @@ public class TimelineModel {
 		return duration;
 	}
 
+	public void mute(boolean value) {
+		isSilent = value;
+		if (value == false) fireStateChanged();
+	}
+
 	// -------------------------------------------------------------------------
 	// Helpers
 	// -------------------------------------------------------------------------
@@ -96,6 +102,7 @@ public class TimelineModel {
 	}
 
 	private void fireStateChanged() {
+		if (isSilent) return;
 		for (Listener listener : listeners)
 			listener.stateChanged();
 	}
@@ -202,7 +209,7 @@ public class TimelineModel {
 			return false;
 		}
 
-		private void sortNodes() {
+		public void sortNodes() {
 			Collections.sort(nodes, new Comparator<Node>() {
 				@Override public int compare(Node o1, Node o2) {
 					return o1.getTime() - o2.getTime();
@@ -237,7 +244,6 @@ public class TimelineModel {
 		public void setTime(int time) {
 			if (this.time != time) {
 				this.time = time;
-				parent.sortNodes();
 				parent.getTimelineModel().fireStateChanged();
 			}
 		}

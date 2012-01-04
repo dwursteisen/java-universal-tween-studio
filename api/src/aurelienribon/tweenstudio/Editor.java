@@ -1,6 +1,7 @@
 package aurelienribon.tweenstudio;
 
 import aurelienribon.tweenstudio.Property.Field;
+import aurelienribon.tweenstudio.TweenStudio.AnimationDef;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -13,10 +14,11 @@ import java.util.Set;
  */
 public abstract class Editor {
 	private final Map<Class, List<Property>> propertiesMap = new HashMap<Class, List<Property>>();
+	private AnimationDef animationDef;
 	private boolean isEnabled = false;
 
 	// -------------------------------------------------------------------------
-	// Abstract and overridable stuff
+	// Public APi
 	// -------------------------------------------------------------------------
 
 	public abstract void initialize();
@@ -26,25 +28,26 @@ public abstract class Editor {
 	public void mouseOverObjectChanged(Object obj) {}
 
 	// -------------------------------------------------------------------------
-	// Public API
+	// Package API
 	// -------------------------------------------------------------------------
 
-	public final void start() {
+	final void start(AnimationDef animationDef) {
+		this.animationDef = animationDef;
 		isEnabled = true;
 		stateChanged(isEnabled);
 	}
 
-	public final void stop() {
+	final void stop() {
 		isEnabled = false;
 		stateChanged(isEnabled);
 	}
 
-	public final List<Property> getProperties(Class clazz) {
+	final List<Property> getProperties(Class clazz) {
 		assert propertiesMap.containsKey(clazz);
 		return propertiesMap.get(clazz);
 	}
 
-	public final Property getProperty(Class clazz, int tweenType) {
+	final Property getProperty(Class clazz, int tweenType) {
 		List<Property> properties = getProperties(clazz);
 		for (Property property : properties)
 			if (property.getId() == tweenType)
@@ -53,13 +56,17 @@ public abstract class Editor {
 		return null;
 	}
 
-	public final boolean isEnabled() {
+	final boolean isEnabled() {
 		return isEnabled;
 	}
 
 	// -------------------------------------------------------------------------
 	// Protected API
 	// -------------------------------------------------------------------------
+
+	protected final AnimationDef getAnimationDef() {
+		return animationDef;
+	}
 
 	protected final void registerProperty(Class clazz, int tweenType, String propertyName, Field... fields) {
 		if (!propertiesMap.containsKey(clazz)) propertiesMap.put(clazz, new ArrayList<Property>(5));

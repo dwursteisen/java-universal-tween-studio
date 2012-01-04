@@ -5,6 +5,7 @@ import aurelienribon.tweenengine.Tween;
 import aurelienribon.tweenengine.TweenAccessor;
 import aurelienribon.tweenengine.TweenEquation;
 import aurelienribon.tweenstudio.Property.Field;
+import aurelienribon.tweenstudio.TweenStudio.AnimationDef;
 import aurelienribon.tweenstudio.ui.timeline.Theme;
 import aurelienribon.tweenstudio.ui.timeline.TimelineHelper;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel;
@@ -44,10 +45,10 @@ public class MainWindow extends javax.swing.JFrame {
 	// -------------------------------------------------------------------------
 
 	private final Theme theme = new Theme();
-	private final Map<Object, InitialState> currentInitialStatesMap = new HashMap<Object, InitialState>();
+	private final Map<Object, InitialState> initialStatesMap = new HashMap<Object, InitialState>();
 	private final float[] buffer = new float[Tween.MAX_COMBINED_TWEENS];
 
-	private Timeline currentTimeline;
+	private AnimationDef animationDef;
 	private Timeline workingTimeline;
 	private int playTime;
 	private int playDuration;
@@ -79,14 +80,19 @@ public class MainWindow extends javax.swing.JFrame {
 		saveAndStopBtn.addActionListener(new ActionListener() {
 			@Override public void actionPerformed(ActionEvent e) {
 				try {
-					TimelineCreationHelper.copy(workingTimeline, currentTimeline);
-					String str = ImportExportHelper.timelineToString(currentTimeline, TweenStudio.getTargetsNamesMap());
-					FileUtils.writeStringToFile(str, TweenStudio.getCurrentAnimationFile());
+					animationDef.editor.stop();
+					TimelineCreationHelper.copy(workingTimeline, animationDef.timeline);
+					String str = ImportExportHelper.timelineToString(animationDef.timeline, animationDef.targetsNamesMap);
+					FileUtils.writeStringToFile(str, TweenStudio.getFile(animationDef.name));
 					end();
-					callback.editionComplete();
-					currentTimeline.start();
+					animationDef.timeline.start();
+
+					String name = animationDef.name;
+					animationDef = null;
+					callback.editionComplete(name);
+					
 				} catch (IOException ex) {
-					JOptionPane.showMessageDialog(MainWindow.this, "Sorry, can't write on animation file...");
+					JOptionPane.showMessageDialog(MainWindow.this, ex.getMessage());
 				}
 			}
 		});
@@ -116,19 +122,19 @@ public class MainWindow extends javax.swing.JFrame {
 				updateObjectCard();
 
 				ElementData elemData = (ElementData) newElem.getUserData();
-				TweenStudio.getCurrentEditor().selectedObjectChanged(elemData.getTarget());
+				animationDef.editor.selectedObjectChanged(elemData.getTarget());
 			} else {
 				cl.show(propertiesPanel, "nothingCard");
-				TweenStudio.getCurrentEditor().selectedObjectChanged(null);
+				animationDef.editor.selectedObjectChanged(null);
 			}
 		}
 
 		@Override public void mouseOverElementChanged(Element newElem, Element oldElem) {
 			if (newElem != null) {
 				ElementData elemData = (ElementData) newElem.getUserData();
-				TweenStudio.getCurrentEditor().mouseOverObjectChanged(elemData.getTarget());
+				animationDef.editor.mouseOverObjectChanged(elemData.getTarget());
 			} else {
-				TweenStudio.getCurrentEditor().mouseOverObjectChanged(null);
+				animationDef.editor.mouseOverObjectChanged(null);
 			}
 		}
 
@@ -148,21 +154,34 @@ public class MainWindow extends javax.swing.JFrame {
 	// -------------------------------------------------------------------------
 
 	public interface Callback {
-		public void editionComplete();
+		public void editionComplete(String animationName);
 	}
 
 	// -------------------------------------------------------------------------
 	// Public API
 	// -------------------------------------------------------------------------
 
-	public void initialize(Timeline timeline) {
+	public int getCurrentTime() {
+		return timelinePanel.getCurrentTime();
+	}
+
+	public void setCurrentTime(int time) {
+		timelinePanel.setCurrentTime(time);
+	}
+
+	// -------------------------------------------------------------------------
+	// Package API
+	// -------------------------------------------------------------------------
+
+	void initialize(AnimationDef animationDef) {
+		this.animationDef = animationDef;
 		begin();
-		animationNameField.setText(TweenStudio.getCurrentAnimationName());
-		currentTimeline = timeline;
+		animationNameField.setText(animationDef.name);
+		animationDef.editor.start(animationDef);
 
 		createInitialStates();
 		TimelineModel model = createModel();
-		ImportExportHelper.timelineToModel(currentTimeline, model, TweenStudio.getTargetsNamesMap(), TweenStudio.getCurrentEditor());
+		ImportExportHelper.timelineToModel(animationDef.timeline, model, animationDef.targetsNamesMap, animationDef.editor);
 		timelinePanel.setModel(model);
 		recreateTimeline();
 
@@ -174,7 +193,8 @@ public class MainWindow extends javax.swing.JFrame {
 		});
 	}
 
-	public void update(int deltaMillis) {
+	void update(int deltaMillis) {
+		if (animationDef == null) return;
 		if (timelinePanel.isPlaying()) {
 			playTime += deltaMillis;
 			if (playTime <= playDuration) {
@@ -184,14 +204,6 @@ public class MainWindow extends javax.swing.JFrame {
 				timelinePanel.setPlaying(false);
 			}
 		}
-	}
-
-	public int getCurrentTime() {
-		return timelinePanel.getCurrentTime();
-	}
-
-	public void setCurrentTime(int time) {
-		timelinePanel.setCurrentTime(time);
 	}
 
 	public void selectedObjectChanged(Object obj) {
@@ -220,7 +232,7 @@ public class MainWindow extends javax.swing.JFrame {
 
 	public void targetStateChanged(Object target, String name, Set<Integer> tweenTypes) {
 		for (int tweenType : tweenTypes) {
-			String propertyName = TweenStudio.getCurrentEditor().getProperty(target.getClass(), tweenType).getName();
+			String propertyName = animationDef.editor.getProperty(target.getClass(), tweenType).getName();
 			Element elem = timelinePanel.getModel().getElement(name + "/" + propertyName);
 			Node node = TimelineHelper.getNodeOrCreate(elem, getCurrentTime());
 			NodeData nodeData = (NodeData) node.getUserData();
@@ -243,7 +255,7 @@ public class MainWindow extends javax.swing.JFrame {
 		workingTimeline = TimelineCreationHelper.createTimelineFromModel(
 			timelinePanel.getModel(),
 			getCurrentTime(),
-			currentInitialStatesMap);
+			initialStatesMap);
 
 		if (objectCard.isVisible()) updateObjectCard();
 	}
@@ -253,10 +265,10 @@ public class MainWindow extends javax.swing.JFrame {
 	// -------------------------------------------------------------------------
 
 	private void createInitialStates() {
-		currentInitialStatesMap.clear();
-		for (Object target : TweenStudio.getRegisteredTargets()) {
-			InitialState state = new InitialState(TweenStudio.getCurrentEditor(), target);
-			currentInitialStatesMap.put(target, state);
+		initialStatesMap.clear();
+		for (Object target : animationDef.targets) {
+			InitialState state = new InitialState(animationDef.editor, target);
+			initialStatesMap.put(target, state);
 		}
 	}
 
@@ -267,14 +279,14 @@ public class MainWindow extends javax.swing.JFrame {
 			@Override public void stateChanged() {recreateTimeline();}
 		});
 
-		for (Object target : TweenStudio.getRegisteredTargets()) {
-			List<Property> properties = TweenStudio.getCurrentEditor().getProperties(target.getClass());
-			Element elem = model.addElement(TweenStudio.getRegisteredName(target));
+		for (Object target : animationDef.targets) {
+			List<Property> properties = animationDef.editor.getProperties(target.getClass());
+			Element elem = model.addElement(animationDef.targetsNamesMap.get(target));
 			elem.setSelectable(false);
 			elem.setUserData(new ElementData(target, null));
 
 			for (Property property : properties) {
-				elem = model.addElement(TweenStudio.getRegisteredName(target) + "/" + property.getName());
+				elem = model.addElement(animationDef.targetsNamesMap.get(target) + "/" + property.getName());
 				elem.setUserData(new ElementData(target, property));
 			}
 		}
@@ -322,7 +334,7 @@ public class MainWindow extends javax.swing.JFrame {
 
 		int cnt = 0;
 
-		for (Property property : TweenStudio.getCurrentEditor().getProperties(elemData.getTarget().getClass())) {
+		for (Property property : animationDef.editor.getProperties(elemData.getTarget().getClass())) {
 			float[] values = new float[property.getFields().length];
 			TweenAccessor accessor = Tween.getRegisteredAccessor(elemData.getTarget().getClass());
 			accessor.getValues(elemData.getTarget(), property.getId(), values);

@@ -73,7 +73,7 @@ public class LibGdxTweenStudioEditorX extends Editor {
 			Gdx.input.setInputProcessor(inputProcessor);
 
 			sprites.clear();
-			for (Object target : TweenStudio.getRegisteredTargets())
+			for (Object target : getAnimationDef().targets)
 				if (target instanceof Sprite) sprites.add((Sprite) target);
 
 		} else {
@@ -102,14 +102,14 @@ public class LibGdxTweenStudioEditorX extends Editor {
 		spriteBatch.setProjectionMatrix(screenCamera.combined);
 		spriteBatch.begin();
 		font.setColor(Color.RED);
-		font.draw(spriteBatch, "Recording", 27, txtY-=20);
+		font.draw(spriteBatch, "Recording \"" + getAnimationDef().name + "\"", 27, txtY-=20);
 		if (selectedSprite != null) {
-			String name = TweenStudio.getRegisteredName(selectedSprite);
+			String name = getAnimationDef().targetsNamesMap.get(selectedSprite);
 			font.setColor(Color.BLUE);
 			font.draw(spriteBatch, "Selected: " + name, 10, txtY-=20);
 		}
 		if (mouseOverSprite != null) {
-			String name = TweenStudio.getRegisteredName(mouseOverSprite);
+			String name = getAnimationDef().targetsNamesMap.get(mouseOverSprite);
 			font.setColor(Color.BLUE);
 			font.draw(spriteBatch, "Mouseover :" + name, 10, txtY-=20);
 		}

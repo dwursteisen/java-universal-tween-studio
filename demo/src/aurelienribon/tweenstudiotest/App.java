@@ -1,6 +1,5 @@
 package aurelienribon.tweenstudiotest;
 
-import aurelienribon.tweenengine.Timeline;
 import aurelienribon.tweenengine.Tween;
 import aurelienribon.tweenengine.TweenManager;
 import aurelienribon.tweenstudio.TweenStudio;
@@ -36,7 +35,7 @@ public class App implements ApplicationListener {
 		tweenManager = new TweenManager();
 		createSprites();
 
-		TweenStudio.setCurrentEditor(LibGdxTweenStudioEditorX.class);
+		TweenStudio.registerEditor(LibGdxTweenStudioEditorX.class);
 		LibGdxTweenStudioEditorX editor = TweenStudio.getEditor(LibGdxTweenStudioEditorX.class);
 		if (editor != null) editor.setup(camera);
 		
@@ -46,14 +45,14 @@ public class App implements ApplicationListener {
 		TweenStudio.registerTarget(sprites[2], "Logo Tween");
 		TweenStudio.registerTarget(sprites[3], "Logo Studio");
 		
-		tweenManager.add(TweenStudio.createTimeline(ANIMATION_1));
+		TweenStudio.createTimeline(ANIMATION_1).addTo(tweenManager);
 
 		TweenStudio.unregisterAllTargets();
 		TweenStudio.registerTarget(sprites[4], "Wave 1");
 		TweenStudio.registerTarget(sprites[5], "Wave 2");
 		TweenStudio.registerTarget(sprites[6], "Wave 3");
 
-		tweenManager.add(TweenStudio.createTimeline(ANIMATION_2));
+		TweenStudio.createTimeline(ANIMATION_2).addTo(tweenManager);
 	}
 
 	private void createSprites() {
