@@ -35,7 +35,7 @@ class GridPanel extends JPanel implements Scrollable {
 	private final TimelinePanel parent;
 	private Callback callback;
 	private float timeScale = 1;
-	private Element mouseOverElement = null;
+	private Element mouseOverProperty = null;
 	private Node mouseOverNode = null;
 	private boolean isOverTrack = false;
 	private int vOffset;
@@ -184,11 +184,11 @@ class GridPanel extends JPanel implements Scrollable {
 				lastX = x2;
 
 				if (node.isLinked()) {
-					gg.setColor(isOverTrack && elem == mouseOverElement
+					gg.setColor(isOverTrack && elem == mouseOverProperty
 						? theme.COLOR_GRIDPANEL_TRACK_MOUSEOVER
 						: theme.COLOR_GRIDPANEL_TRACK);
 				} else {
-					gg.setColor(isOverTrack && elem == mouseOverElement
+					gg.setColor(isOverTrack && elem == mouseOverProperty
 						? theme.COLOR_GRIDPANEL_TRACK_UNLINKED_MOUSEOVER
 						: theme.COLOR_GRIDPANEL_TRACK_UNLINKED);
 				}
@@ -358,7 +358,7 @@ class GridPanel extends JPanel implements Scrollable {
 					break;
 
 				case DRAG_TRACK:
-					for (Node n : mouseOverElement.getNodes())
+					for (Node n : mouseOverProperty.getNodes())
 						n.setTime((int) (Math.round(n.getTime() / 100f)) * 100);
 					parent.getModel().mute(false);
 					break;
@@ -416,8 +416,8 @@ class GridPanel extends JPanel implements Scrollable {
 
 				case DRAG_TRACK:
 					parent.getModel().mute(true);
-					if (deltaTime < 0) deltaTime = Math.max(deltaTime, -getMinTime(mouseOverElement.getNodes()));
-					for (Node n : mouseOverElement.getNodes()) n.setTime(n.getTime() + deltaTime);
+					if (deltaTime < 0) deltaTime = Math.max(deltaTime, -getMinTime(mouseOverProperty.getNodes()));
+					for (Node n : mouseOverProperty.getNodes()) n.setTime(n.getTime() + deltaTime);
 					System.out.println();
 					break;
 
@@ -438,22 +438,22 @@ class GridPanel extends JPanel implements Scrollable {
 			int eLine = getLineFromY(e.getY());
 
 			Node oldNode = mouseOverNode;
-			Element oldElement = mouseOverElement;
+			Element oldElement = mouseOverProperty;
 			mouseOverNode = null;
-			mouseOverElement = null;
+			mouseOverProperty = null;
 			isOverTrack = false;
 
 			int line = 0;
 			for (Element elem : parent.getModel().getElements()) {
 				if (eLine == line) {
-					mouseOverElement = elem;
+					mouseOverProperty = elem;
 					break;
 				}
 				line += 1;
 			}
 
-			if (mouseOverElement != null) {
-				for (Node node : mouseOverElement.getNodes()) {
+			if (mouseOverProperty != null) {
+				for (Node node : mouseOverProperty.getNodes()) {
 					if (eTime == node.getTime()) {
 						mouseOverNode = node;
 						break;
@@ -461,12 +461,12 @@ class GridPanel extends JPanel implements Scrollable {
 				}
 			}
 			
-			if (mouseOverElement != null && mouseOverNode == null && mouseOverElement.getNodes().size() > 1) {
-				Node n = mouseOverElement.getNodes().get(mouseOverElement.getNodes().size()-1);
+			if (mouseOverProperty != null && mouseOverNode == null && mouseOverProperty.getNodes().size() > 1) {
+				Node n = mouseOverProperty.getNodes().get(mouseOverProperty.getNodes().size()-1);
 				isOverTrack = 0 <= eTime && eTime <= n.getTime();
 			}
 
-			if (oldNode != mouseOverNode || oldElement != mouseOverElement) repaint();
+			if (oldNode != mouseOverNode || oldElement != mouseOverProperty) repaint();
 
 			setCursor(isOverTrack
 				? Cursor.getPredefinedCursor(Cursor.E_RESIZE_CURSOR)
@@ -476,7 +476,7 @@ class GridPanel extends JPanel implements Scrollable {
 		@Override
 		public void mouseExited(MouseEvent e) {
 			if (!isPressed) {
-				mouseOverElement = null;
+				mouseOverProperty = null;
 				mouseOverNode = null;
 				isOverTrack = false;
 				repaint();
@@ -503,6 +503,16 @@ class GridPanel extends JPanel implements Scrollable {
 					List<Node> nodes = new ArrayList<Node>(parent.getSelectedNodes());
 					parent.clearSelectedNodes();
 					for (Node node : nodes) node.getParent().removeNode(node);
+					break;
+
+				case KeyEvent.VK_ENTER:
+					if (mouseOverProperty == null) {
+						if (parent.getSelectedElement() != null)
+							for (Element child : parent.getSelectedElement().getChildren())
+								child.addNode(parent.getCurrentTime());
+					} else {
+						mouseOverProperty.addNode(parent.getCurrentTime());
+					}
 					break;
 			}
 		}

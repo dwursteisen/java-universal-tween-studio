@@ -82,6 +82,14 @@ class MainWindow extends javax.swing.JFrame {
 				callback.editionComplete();
 			}
 		});
+
+		discardbtn.addActionListener(new ActionListener() {
+			@Override public void actionPerformed(ActionEvent e) {
+				end();
+				animationDef = null;
+				callback.editionDiscarded();
+			}
+		});
 	}
 
 	private final TimelinePanel.Listener timelinePanelListener = new Listener() {
@@ -141,6 +149,7 @@ class MainWindow extends javax.swing.JFrame {
 
 	public interface Callback {
 		public void editionComplete();
+		public void editionDiscarded();
 	}
 
 	// -------------------------------------------------------------------------
@@ -286,6 +295,7 @@ class MainWindow extends javax.swing.JFrame {
 	private void begin() {
 		setCurrentTime(0);
 		saveAndStopBtn.setEnabled(true);
+		discardbtn.setEnabled(true);
 		timelinePanel.setSelectedElement(null);
 		timelinePanel.clearSelectedNodes();
 	}
@@ -297,6 +307,7 @@ class MainWindow extends javax.swing.JFrame {
 		timelinePanel.setModel(new TimelineModel());
 		animationNameField.setText("<nothing loaded>");
 		saveAndStopBtn.setEnabled(false);
+		discardbtn.setEnabled(false);
 	}
 
 	private void updateTweenCard() {
@@ -414,6 +425,7 @@ class MainWindow extends javax.swing.JFrame {
         jPanel3 = new javax.swing.JPanel();
         animationNameField = new javax.swing.JTextField();
         saveAndStopBtn = new javax.swing.JButton();
+        discardbtn = new javax.swing.JButton();
         propertiesPanel = new javax.swing.JPanel();
         nothingCard = new javax.swing.JPanel();
         tweenCard = new javax.swing.JPanel();
@@ -444,11 +456,11 @@ class MainWindow extends javax.swing.JFrame {
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel2Layout.createSequentialGroup()
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel1, javax.swing.GroupLayout.DEFAULT_SIZE, 180, Short.MAX_VALUE)
-                    .addComponent(jLabel2, javax.swing.GroupLayout.DEFAULT_SIZE, 180, Short.MAX_VALUE))
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(jLabel2, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 180, Short.MAX_VALUE)
+                    .addComponent(jLabel1, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 180, Short.MAX_VALUE))
                 .addContainerGap())
         );
         jPanel2Layout.setVerticalGroup(
@@ -469,11 +481,19 @@ class MainWindow extends javax.swing.JFrame {
         animationNameField.setText("---");
 
         saveAndStopBtn.setIcon(new javax.swing.ImageIcon(getClass().getResource("/aurelienribon/tweenstudio/gfx/ic_save.png"))); // NOI18N
-        saveAndStopBtn.setText("Save and close animation");
+        saveAndStopBtn.setText("Save and next");
+        saveAndStopBtn.setFocusable(false);
         saveAndStopBtn.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         saveAndStopBtn.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
         saveAndStopBtn.setMargin(new java.awt.Insets(2, 3, 2, 3));
         saveAndStopBtn.setOpaque(false);
+
+        discardbtn.setText("Discard");
+        discardbtn.setFocusable(false);
+        discardbtn.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        discardbtn.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
+        discardbtn.setMargin(new java.awt.Insets(2, 3, 2, 3));
+        discardbtn.setOpaque(false);
 
         javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
         jPanel3.setLayout(jPanel3Layout);
@@ -482,7 +502,10 @@ class MainWindow extends javax.swing.JFrame {
             .addGroup(jPanel3Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(saveAndStopBtn, javax.swing.GroupLayout.DEFAULT_SIZE, 160, Short.MAX_VALUE)
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
+                        .addComponent(saveAndStopBtn, javax.swing.GroupLayout.DEFAULT_SIZE, 109, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(discardbtn))
                     .addComponent(animationNameField, javax.swing.GroupLayout.DEFAULT_SIZE, 160, Short.MAX_VALUE))
                 .addContainerGap())
         );
@@ -492,7 +515,9 @@ class MainWindow extends javax.swing.JFrame {
                 .addContainerGap()
                 .addComponent(animationNameField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(saveAndStopBtn)
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(saveAndStopBtn)
+                    .addComponent(discardbtn, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
@@ -649,6 +674,7 @@ class MainWindow extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JTextField animationNameField;
+    private javax.swing.JButton discardbtn;
     private javax.swing.JComboBox easingCbox;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;

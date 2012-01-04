@@ -27,7 +27,6 @@ import javax.swing.UnsupportedLookAndFeelException;
  * @author Aurelien Ribon | http://www.aurelienribon.com/
  */
 public class TweenStudio {
-
 	// -------------------------------------------------------------------------
 	// Attributes
 	// -------------------------------------------------------------------------
@@ -70,9 +69,6 @@ public class TweenStudio {
 
 				editionWindow = new MainWindow(new MainWindow.Callback() {
 					@Override public void editionComplete() {
-						currentAnimation.timeline.start();
-						currentAnimation.editor.stop();
-
 						try {
 							String str = ImportExportHelper.timelineToString(currentAnimation.timeline, currentAnimation.targetsNamesMap);
 							FileUtils.writeStringToFile(str, filesMap.get(currentAnimation.name));
@@ -80,11 +76,11 @@ public class TweenStudio {
 							throw new RuntimeException(ex.getMessage());
 						}
 
-						currentAnimation = animationsFifo.poll();
-						if (currentAnimation != null) {
-							currentAnimation.editor.start(currentAnimation);
-							editionWindow.initialize(currentAnimation);
-						}
+						callNextAnimation();
+					}
+
+					@Override public void editionDiscarded() {
+						callNextAnimation();
 					}
 				});
 
@@ -108,7 +104,11 @@ public class TweenStudio {
 			if (animationsFifo == null) animationsFifo = new ArrayDeque<AnimationDef>();
 
 		} catch (InterruptedException ex) {
+			editionWindow = null;
+			throw new RuntimeException(ex);
 		} catch (InvocationTargetException ex) {
+			editionWindow = null;
+			throw new RuntimeException(ex);
 		}
 	}
 
@@ -283,6 +283,16 @@ public class TweenStudio {
 			if (name.equals(targetsNamesMap.get(target)))
 				return target;
 		return null;
+	}
+
+	private static void callNextAnimation() {
+		currentAnimation.timeline.start();
+		currentAnimation.editor.stop();
+		currentAnimation = animationsFifo.poll();
+		if (currentAnimation != null) {
+			currentAnimation.editor.start(currentAnimation);
+			editionWindow.initialize(currentAnimation);
+		}
 	}
 
 	// -------------------------------------------------------------------------
