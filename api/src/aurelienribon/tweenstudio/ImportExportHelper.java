@@ -57,7 +57,7 @@ class ImportExportHelper {
 				nodeData.setTargets(tween.getTargetValues());
 
 				Node node = elem.addNode(tween.getFullDuration());
-				node.setLinked(tween.getDuration() > 0);
+				node.setLinked(tween.getDuration() > 0 || child == timeline.getChildren().get(0));
 				node.setUserData(nodeData);
 			} else {
 				System.err.println("'" + targetName + "/" + propertyName + "' was not found in the model.");

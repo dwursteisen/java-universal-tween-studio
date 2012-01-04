@@ -23,7 +23,7 @@ import javax.swing.JPanel;
  * @author Aurelien Ribon | http://www.aurelienribon.com/
  */
 class GridPanel extends JPanel implements Scrollable {
-	private final int oneSecondWidth = 70;
+	private final int oneSecondWidth = 60;
 	private final int paddingTop = 30;
 	private final int paddingLeft = 15;
 	private final int lineHeight = 20;
@@ -462,6 +462,7 @@ class GridPanel extends JPanel implements Scrollable {
 
 			mouseOverNode = null;
 			mouseOverProperty = null;
+			trackGripRect = null;
 			isOverTrack = isOverTrackGrip = false;
 
 			int line = 0;
