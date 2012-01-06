@@ -253,7 +253,7 @@ class GridPanel extends JPanel implements Scrollable {
 		FontMetrics fm = gg.getFontMetrics();
 
 		for (int i=minSeconds; i<=maxSeconds; i++) {
-			int x = getXFromTime(i*1000);
+			int x = getXFromTime(i*1000000);
 
 			String str = String.valueOf(i);
 			gg.setColor(theme.COLOR_FOREGROUND);
@@ -262,7 +262,7 @@ class GridPanel extends JPanel implements Scrollable {
 			gg.setColor(theme.COLOR_GRIDPANEL_TIMELINE);
 			gg.fillRect(x-1, paddingTop - tickHeight, 2, getHeight());
 			for (int ii=1; ii<10; ii++) {
-				int xx = getXFromTime(ii*100 + i*1000);
+				int xx = getXFromTime(ii*100000 + i*1000000);
 				gg.drawLine(xx, paddingTop - tickHeight, xx, paddingTop-1);
 			}
 		}
@@ -304,11 +304,12 @@ class GridPanel extends JPanel implements Scrollable {
 	// Input -- Mouse
 	// -------------------------------------------------------------------------
 
-	private enum MouseState {IDLE, DRAW_SELECTION, DRAG_CURSOR, DRAG_NODES, DRAG_TRACK, DRAG_GRIP}
+	private enum MouseState {DRAW_SELECTION, DRAG_CURSOR, DRAG_NODES, DRAG_TRACK, DRAG_GRIP}
 
 	private final MouseAdapter mouseAdapter = new MouseAdapter() {
 		private MouseState state;
 		private boolean isPressed = false;
+		private boolean isDragged = false;
 		private int lastX;
 
 		@Override
@@ -316,27 +317,35 @@ class GridPanel extends JPanel implements Scrollable {
 			if (parent.getModel() == null || parent.isPlaying()) return;
 			if (e.getButton() != MouseEvent.BUTTON1) return;
 
-			int eTime = getTimeFromX(e.getX());
 			int eLine = getLineFromY(e.getY());
 
 			if (eLine < 0) {
 				state = MouseState.DRAG_CURSOR;
-				parent.setCurrentTime(eTime);
+				parent.setCurrentTime(getTimeFromX(e.getX()));
 
 			} else if (mouseOverNode != null) {
 				state = MouseState.DRAG_NODES;
-				if (!parent.getSelectedNodes().contains(mouseOverNode)) {
-					if (e.isControlDown()) parent.addSelectedNode(mouseOverNode);
-					else parent.setSelectedNode(mouseOverNode);
-				}
+				if (e.isControlDown() && !parent.getSelectedNodes().contains(mouseOverNode)) parent.addSelectedNode(mouseOverNode);
+				else if (e.isControlDown()) parent.removeSelectedNode(mouseOverNode);
+				else parent.setSelectedNode(mouseOverNode);
+				trackGripRect = null;
+
+			} else if (isOverTrack) {
+				state = MouseState.DRAG_TRACK;
+				trackGripRect = null;
+
+			} else if (isOverTrackGrip) {
+				state = MouseState.DRAG_GRIP;
 				
 			} else {
-				state = MouseState.IDLE;
+				state = MouseState.DRAW_SELECTION;
 				selectionRect = new Rectangle(e.getPoint());
+				trackGripRect = null;
 			}
 
 			isPressed = true;
 			lastX = e.getX();
+			repaint();
 		}
 
 		@Override
@@ -344,64 +353,74 @@ class GridPanel extends JPanel implements Scrollable {
 			if (parent.getModel() == null || parent.isPlaying()) return;
 			if (e.getButton() != MouseEvent.BUTTON1) return;
 
-			int eTime = getTimeFromX(e.getX());
-
 			switch (state) {
-				case IDLE:
-					parent.clearSelectedNodes();
-					parent.setCurrentTime(eTime);
-					break;
-
 				case DRAG_NODES:
-					for (Node n : parent.getSelectedNodes())
-						n.setTime((int) (Math.round(n.getTime() / 100f)) * 100);
-					correctTimeline();
-					parent.getModel().mute(false);
-					parent.setCurrentTime(eTime);
+					if (isDragged) {
+						for (Node n : parent.getSelectedNodes())
+							n.setTime((int) (Math.round(n.getTime() / 100000f)) * 100000);
+						correctTimeline();
+						parent.getModel().mute(false);
+						parent.setCurrentTime(getTimeFromX(e.getX()));
+					} else {
+						parent.setCurrentTime(getTimeFromX(e.getX()));
+					}
 					break;
 
 				case DRAG_TRACK:
-					for (Node n : mouseOverProperty.getNodes())
-						n.setTime((int) (Math.round(n.getTime() / 100f)) * 100);
-					parent.getModel().mute(false);
+					if (isDragged) {
+						for (Node n : mouseOverProperty.getNodes())
+							n.setTime((int) (Math.round(n.getTime() / 100000f)) * 100000);
+						parent.getModel().mute(false);
+					} else {
+						parent.clearSelectedNodes();
+						parent.setCurrentTime(getTimeFromX(e.getX()));
+					}
 					break;
 
 				case DRAG_GRIP:
-					for (Node n : mouseOverProperty.getNodes())
-						n.setTime((int) (Math.round(n.getTime() / 100f)) * 100);
-					correctTimeline();
-					parent.getModel().mute(false);
+					if (isDragged) {
+						for (Node n : mouseOverProperty.getNodes())
+							n.setTime((int) (Math.round(n.getTime() / 100000f)) * 100000);
+						correctTimeline();
+						parent.getModel().mute(false);
+					} else {
+						parent.clearSelectedNodes();
+						parent.setCurrentTime(getTimeFromX(e.getX()));
+					}
 					break;
 
 				case DRAW_SELECTION:
-					if (!e.isControlDown()) parent.clearSelectedNodes();
-					
-					int rx = Math.min(selectionRect.x, selectionRect.x + selectionRect.width);
-					int ry = Math.min(selectionRect.y, selectionRect.y + selectionRect.height);
-					int rw = Math.abs(selectionRect.width);
-					int rh = Math.abs(selectionRect.height);
-					selectionRect = null;
-
-					Rectangle rect = new Rectangle(rx, ry, rw, rh);
-					
-					int line = 0;
-					for (Element elem : parent.getModel().getElements()) {
-						int y = getYFromLine(line) + lineHeight/2;
-						for (Node node : elem.getNodes()) {
-							int x = getXFromTime(node.getTime());
-							if (rect.contains(x, y) && e.isControlDown()) {
-								if (parent.getSelectedNodes().contains(node)) parent.removeSelectedNode(node);
-								else parent.addSelectedNode(node);
-							} else if (rect.contains(x, y)) {
-								parent.addSelectedNode(node);
+					if (isDragged) {
+						if (!e.isControlDown()) parent.clearSelectedNodes();
+						int rx = Math.min(selectionRect.x, selectionRect.x + selectionRect.width);
+						int ry = Math.min(selectionRect.y, selectionRect.y + selectionRect.height);
+						int rw = Math.abs(selectionRect.width);
+						int rh = Math.abs(selectionRect.height);
+						selectionRect = null;
+						Rectangle rect = new Rectangle(rx, ry, rw, rh);
+						int line = 0;
+						for (Element elem : parent.getModel().getElements()) {
+							int y = getYFromLine(line) + lineHeight/2;
+							for (Node node : elem.getNodes()) {
+								int x = getXFromTime(node.getTime());
+								if (rect.contains(x, y) && e.isControlDown()) {
+									if (parent.getSelectedNodes().contains(node)) parent.removeSelectedNode(node);
+									else parent.addSelectedNode(node);
+								} else if (rect.contains(x, y)) {
+									parent.addSelectedNode(node);
+								}
 							}
+							line += 1;
 						}
-						line += 1;
+					} else {
+						parent.clearSelectedNodes();
+						parent.setCurrentTime(getTimeFromX(e.getX()));
 					}
 					break;
 			}
 
 			isPressed = false;
+			isDragged = false;
 			repaint();
 		}
 
@@ -409,11 +428,7 @@ class GridPanel extends JPanel implements Scrollable {
 		public void mouseDragged(MouseEvent e) {
 			if (parent.getModel() == null || parent.isPlaying()) return;
 
-			int deltaTime = (int) ((e.getX() - lastX) * 1000f / oneSecondWidth * timeScale);
-
-			if (state == MouseState.IDLE && isOverTrack) state = MouseState.DRAG_TRACK;
-			else if (state == MouseState.IDLE && isOverTrackGrip) state = MouseState.DRAG_GRIP;
-			else if (state == MouseState.IDLE) state = MouseState.DRAW_SELECTION;
+			int deltaTime = (int) ((e.getX() - lastX) * 1000000f / oneSecondWidth * timeScale);
 
 			switch (state) {
 				case DRAG_CURSOR:
@@ -435,7 +450,7 @@ class GridPanel extends JPanel implements Scrollable {
 				case DRAG_GRIP:
 					parent.getModel().mute(true);
 					int totalTime = mouseOverProperty.getLastNode().getTime();
-					for (Node n : mouseOverProperty.getNodes()) n.setTime((int) (n.getTime() + deltaTime * (1 - (totalTime - n.getTime()) / (float)totalTime)));
+					for (Node n : mouseOverProperty.getNodes()) n.setTime((int) (n.getTime() + deltaTime * (1 - (totalTime - n.getTime()) / (double)totalTime)));
 					trackGripRect.x += getXFromTime(mouseOverProperty.getLastNode().getTime()) - trackGripRect.x;
 					break;
 
@@ -444,8 +459,9 @@ class GridPanel extends JPanel implements Scrollable {
 					break;
 			}
 			
-			repaint();
 			lastX = e.getX();
+			isDragged = true;
+			repaint();
 		}
 
 		@Override
@@ -547,14 +563,14 @@ class GridPanel extends JPanel implements Scrollable {
 	// -------------------------------------------------------------------------
 
 	private int getTimeFromX(int x) {
-		int time = (int) ((x - paddingLeft + hOffset) * 1000f / oneSecondWidth * timeScale);
+		int time = (int) ((x - paddingLeft + hOffset) * 1000000f / oneSecondWidth * timeScale);
 		time = time > 0 ? time : 0;
-		time = (int) (Math.round(time / 100f)) * 100;
+		time = (int) (Math.round(time / 100000f)) * 100000;
 		return Math.max(time, 0);
 	}
 
-	private int getXFromTime(int millis) {
-		return (int) (millis / 1000f * oneSecondWidth / timeScale + paddingLeft - hOffset);
+	private int getXFromTime(int time) {
+		return (int) (time / 1000000f * oneSecondWidth / timeScale + paddingLeft - hOffset);
 	}
 
 	private int getLineFromY(int y) {

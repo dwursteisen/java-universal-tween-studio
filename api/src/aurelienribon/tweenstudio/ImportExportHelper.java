@@ -56,7 +56,7 @@ class ImportExportHelper {
 				nodeData.setEquation(tween.getEasing());
 				nodeData.setTargets(tween.getTargetValues());
 
-				Node node = elem.addNode(tween.getFullDuration());
+				Node node = elem.addNode(tween.getFullDuration()*1000);
 				node.setLinked(tween.getDuration() > 0 || child == timeline.getChildren().get(0));
 				node.setUserData(nodeData);
 			} else {

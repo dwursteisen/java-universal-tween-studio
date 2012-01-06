@@ -104,7 +104,7 @@ class MainWindow extends javax.swing.JFrame {
 		}
 
 		@Override public void currentTimeChanged(int newTime, int oldTime) {
-			workingTimeline.update(newTime-oldTime);
+			workingTimeline.update((newTime - oldTime) / 1000);
 			if (objectCard.isVisible()) updateObjectCard();
 		}
 
@@ -153,18 +153,6 @@ class MainWindow extends javax.swing.JFrame {
 	}
 
 	// -------------------------------------------------------------------------
-	// Public API
-	// -------------------------------------------------------------------------
-
-	public int getCurrentTime() {
-		return timelinePanel.getCurrentTime();
-	}
-
-	public void setCurrentTime(int time) {
-		timelinePanel.setCurrentTime(time);
-	}
-
-	// -------------------------------------------------------------------------
 	// Package API
 	// -------------------------------------------------------------------------
 
@@ -192,9 +180,9 @@ class MainWindow extends javax.swing.JFrame {
 		if (timelinePanel.isPlaying()) {
 			playTime += deltaMillis;
 			if (playTime <= playDuration) {
-				setCurrentTime(playTime);
+				timelinePanel.setCurrentTime(playTime * 1000);
 			} else {
-				setCurrentTime(playDuration);
+				timelinePanel.setCurrentTime(playDuration * 1000);
 				timelinePanel.setPlaying(false);
 			}
 		}
@@ -228,7 +216,7 @@ class MainWindow extends javax.swing.JFrame {
 		for (int tweenType : tweenTypes) {
 			String propertyName = animationDef.editor.getProperty(target.getClass(), tweenType).getName();
 			Element elem = timelinePanel.getModel().getElement(name + "/" + propertyName);
-			Node node = TimelineHelper.getNodeOrCreate(elem, getCurrentTime());
+			Node node = TimelineHelper.getNodeOrCreate(elem, timelinePanel.getCurrentTime());
 			NodeData nodeData = (NodeData) node.getUserData();
 
 			TweenAccessor accessor = Tween.getRegisteredAccessor(target.getClass());
@@ -248,7 +236,7 @@ class MainWindow extends javax.swing.JFrame {
 
 		workingTimeline = TimelineCreationHelper.createTimelineFromModel(
 			timelinePanel.getModel(),
-			getCurrentTime(),
+			timelinePanel.getCurrentTime(),
 			initialStatesMap);
 
 		if (objectCard.isVisible()) updateObjectCard();
@@ -293,15 +281,15 @@ class MainWindow extends javax.swing.JFrame {
 	// -------------------------------------------------------------------------
 
 	private void begin() {
-		setCurrentTime(0);
-		saveAndStopBtn.setEnabled(true);
-		discardbtn.setEnabled(true);
+		timelinePanel.setCurrentTime(0);
 		timelinePanel.setSelectedElement(null);
 		timelinePanel.clearSelectedNodes();
+		saveAndStopBtn.setEnabled(true);
+		discardbtn.setEnabled(true);
 	}
 
 	private void end() {
-		setCurrentTime(0);
+		timelinePanel.setCurrentTime(0);
 		timelinePanel.setSelectedElement(null);
 		timelinePanel.clearSelectedNodes();
 		timelinePanel.setModel(new TimelineModel());
@@ -405,7 +393,7 @@ class MainWindow extends javax.swing.JFrame {
 			JSpinner spinner = (JSpinner) e.getSource();
 			float value = ((Number)spinner.getValue()).floatValue();
 
-			Node node = TimelineHelper.getNodeOrCreate(propertyElem, getCurrentTime());
+			Node node = TimelineHelper.getNodeOrCreate(propertyElem, timelinePanel.getCurrentTime());
 			NodeData nodeData = (NodeData) node.getUserData();
 			nodeData.getTargets()[fieldIdx] = value;
 

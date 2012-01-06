@@ -52,14 +52,14 @@ class TimelineCreationHelper {
 			time = TimelineHelper.getNextTime(model.getRoot(), time, true);
 			if (time < 0) break;
 
-			tl.update(time - lastTime);
+			tl.update((time - lastTime) / 1000);
 
 			acc += time - lastTime;
 			lastTime = time;
 		}
 
 		assert acc == model.getDuration();
-		tl.update(currentTime - acc);
+		tl.update((currentTime - acc) / 1000);
 		return tl;
 	}
 
@@ -67,8 +67,8 @@ class TimelineCreationHelper {
 		for (Node node : elem.getNodes()) {
 			NodeData nodeData = (NodeData) node.getUserData();
 
-			int duration = TimelineHelper.getDuration(node);
-			int delay = node.getTime() - duration;
+			int duration = TimelineHelper.getDuration(node) / 1000;
+			int delay = node.getTime() / 1000 - duration;
 
 			Tween tween = Tween.to(target, tweenType, duration)
 				.target(nodeData.getTargets())

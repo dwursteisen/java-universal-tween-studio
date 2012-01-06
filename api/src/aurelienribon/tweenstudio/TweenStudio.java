@@ -48,7 +48,7 @@ import javax.swing.UnsupportedLookAndFeelException;
  *         TweenStudio.registerTarget(sprites[2], "Ground");
  *         TweenStudio.registerTarget(sprites[3], "Sun");
  *
- *         TweenStudio.createTimeline("My title animation").addTo(tweenManager);
+ *         TweenStudio.createTimeline("My title animation").start(tweenManager);
  *     }
  *
  *     public void update(int deltaTime) {

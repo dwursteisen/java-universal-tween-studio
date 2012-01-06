@@ -45,14 +45,14 @@ public class App implements ApplicationListener {
 		TweenStudio.registerTarget(sprites[2], "Logo Tween");
 		TweenStudio.registerTarget(sprites[3], "Logo Studio");
 		
-		TweenStudio.createTimeline(ANIMATION_1).addTo(tweenManager);
+		TweenStudio.createTimeline(ANIMATION_1).start(tweenManager);
 
 		TweenStudio.unregisterAllTargets();
 		TweenStudio.registerTarget(sprites[4], "Wave 1");
 		TweenStudio.registerTarget(sprites[5], "Wave 2");
 		TweenStudio.registerTarget(sprites[6], "Wave 3");
 
-		TweenStudio.createTimeline(ANIMATION_2).addTo(tweenManager);
+		TweenStudio.createTimeline(ANIMATION_2).start(tweenManager);
 	}
 
 	private void createSprites() {

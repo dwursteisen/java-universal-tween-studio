@@ -134,7 +134,8 @@ class MenuBarPanel extends JPanel {
 		add(btnPanel, BorderLayout.EAST);
 	}
 
-	public final void setTime(int millis) {
+	public final void setTime(int time) {
+		int millis = time / 1000;
 		String str = String.format("%02d,%03d", millis / 1000, millis % 1000);
 		timeLbl.setText(str);
 	}
