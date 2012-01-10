@@ -1,5 +1,4 @@
-package aurelienribon.tweenstudiotest;
-
+import aurelienribon.tweenstudiotest.App;
 import com.badlogic.gdx.backends.lwjgl.LwjglApplication;
 
 public class Main {
