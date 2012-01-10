@@ -13,6 +13,8 @@ import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Element;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Node;
 import aurelienribon.tweenstudio.ui.timeline.TimelinePanel;
 import aurelienribon.tweenstudio.ui.timeline.TimelinePanel.Listener;
+import aurelienribon.utils.swing.SpinnerNullableFloatEditor;
+import aurelienribon.utils.swing.SpinnerNullableFloatModel;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
@@ -28,6 +30,7 @@ import java.util.Set;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSpinner;
+import javax.swing.SpinnerModel;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.ChangeEvent;
@@ -136,6 +139,7 @@ class MainWindow extends javax.swing.JFrame {
 			CardLayout cl = (CardLayout) propertiesPanel.getLayout();
 			if (!newNodes.isEmpty()) {
 				cl.show(propertiesPanel, "tweenCard");
+				buildTweenCard();
 				updateTweenCard();
 			} else {
 				cl.show(propertiesPanel, "nothingCard");
@@ -298,41 +302,84 @@ class MainWindow extends javax.swing.JFrame {
 		discardbtn.setEnabled(false);
 	}
 
-	private void updateTweenCard() {
-		TweenEquation commonEq = null;
-		for (Node node : timelinePanel.getSelectedNodes()) {
-			NodeData nodeData = (NodeData) node.getUserData();
-			TweenEquation eq = nodeData.getEquation();
-			if (commonEq == null) commonEq = eq;
-			if (eq != commonEq) {commonEq = null; break;}
+	private Property getCommonProperty(List<Node> nodes) {
+		Property prop = null;
+		for (Node node : nodes) {
+			ElementData elemData = (ElementData) node.getParent().getUserData();
+			if (prop == null) prop = elemData.getProperty();
+			if (prop != elemData.getProperty()) return null;
 		}
-
-		easingCbox.setEditable(true);
-		easingCbox.setSelectedItem(commonEq != null ? commonEq.toString() : "---");
-		easingCbox.setEditable(false);
+		return prop;
 	}
 
-	private void updateObjectCard() {
-		Element elem = timelinePanel.getSelectedElement();
-		ElementData elemData = (ElementData) elem.getUserData();
+	private TweenEquation getCommonEquation(List<Node> nodes) {
+		TweenEquation equation = null;
+		for (Node node : timelinePanel.getSelectedNodes()) {
+			NodeData nodeData = (NodeData) node.getUserData();
+			if (equation == null) equation = nodeData.getEquation();
+			if (equation != nodeData.getEquation()) return null;
+		}
+		return equation;
+	}
 
-		int cnt = 0;
+	private Float getCommonTarget(List<Node> nodes, int fieldIdx) {
+		Float target = null;
+		for (Node node : nodes) {
+			NodeData nodeData = (NodeData) node.getUserData();
+			if (target == null) target = new Float(nodeData.getTargets()[fieldIdx]);
+			if (target.floatValue() != nodeData.getTargets()[fieldIdx]) return null;
+		}
+		return target;
+	}
 
-		for (Property property : animationDef.editor.getProperties(elemData.getTarget().getClass())) {
-			float[] values = new float[property.getFields().length];
-			TweenAccessor accessor = Tween.getRegisteredAccessor(elemData.getTarget().getClass());
-			accessor.getValues(elemData.getTarget(), property.getId(), values);
+	// -------------------------------------------------------------------------
+	// Cards
+	// -------------------------------------------------------------------------
 
-			for (int i=0; i<property.getFields().length; i++) {
-				JPanel panel = (JPanel) objectPanel.getComponent(cnt);
-				JSpinner spinner = (JSpinner) panel.getComponent(1);
-				ValueChangeListener listener = (ValueChangeListener) spinner.getChangeListeners()[0];
-				listener.setEnabled(false);
-				spinner.setValue(new Double(values[i]));
-				listener.setEnabled(true);
-				cnt += 1;
+	private void buildTweenCard() {
+		tweenPanel.removeAll();
+
+		List<Node> nodes = timelinePanel.getSelectedNodes();
+		Property commonProp = getCommonProperty(nodes);
+
+		if (commonProp != null) {
+			for (int i=0; i<commonProp.getFields().length; i++) {
+				Field field = commonProp.getFields()[i];
+
+				JLabel label = new JLabel(field.name + ": ");
+				label.setForeground(Color.WHITE);
+				label.setHorizontalAlignment(JLabel.RIGHT);
+
+				SpinnerNullableFloatModel model = new SpinnerNullableFloatModel(field.min, field.max, field.step);
+				model.setValue(getCommonTarget(nodes, i));
+
+				JSpinner spinner = new JSpinner(model);
+				spinner.setEditor(new SpinnerNullableFloatEditor(model));
+				spinner.addChangeListener(new NodesTargetChangeListener(nodes, i));
+				spinner.setMinimumSize(new Dimension(70, 20));
+				spinner.setPreferredSize(new Dimension(70, 20));
+				spinner.setMaximumSize(new Dimension(70, 20));
+
+				JPanel panel = new JPanel(new BorderLayout());
+				panel.setBorder(new EmptyBorder(0, 0, 2, 0));
+				panel.setOpaque(false);
+				panel.add(label, BorderLayout.CENTER);
+				panel.add(spinner, BorderLayout.EAST);
+
+				tweenPanel.add(panel);
 			}
 		}
+
+		tweenPanel.revalidate();
+	}
+
+	private void updateTweenCard() {
+		List<Node> nodes = timelinePanel.getSelectedNodes();
+		TweenEquation commonEquation = getCommonEquation(nodes);
+
+		easingCbox.setEditable(true);
+		easingCbox.setSelectedItem(commonEquation != null ? commonEquation.toString() : "---");
+		easingCbox.setEditable(false);
 	}
 
 	private void buildObjectCard() {
@@ -352,9 +399,11 @@ class MainWindow extends javax.swing.JFrame {
 				label.setForeground(Color.WHITE);
 				label.setHorizontalAlignment(JLabel.RIGHT);
 
-				SpinnerNumberModel model = new SpinnerNumberModel(field.min, field.min, field.max, field.step);
+				SpinnerNullableFloatModel model = new SpinnerNullableFloatModel(field.min, field.max, field.step);
+
 				JSpinner spinner = new JSpinner(model);
-				spinner.addChangeListener(new ValueChangeListener(propertyElem, i));
+				spinner.setEditor(new SpinnerNullableFloatEditor(model));
+				spinner.addChangeListener(new PropertyTargetChangeListener(propertyElem, i));
 				spinner.setMinimumSize(new Dimension(70, 20));
 				spinner.setPreferredSize(new Dimension(70, 20));
 				spinner.setMaximumSize(new Dimension(70, 20));
@@ -372,12 +421,39 @@ class MainWindow extends javax.swing.JFrame {
 		objectPanel.revalidate();
 	}
 
-	private class ValueChangeListener implements ChangeListener {
+	private void updateObjectCard() {
+		Element elem = timelinePanel.getSelectedElement();
+		ElementData elemData = (ElementData) elem.getUserData();
+
+		int cnt = 0;
+
+		for (Property property : animationDef.editor.getProperties(elemData.getTarget().getClass())) {
+			float[] values = new float[property.getFields().length];
+			TweenAccessor accessor = Tween.getRegisteredAccessor(elemData.getTarget().getClass());
+			accessor.getValues(elemData.getTarget(), property.getId(), values);
+
+			for (int i=0; i<property.getFields().length; i++) {
+				JPanel panel = (JPanel) objectPanel.getComponent(cnt);
+				JSpinner spinner = (JSpinner) panel.getComponent(1);
+				PropertyTargetChangeListener listener = (PropertyTargetChangeListener) spinner.getChangeListeners()[0];
+				listener.setEnabled(false);
+				spinner.setValue(values[i]);
+				listener.setEnabled(true);
+				cnt += 1;
+			}
+		}
+	}
+
+	// -------------------------------------------------------------------------
+	// Spinner elements
+	// -------------------------------------------------------------------------
+
+	private class PropertyTargetChangeListener implements ChangeListener {
 		private final Element propertyElem;
 		private final int fieldIdx;
 		private boolean isEnabled = true;
 
-		public ValueChangeListener(Element propertyElem, int fieldIdx) {
+		public PropertyTargetChangeListener(Element propertyElem, int fieldIdx) {
 			this.propertyElem = propertyElem;
 			this.fieldIdx = fieldIdx;
 		}
@@ -393,9 +469,39 @@ class MainWindow extends javax.swing.JFrame {
 			JSpinner spinner = (JSpinner) e.getSource();
 			float value = ((Number)spinner.getValue()).floatValue();
 
-			Node node = TimelineHelper.getNodeOrCreate(propertyElem, timelinePanel.getCurrentTime());
-			NodeData nodeData = (NodeData) node.getUserData();
+			Node n = TimelineHelper.getNodeOrCreate(propertyElem, timelinePanel.getCurrentTime());
+			NodeData nodeData = (NodeData) n.getUserData();
 			nodeData.getTargets()[fieldIdx] = value;
+
+			recreateTimeline();
+		}
+	}
+
+	private class NodesTargetChangeListener implements ChangeListener {
+		private final List<Node> nodes;
+		private final int fieldIdx;
+		private boolean isEnabled = true;
+
+		public NodesTargetChangeListener(List<Node> nodes, int fieldIdx) {
+			this.nodes = nodes;
+			this.fieldIdx = fieldIdx;
+		}
+
+		public void setEnabled(boolean isEnabled) {
+			this.isEnabled = isEnabled;
+		}
+
+		@Override
+		public void stateChanged(ChangeEvent e) {
+			if (!isEnabled) return;
+
+			JSpinner spinner = (JSpinner) e.getSource();
+			float value = ((Number)spinner.getValue()).floatValue();
+
+			for (Node node : nodes) {
+				NodeData nodeData = (NodeData) node.getUserData();
+				nodeData.getTargets()[fieldIdx] = value;
+			}
 
 			recreateTimeline();
 		}
@@ -417,13 +523,14 @@ class MainWindow extends javax.swing.JFrame {
         propertiesPanel = new javax.swing.JPanel();
         nothingCard = new javax.swing.JPanel();
         tweenCard = new javax.swing.JPanel();
-        tweenPanel = new javax.swing.JPanel();
+        jPanel5 = new javax.swing.JPanel();
         jLabel3 = new javax.swing.JLabel();
         easingCbox = new javax.swing.JComboBox();
+        tweenPanel = new javax.swing.JPanel();
         objectCard = new javax.swing.JPanel();
         jPanel6 = new javax.swing.JPanel();
-        objectPanel = new javax.swing.JPanel();
         objectField = new javax.swing.JTextField();
+        objectPanel = new javax.swing.JPanel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setTitle("Tween Studio");
@@ -438,7 +545,7 @@ class MainWindow extends javax.swing.JFrame {
 
         jLabel2.setForeground(new java.awt.Color(255, 255, 255));
         jLabel2.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel2.setText("<html> <p align=\"center\">v0.3 - 2012 - Aurelien Ribon<br/><font color=\"#6eccff\">www.aurelienribon.com</font></p>");
+        jLabel2.setText("<html> <p align=\"center\">v0.4 - 2012 - Aurelien Ribon<br/><font color=\"#6eccff\">www.aurelienribon.com</font></p>");
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
@@ -529,13 +636,13 @@ class MainWindow extends javax.swing.JFrame {
 
         tweenCard.setOpaque(false);
 
-        tweenPanel.setBackground(theme.COLOR_GRIDPANEL_SECTION);
+        jPanel5.setBackground(theme.COLOR_GRIDPANEL_SECTION);
         aurelienribon.utils.swing.GroupBorder groupBorder1 = new aurelienribon.utils.swing.GroupBorder();
         groupBorder1.setTitle("Tween properties");
-        tweenPanel.setBorder(groupBorder1);
-        tweenPanel.setForeground(new java.awt.Color(255, 255, 255));
-        tweenPanel.setFont(new java.awt.Font("Tahoma", 1, 11));
-        tweenPanel.setOpaque(false);
+        jPanel5.setBorder(groupBorder1);
+        jPanel5.setForeground(new java.awt.Color(255, 255, 255));
+        jPanel5.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        jPanel5.setOpaque(false);
 
         jLabel3.setForeground(new java.awt.Color(255, 255, 255));
         jLabel3.setText("Easing:");
@@ -543,24 +650,32 @@ class MainWindow extends javax.swing.JFrame {
         easingCbox.setMaximumRowCount(12);
         easingCbox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Linear.INOUT", "----------", "Quad.IN", "Quad.OUT", "Quad.INOUT", "----------", "Cubic.IN", "Cubic.OUT", "Cubic.INOUT", "----------", "Quart.IN", "Quart.OUT", "Quart.INOUT", "----------", "Quint.IN", "Quint.OUT", "Quint.INOUT", "----------", "Circ.IN", "Circ.OUT", "Circ.INOUT", "----------", "Sine.IN", "Sine.OUT", "Sine.INOUT", "----------", "Expo.IN", "Expo.OUT", "Expo.INOUT", "----------", "Back.IN", "Back.OUT", "Back.INOUT", "----------", "Bounce.IN", "Bounce.OUT", "Bounce.INOUT", "----------", "Elastic.IN", "Elastic.OUT", "Elastic.INOUT" }));
 
-        javax.swing.GroupLayout tweenPanelLayout = new javax.swing.GroupLayout(tweenPanel);
-        tweenPanel.setLayout(tweenPanelLayout);
-        tweenPanelLayout.setHorizontalGroup(
-            tweenPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(tweenPanelLayout.createSequentialGroup()
+        tweenPanel.setOpaque(false);
+        tweenPanel.setLayout(new javax.swing.BoxLayout(tweenPanel, javax.swing.BoxLayout.PAGE_AXIS));
+
+        javax.swing.GroupLayout jPanel5Layout = new javax.swing.GroupLayout(jPanel5);
+        jPanel5.setLayout(jPanel5Layout);
+        jPanel5Layout.setHorizontalGroup(
+            jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel5Layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jLabel3)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(easingCbox, 0, 121, Short.MAX_VALUE)
+                .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(tweenPanel, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 160, Short.MAX_VALUE)
+                    .addGroup(jPanel5Layout.createSequentialGroup()
+                        .addComponent(jLabel3)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(easingCbox, 0, 121, Short.MAX_VALUE)))
                 .addContainerGap())
         );
-        tweenPanelLayout.setVerticalGroup(
-            tweenPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(tweenPanelLayout.createSequentialGroup()
+        jPanel5Layout.setVerticalGroup(
+            jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel5Layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(tweenPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel3)
                     .addComponent(easingCbox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(tweenPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
@@ -568,13 +683,13 @@ class MainWindow extends javax.swing.JFrame {
         tweenCard.setLayout(tweenCardLayout);
         tweenCardLayout.setHorizontalGroup(
             tweenCardLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(tweenPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addComponent(jPanel5, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
         tweenCardLayout.setVerticalGroup(
             tweenCardLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(tweenCardLayout.createSequentialGroup()
-                .addComponent(tweenPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(167, Short.MAX_VALUE))
+                .addComponent(jPanel5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(161, Short.MAX_VALUE))
         );
 
         propertiesPanel.add(tweenCard, "tweenCard");
@@ -586,14 +701,14 @@ class MainWindow extends javax.swing.JFrame {
         groupBorder2.setTitle("Object properties");
         jPanel6.setBorder(groupBorder2);
         jPanel6.setForeground(new java.awt.Color(255, 255, 255));
-        jPanel6.setFont(new java.awt.Font("Tahoma", 1, 11));
+        jPanel6.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         jPanel6.setOpaque(false);
-
-        objectPanel.setOpaque(false);
-        objectPanel.setLayout(new javax.swing.BoxLayout(objectPanel, javax.swing.BoxLayout.PAGE_AXIS));
 
         objectField.setEditable(false);
         objectField.setText("---");
+
+        objectPanel.setOpaque(false);
+        objectPanel.setLayout(new javax.swing.BoxLayout(objectPanel, javax.swing.BoxLayout.PAGE_AXIS));
 
         javax.swing.GroupLayout jPanel6Layout = new javax.swing.GroupLayout(jPanel6);
         jPanel6.setLayout(jPanel6Layout);
@@ -670,6 +785,7 @@ class MainWindow extends javax.swing.JFrame {
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
+    private javax.swing.JPanel jPanel5;
     private javax.swing.JPanel jPanel6;
     private javax.swing.JPanel nothingCard;
     private javax.swing.JPanel objectCard;

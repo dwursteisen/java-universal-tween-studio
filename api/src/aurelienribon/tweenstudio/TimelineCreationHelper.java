@@ -52,14 +52,13 @@ class TimelineCreationHelper {
 			time = TimelineHelper.getNextTime(model.getRoot(), time, true);
 			if (time < 0) break;
 
-			tl.update((time - lastTime) / 1000);
-
-			acc += time - lastTime;
+			int inc = (int) Math.ceil((time - lastTime) / 1000f);
+			tl.update(inc);
+			acc += inc;
 			lastTime = time;
 		}
 
-		assert acc == model.getDuration();
-		tl.update((currentTime - acc) / 1000);
+		tl.update((int) (Math.ceil(currentTime / 1000f)) - acc);
 		return tl;
 	}
 
