@@ -30,8 +30,6 @@ import java.util.Set;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSpinner;
-import javax.swing.SpinnerModel;
-import javax.swing.SpinnerNumberModel;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -97,8 +95,8 @@ class MainWindow extends javax.swing.JFrame {
 
 	private final TimelinePanel.Listener timelinePanelListener = new Listener() {
 		@Override public void playRequested() {
-			playDuration = workingTimeline.getFullDuration();
-			playTime = 0;
+			playDuration = workingTimeline.getFullDuration() * 1000;
+			playTime = timelinePanel.getCurrentTime();
 			timelinePanel.setPlaying(true);
 		}
 
@@ -182,11 +180,11 @@ class MainWindow extends javax.swing.JFrame {
 	void update(int deltaMillis) {
 		if (animationDef == null) return;
 		if (timelinePanel.isPlaying()) {
-			playTime += deltaMillis;
+			playTime += deltaMillis * 1000;
 			if (playTime <= playDuration) {
-				timelinePanel.setCurrentTime(playTime * 1000);
+				timelinePanel.setCurrentTime(playTime);
 			} else {
-				timelinePanel.setCurrentTime(playDuration * 1000);
+				timelinePanel.setCurrentTime(playDuration);
 				timelinePanel.setPlaying(false);
 			}
 		}
@@ -657,11 +655,11 @@ class MainWindow extends javax.swing.JFrame {
         jPanel5.setLayout(jPanel5Layout);
         jPanel5Layout.setHorizontalGroup(
             jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel5Layout.createSequentialGroup()
+            .addGroup(jPanel5Layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(tweenPanel, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 160, Short.MAX_VALUE)
-                    .addGroup(jPanel5Layout.createSequentialGroup()
+                .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(tweenPanel, javax.swing.GroupLayout.DEFAULT_SIZE, 160, Short.MAX_VALUE)
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel5Layout.createSequentialGroup()
                         .addComponent(jLabel3)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(easingCbox, 0, 121, Short.MAX_VALUE)))
@@ -701,7 +699,7 @@ class MainWindow extends javax.swing.JFrame {
         groupBorder2.setTitle("Object properties");
         jPanel6.setBorder(groupBorder2);
         jPanel6.setForeground(new java.awt.Color(255, 255, 255));
-        jPanel6.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        jPanel6.setFont(new java.awt.Font("Tahoma", 1, 11));
         jPanel6.setOpaque(false);
 
         objectField.setEditable(false);

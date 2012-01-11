@@ -1,5 +1,6 @@
 package aurelienribon.tweenstudiotest;
 
+import aurelienribon.tweenengine.Timeline;
 import aurelienribon.tweenengine.Tween;
 import aurelienribon.tweenengine.TweenManager;
 import aurelienribon.tweenstudio.TweenStudio;
@@ -47,17 +48,17 @@ public class App implements ApplicationListener {
 		// 1. Preloading of the animations. You should always do that in your
 		//    initialization code and not while your game is running, for
 		//    performance reason.
-		TweenStudio.loadAnimation(Gdx.files.internal("data/anim1.timeline").file(), ANIMATION_1);
-		TweenStudio.loadAnimation(Gdx.files.internal("data/anim2.timeline").file(), ANIMATION_2);
+		TweenStudio.preloadAnimation(Gdx.files.internal("data/anim1.timeline").file(), ANIMATION_1);
+		TweenStudio.preloadAnimation(Gdx.files.internal("data/anim2.timeline").file(), ANIMATION_2);
+
+		// (optional) The provided LibGdxTweenStudioEditorX editor needs to be
+		//            configurated. Be careful that when edition is disabled,
+		//            all editor instances are null.
+		LibGdxTweenStudioEditorX editor = TweenStudio.getEditor(LibGdxTweenStudioEditorX.class);
+		if (editor != null) editor.setup(camera);
 
 		// 2. Registration of the editor we want to use for the next animations.
 		TweenStudio.registerEditor(LibGdxTweenStudioEditorX.class);
-
-		// 2b. The provided LibGdxTweenStudioEditorX editor needs to be
-		//     configurated. Be careful that when edition is disabled, all
-		//     editor instances are null.
-		LibGdxTweenStudioEditorX editor = TweenStudio.getEditor(LibGdxTweenStudioEditorX.class);
-		if (editor != null) editor.setup(camera);
 
 		// 3. Registration of the objects that are part of the next animation.
 		//    Their names are required to create timelines from serialized
@@ -67,20 +68,38 @@ public class App implements ApplicationListener {
 		TweenStudio.registerTarget(sprites[2], "Logo Tween");
 		TweenStudio.registerTarget(sprites[3], "Logo Studio");
 
-		// 4. Creation of the first animation timeline. We also add it to our
-		//    TweenManager. In edition mode, it won't be started automatically,
-		//    to let you edit it.
-		TweenStudio.createTimeline(ANIMATION_1).start(tweenManager);
+		// 4. Registration of the callback that will be used for the next
+		//    animation. Callbacks are the only way to retrieve the created
+		//    animations (in order to cover all use-cases), so they are
+		//    mandatory.
+		TweenStudio.registerCallback(new TweenStudio.Callback() {
+			@Override public void animationReady(String animationName, Timeline animation) {
+				animation.start(tweenManager);
+			}
+		});
 
-		// That's all! The following lines let you edit a second animation once
-		// you're happy with the first one.
+		// 5. Creation of the first animation timeline.
+		TweenStudio.createAnimation(ANIMATION_1);
 		// ---------------------------------------------------------------------
+
+		// That's all! The following lines create a second animation once
+		// you're happy with the first one.
 
 		TweenStudio.unregisterAllTargets();
 		TweenStudio.registerTarget(sprites[4], "Wave 1");
 		TweenStudio.registerTarget(sprites[5], "Wave 2");
 		TweenStudio.registerTarget(sprites[6], "Wave 3");
-		TweenStudio.createTimeline(ANIMATION_2).start(tweenManager);
+
+		TweenStudio.registerCallback(new TweenStudio.Callback() {
+			@Override public void animationReady(String animationName, Timeline animation) {
+				Timeline.createSequence()
+					.pushPause(TweenStudio.isEditionEnabled() ? 0 : 6500)
+					.push(animation)
+					.start(tweenManager);
+			}
+		});
+
+		TweenStudio.createAnimation(ANIMATION_2);
 	}
 
 	private void createSprites() {
@@ -101,6 +120,10 @@ public class App implements ApplicationListener {
 			sprites[i].setSize(5, 5/ratio);
 			sprites[i].setOrigin(sprites[i].getWidth()/2, sprites[i].getHeight()/2);
 		}
+		
+		sprites[4].setColor(1, 1, 1, 0);
+		sprites[5].setColor(1, 1, 1, 0);
+		sprites[6].setColor(1, 1, 1, 0);
 	}
 
 	@Override

@@ -102,7 +102,7 @@ class GridPanel extends JPanel implements Scrollable {
 
 	@Override
 	public int getLength() {
-		return getXFromTime(maxTime) + hOffset + 20;
+		return getXFromTime(maxTime) + hOffset + 200;
 	}
 
 	@Override
@@ -327,7 +327,7 @@ class GridPanel extends JPanel implements Scrollable {
 				state = MouseState.DRAG_NODES;
 				if (e.isControlDown() && !parent.getSelectedNodes().contains(mouseOverNode)) parent.addSelectedNode(mouseOverNode);
 				else if (e.isControlDown()) parent.removeSelectedNode(mouseOverNode);
-				else parent.setSelectedNode(mouseOverNode);
+				else if (!parent.getSelectedNodes().contains(mouseOverNode)) parent.setSelectedNode(mouseOverNode);
 				trackGripRect = null;
 
 			} else if (isOverTrack) {
@@ -373,7 +373,7 @@ class GridPanel extends JPanel implements Scrollable {
 						parent.getModel().mute(false);
 					} else {
 						parent.clearSelectedNodes();
-						parent.setCurrentTime(getTimeFromX(e.getX()));
+						parent.setCurrentTime(getRoundedTime(getTimeFromX(e.getX()), 100000));
 					}
 					break;
 
@@ -383,7 +383,7 @@ class GridPanel extends JPanel implements Scrollable {
 						parent.getModel().mute(false);
 					} else {
 						parent.clearSelectedNodes();
-						parent.setCurrentTime(getTimeFromX(e.getX()));
+						parent.setCurrentTime(getRoundedTime(getTimeFromX(e.getX()), 100000));
 					}
 					break;
 
@@ -412,7 +412,7 @@ class GridPanel extends JPanel implements Scrollable {
 						}
 					} else {
 						parent.clearSelectedNodes();
-						parent.setCurrentTime(getTimeFromX(e.getX()));
+						parent.setCurrentTime(getRoundedTime(getTimeFromX(e.getX()), 100000));
 					}
 					break;
 			}

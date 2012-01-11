@@ -4,7 +4,6 @@ import aurelienribon.tweenengine.BaseTween;
 import aurelienribon.tweenengine.Timeline;
 import aurelienribon.tweenengine.Tween;
 import aurelienribon.tweenengine.TweenAccessor;
-import aurelienribon.tweenengine.TweenManager;
 import aurelienribon.utils.io.FileUtils;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -38,9 +37,9 @@ import javax.swing.UnsupportedLookAndFeelException;
  *     }
  *
  *     public MyGame() {
- *         TweenStudio.loadAnimation(new File("data/anim1.timeline"), "My title animation");
- *
  *         << load and create your objects >>
+ *
+ *         TweenStudio.preloadAnimation(new File("data/anim1.timeline"), "My animation");
  *
  *         TweenStudio.registerEditor(MyTweenStudioEditor.class);
  *         TweenStudio.registerTarget(sprites[0], "Player");
@@ -48,7 +47,13 @@ import javax.swing.UnsupportedLookAndFeelException;
  *         TweenStudio.registerTarget(sprites[2], "Ground");
  *         TweenStudio.registerTarget(sprites[3], "Sun");
  *
- *         TweenStudio.createTimeline("My title animation").start(tweenManager);
+ *         TweenStudio.registerCallback(new TweenStudio.Callback() {
+ *             @Override public void animationReady(String animationName, Timeline animation) {
+ * 	               animation.start(tweenManager);
+ * 	           }
+ *         });
+ *
+ *         TweenStudio.createAnimation("My animation");
  *     }
  *
  *     public void update(int deltaTime) {
@@ -73,6 +78,8 @@ public class TweenStudio {
 	private static final Map<String, Timeline> timelinesMap = new HashMap<String, Timeline>(5);
 	private static final List<Object> nextTargets = new ArrayList<Object>(5);
 	private static final Map<Object, String> nextTargetsNamesMap = new HashMap<Object, String>(5);
+	private static Editor nextEditor;
+	private static Callback nextCallback;
 
 	// Only needed in edition mode
 	private static MainWindow editionWindow;
@@ -80,7 +87,14 @@ public class TweenStudio {
 	private static Map<String, File> filesMap;
 	private static Queue<AnimationDef> animationsFifo;
 	private static AnimationDef currentAnimation;
-	private static Editor nextEditor;
+
+	// -------------------------------------------------------------------------
+	// Callback
+	// -------------------------------------------------------------------------
+
+	public static interface Callback {
+		public void animationReady(String animationName, Timeline animation);
+	}
 
 	// -------------------------------------------------------------------------
 	// Public API
@@ -125,10 +139,12 @@ public class TweenStudio {
 							throw new RuntimeException(ex.getMessage());
 						}
 
+						currentAnimation.callback.animationReady(currentAnimation.name, currentAnimation.timeline);
 						callNextAnimation();
 					}
 
 					@Override public void editionDiscarded() {
+						currentAnimation.callback.animationReady(currentAnimation.name, currentAnimation.timeline);
 						callNextAnimation();
 					}
 				});
@@ -140,9 +156,11 @@ public class TweenStudio {
 						editionWindow = null;
 						if (currentAnimation != null) {
 							currentAnimation.editor.stop();
-							currentAnimation.timeline.start();
-							while (!animationsFifo.isEmpty())
-								animationsFifo.remove().timeline.start();
+							currentAnimation.callback.animationReady(currentAnimation.name, currentAnimation.timeline);
+							while (!animationsFifo.isEmpty()) {
+								currentAnimation = animationsFifo.remove();
+								currentAnimation.callback.animationReady(currentAnimation.name, currentAnimation.timeline);
+							}
 						}
 					}
 				});
@@ -165,7 +183,7 @@ public class TweenStudio {
 	 * Loads the file content and create a timeline out of it. If edition is
 	 * enabled, the file path is also stored for future modification.
 	 */
-	public static void loadAnimation(File animationFile, String animationName) {
+	public static void preloadAnimation(File animationFile, String animationName) {
 		try {
 			String str = FileUtils.readFileToString(animationFile);
 			Timeline tl = ImportExportHelper.stringToTimeline(str);
@@ -223,6 +241,13 @@ public class TweenStudio {
 	}
 
 	/**
+	 * Registers a callback to be used with the future animations.
+	 */
+	public static void registerCallback(Callback callback) {
+		nextCallback = callback;
+	}
+
+	/**
 	 * Registers the given object as a target of the future animations.
 	 */
 	public static void registerTarget(Object target, String name) {
@@ -248,26 +273,20 @@ public class TweenStudio {
 
 	/**
 	 * Creates a {@link Timeline} from the loaded file associated to the
-	 * given animation name. If edition is enabled, the returned timeline
-	 * won't be auto-started by a manager, so you can safely directly add it to
-	 * your manager right after this call. The timeline will be started by the
-	 * studio once you'll end its edition. If edition is disabled, the returned
-	 * timeline will be already started, for consistency with the edition
-	 * behavior.
+	 * given animation name.
 	 */
-	public static Timeline createTimeline(String animationName) {
+	public static void createAnimation(String animationName) {
 		if (!timelinesMap.containsKey(animationName)) throw new RuntimeException(animationName + " is not loaded.");
-		if (isEditionEnabled() && nextEditor == null) throw new RuntimeException("No editor was set.");
+		if (nextCallback == null) throw new NullPointerException("No callback was registered");
+		if (isEditionEnabled() && nextEditor == null) throw new NullPointerException("No editor was registered.");
 		
 		Timeline timeline = buildTimeline(timelinesMap.get(animationName), nextTargetsNamesMap);
 		
 		if (isEditionEnabled()) {
 			AnimationDef anim = new AnimationDef(
-				animationName, timeline, nextEditor,
+				animationName, timeline, nextEditor, nextCallback,
 				new ArrayList<Object>(nextTargets),
 				new HashMap<Object, String>(nextTargetsNamesMap));
-
-			TweenManager.setAutoStart(timeline, false);
 
 			animationsFifo.add(anim);
 			if (currentAnimation == null) {
@@ -276,10 +295,8 @@ public class TweenStudio {
 				editionWindow.initialize(currentAnimation);
 			}
 		} else {
-			timeline.start();
+			nextCallback.animationReady(animationName, timeline);
 		}
-
-		return timeline;
 	}
 
 	/**
@@ -382,7 +399,6 @@ public class TweenStudio {
 	}
 
 	private static void callNextAnimation() {
-		currentAnimation.timeline.start();
 		currentAnimation.editor.stop();
 		currentAnimation = animationsFifo.poll();
 		if (currentAnimation != null) {
@@ -399,13 +415,15 @@ public class TweenStudio {
 		public final String name;
 		public final Timeline timeline;
 		public final Editor editor;
+		public final Callback callback;
 		public final List<Object> targets;
 		public final Map<Object, String> targetsNamesMap;
 
-		public AnimationDef(String name, Timeline timeline, Editor editor, List<Object> targets, Map<Object, String> targetsNamesMap) {
+		public AnimationDef(String name, Timeline timeline, Editor editor, Callback callback, List<Object> targets, Map<Object, String> targetsNamesMap) {
 			this.name = name;
 			this.timeline = timeline;
 			this.editor = editor;
+			this.callback = callback;
 			this.targets = Collections.unmodifiableList(targets);
 			this.targetsNamesMap = Collections.unmodifiableMap(targetsNamesMap);
 		}
