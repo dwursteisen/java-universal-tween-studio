@@ -321,7 +321,7 @@ class GridPanel extends JPanel implements Scrollable {
 
 			if (eLine < 0) {
 				state = MouseState.DRAG_CURSOR;
-				parent.setCurrentTime(getTimeFromX(e.getX()));
+				parent.setCurrentTime(getRoundedTime(getTimeFromX(e.getX()), 100000));
 
 			} else if (mouseOverNode != null) {
 				state = MouseState.DRAG_NODES;

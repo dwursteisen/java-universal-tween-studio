@@ -6,6 +6,12 @@ api/nbproject/*
 api/manifest.mf
 api/nbbuild.xml
 
+api-play-only/build/*
+api-play-only/dist/*
+api-play-only/nbproject/*
+api-play-only/manifest.mf
+api-play-only/nbbuild.xml
+
 demo/build/*
 demo/dist/*
 demo/nbproject/*

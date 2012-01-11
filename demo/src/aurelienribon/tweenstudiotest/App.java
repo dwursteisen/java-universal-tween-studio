@@ -10,6 +10,7 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
+import javax.swing.JOptionPane;
 
 public class App implements ApplicationListener {
 	private static final String ANIMATION_1 = "First animation";
@@ -20,12 +21,19 @@ public class App implements ApplicationListener {
 	private Sprite[] sprites;
 	private TweenManager tweenManager;
 
-	@Override
-	public void create() {
+	public App() {
+		// Tween Engine initialization
 		Tween.enablePooling(true);
 		Tween.registerAccessor(Sprite.class, new SpriteTweenAccessor());
 
-		TweenStudio.enableEdition();
+		// Tween Studio initialization: this single call ("enableEdition()")
+		// lets you toggle between edition and play modes!
+		int res = JOptionPane.showConfirmDialog(null, "Do you want to enable the edition of the animations ?", "Tween Studio", JOptionPane.YES_NO_OPTION);
+		if (res == 0) TweenStudio.enableEdition();
+	}
+
+	@Override
+	public void create() {
 		TweenStudio.loadAnimation(Gdx.files.internal("data/anim1.timeline").file(), ANIMATION_1);
 		TweenStudio.loadAnimation(Gdx.files.internal("data/anim2.timeline").file(), ANIMATION_2);
 
