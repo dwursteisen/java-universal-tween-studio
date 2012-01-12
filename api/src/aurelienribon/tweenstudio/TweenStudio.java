@@ -17,7 +17,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.Set;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
@@ -291,7 +290,7 @@ public class TweenStudio {
 			animationsFifo.add(anim);
 			if (currentAnimation == null) {
 				currentAnimation = animationsFifo.poll();
-				currentAnimation.editor.start(currentAnimation);
+				currentAnimation.editor.start(currentAnimation, editionWindow);
 				editionWindow.initialize(currentAnimation);
 			}
 		} else {
@@ -327,40 +326,6 @@ public class TweenStudio {
 	// -------------------------------------------------------------------------
 	// Package API
 	// -------------------------------------------------------------------------
-
-	static void targetStateChanged(final Object target, final Set<Integer> tweenTypes) {
-		if (!isEditionEnabled()) return;
-		try {
-			SwingUtilities.invokeAndWait(new Runnable() {@Override public void run() {
-				String name = currentAnimation.targetsNamesMap.get(target);
-				editionWindow.targetStateChanged(target, name, tweenTypes);
-			}});
-		} catch (InterruptedException ex) {
-		} catch (InvocationTargetException ex) {
-		}
-	}
-
-	static void selectedObjectChanged(final Object obj) {
-		if (!isEditionEnabled()) return;
-		try {
-			SwingUtilities.invokeAndWait(new Runnable() {@Override public void run() {
-				editionWindow.selectedObjectChanged(obj);
-			}});
-		} catch (InterruptedException ex) {
-		} catch (InvocationTargetException ex) {
-		}
-	}
-
-	static void mouseOverObjectChanged(final Object obj) {
-		if (!isEditionEnabled()) return;
-		try {
-			SwingUtilities.invokeAndWait(new Runnable() {@Override public void run() {
-				editionWindow.mouseOverObjectChanged(obj);
-			}});
-		} catch (InterruptedException ex) {
-		} catch (InvocationTargetException ex) {
-		}
-	}
 
 	static class DummyTweenAccessor implements TweenAccessor {
 		public final String data;
@@ -402,7 +367,7 @@ public class TweenStudio {
 		currentAnimation.editor.stop();
 		currentAnimation = animationsFifo.poll();
 		if (currentAnimation != null) {
-			currentAnimation.editor.start(currentAnimation);
+			currentAnimation.editor.start(currentAnimation, editionWindow);
 			editionWindow.initialize(currentAnimation);
 		}
 	}

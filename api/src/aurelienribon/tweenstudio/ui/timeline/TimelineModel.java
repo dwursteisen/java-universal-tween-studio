@@ -214,6 +214,15 @@ public class TimelineModel {
 			return false;
 		}
 
+		public boolean isDescendantOf(List<Element> parents) {
+			Element elem = this;
+			while (elem.getLevel() > 0) {
+				if (parents.contains(elem)) return true;
+				elem = elem.getParent();
+			}
+			return false;
+		}
+
 		public void sortNodes() {
 			Collections.sort(nodes, new Comparator<Node>() {
 				@Override public int compare(Node o1, Node o2) {

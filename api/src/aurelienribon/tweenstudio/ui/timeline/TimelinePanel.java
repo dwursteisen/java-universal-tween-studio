@@ -18,6 +18,8 @@ import javax.swing.border.MatteBorder;
  * @author Aurelien Ribon | http://www.aurelienribon.com/
  */
 public class TimelinePanel extends JPanel {
+	public static enum PushBehavior {SET, ADD, ADD_OR_REMOVE}
+
 	private final MenuBarPanel menuBarPanel;
 	private final NamesPanel namesPanel;
 	private final GridPanel gridPanel;
@@ -28,8 +30,8 @@ public class TimelinePanel extends JPanel {
 	private Theme theme;
 	private TimelineModel model;
 
+	private final List<Element> selectedElements = new ArrayList<Element>();
 	private final List<Node> selectedNodes = new ArrayList<Node>();
-	private Element selectedElement = null;
 	private Element mouseOverElement = null;
 	private int currentTime = 0;
 	private boolean isPlaying = false;
@@ -86,16 +88,71 @@ public class TimelinePanel extends JPanel {
 		return isPlaying;
 	}
 
-	public void setSelectedElement(Element elem) {
-		if (elem != null) clearSelectedNodes();
-		Element oldElem = selectedElement;
-		selectedElement = elem;
-		if (oldElem != elem) fireSelectedElementChanged(elem, oldElem);
+	// -------------------------------------------------------------------------
+
+	public void pushSelectedElement(Element elem, PushBehavior behavior) {
+		assert elem != null;
+		clearSelectedNodes();
+		List<Element> oldElems = Collections.unmodifiableList(new ArrayList<Element>(selectedElements));
+
+		switch (behavior) {
+			case SET: selectedElements.clear(); selectedElements.add(elem); break;
+			case ADD: if (!selectedElements.contains(elem)) selectedElements.add(elem); break;
+			case ADD_OR_REMOVE:
+				if (!selectedElements.contains(elem)) selectedElements.add(elem);
+				else selectedElements.remove(elem);
+				break;
+		}
+
+		List<Element> newElems = Collections.unmodifiableList(new ArrayList<Element>(selectedElements));
+		if (!newElems.containsAll(oldElems) || !oldElems.containsAll(newElems))
+			fireSelectedElementsChanged(newElems, oldElems);
 	}
 
-	public Element getSelectedElement() {
-		return selectedElement;
+	public void clearSelectedElements() {
+		List<Element> oldElems = Collections.unmodifiableList(new ArrayList<Element>(selectedElements));
+		selectedElements.clear();
+		List<Element> newElems = Collections.unmodifiableList(new ArrayList<Element>(selectedElements));
+		if (!oldElems.isEmpty()) fireSelectedElementsChanged(newElems, oldElems);
 	}
+
+	public List<Element> getSelectedElements() {
+		return Collections.unmodifiableList(selectedElements);
+	}
+
+	// -------------------------------------------------------------------------
+
+	public void pushSelectedNode(Node node, PushBehavior behavior) {
+		assert node != null;
+		clearSelectedElements();
+		List<Node> oldNodes = Collections.unmodifiableList(new ArrayList<Node>(selectedNodes));
+
+		switch (behavior) {
+			case SET: selectedNodes.clear(); selectedNodes.add(node); break;
+			case ADD: if (!selectedNodes.contains(node)) selectedNodes.add(node); break;
+			case ADD_OR_REMOVE:
+				if (!selectedNodes.contains(node)) selectedNodes.add(node);
+				else selectedNodes.remove(node);
+				break;
+		}
+
+		List<Node> newNodes = Collections.unmodifiableList(new ArrayList<Node>(selectedNodes));
+		if (!newNodes.containsAll(oldNodes) || !oldNodes.containsAll(newNodes))
+			fireSelectedNodesChanged(newNodes, oldNodes);
+	}
+
+	public void clearSelectedNodes() {
+		List<Node> oldNodes = Collections.unmodifiableList(selectedNodes);
+		selectedNodes.clear();
+		List<Node> newNodes = Collections.unmodifiableList(selectedNodes);
+		if (!oldNodes.isEmpty()) fireSelectedNodesChanged(newNodes, oldNodes);
+	}
+
+	public List<Node> getSelectedNodes() {
+		return Collections.unmodifiableList(selectedNodes);
+	}
+
+	// -------------------------------------------------------------------------
 
 	public void setMouseOverElement(Element elem) {
 		Element oldElem = mouseOverElement;
@@ -107,47 +164,7 @@ public class TimelinePanel extends JPanel {
 		return mouseOverElement;
 	}
 
-	public void addSelectedNode(Node node) {
-		setSelectedElement(null);
-		assert node != null;
-		if (!selectedNodes.contains(node)) {
-			List<Node> oldNodes = Collections.unmodifiableList(selectedNodes);
-			selectedNodes.add(node);
-			List<Node> newNodes = Collections.unmodifiableList(selectedNodes);
-			fireSelectedNodesChanged(newNodes, oldNodes);
-		}
-	}
-
-	public void removeSelectedNode(Node node) {
-		setSelectedElement(null);
-		assert node != null;
-		if (selectedNodes.contains(node)) {
-			List<Node> oldNodes = Collections.unmodifiableList(selectedNodes);
-			selectedNodes.remove(node);
-			List<Node> newNodes = Collections.unmodifiableList(selectedNodes);
-			fireSelectedNodesChanged(newNodes, oldNodes);
-		}
-	}
-
-	public void setSelectedNode(Node node) {
-		setSelectedElement(null);
-		assert node != null;
-		clearSelectedNodes();
-		addSelectedNode(node);
-	}
-
-	public void clearSelectedNodes() {
-		if (!selectedNodes.isEmpty()) {
-			List<Node> oldNodes = Collections.unmodifiableList(selectedNodes);
-			selectedNodes.clear();
-			List<Node> newNodes = Collections.unmodifiableList(selectedNodes);
-			fireSelectedNodesChanged(newNodes, oldNodes);
-		}
-	}
-
-	public List<Node> getSelectedNodes() {
-		return Collections.unmodifiableList(selectedNodes);
-	}
+	// -------------------------------------------------------------------------
 
 	public void setCurrentTime(int time) {
 		if (time != currentTime) {
@@ -236,9 +253,9 @@ public class TimelinePanel extends JPanel {
 	public interface Listener {
 		public void playRequested();
 		public void pauseRequested();
-		public void selectedElementChanged(Element newElem, Element oldElem);
-		public void mouseOverElementChanged(Element newElem, Element oldElem);
+		public void selectedElementsChanged(List<Element> newElems, List<Element> oldElems);
 		public void selectedNodesChanged(List<Node> newNodes, List<Node> oldNodes);
+		public void mouseOverElementChanged(Element newElem, Element oldElem);
 		public void currentTimeChanged(int newTime, int oldTime);
 	}
 
@@ -252,19 +269,19 @@ public class TimelinePanel extends JPanel {
 			listener.pauseRequested();
 	}
 
-	private void fireSelectedElementChanged(Element newElem, Element oldElem) {
+	private void fireSelectedElementsChanged(List<Element> newElems, List<Element> oldElems) {
 		for (Listener listener : listeners)
-			listener.selectedElementChanged(newElem, oldElem);
-	}
-
-	private void fireMouseOverElementChanged(Element newElem, Element oldElem) {
-		for (Listener listener : listeners)
-			listener.mouseOverElementChanged(newElem, oldElem);
+			listener.selectedElementsChanged(newElems, oldElems);
 	}
 
 	private void fireSelectedNodesChanged(List<Node> newNodes, List<Node> oldNodes) {
 		for (Listener listener : listeners)
 			listener.selectedNodesChanged(newNodes, oldNodes);
+	}
+
+	private void fireMouseOverElementChanged(Element newElem, Element oldElem) {
+		for (Listener listener : listeners)
+			listener.mouseOverElementChanged(newElem, oldElem);
 	}
 
 	private void fireCurrentTimeChanged(int newTime, int oldTime) {

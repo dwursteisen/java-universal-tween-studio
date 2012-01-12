@@ -2,6 +2,7 @@ package aurelienribon.tweenstudio.ui.timeline;
 
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Element;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Node;
+import aurelienribon.tweenstudio.ui.timeline.TimelinePanel.PushBehavior;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.FontMetrics;
@@ -56,9 +57,9 @@ class GridPanel extends JPanel implements Scrollable {
 		parent.addListener(new TimelinePanel.Listener() {
 			@Override public void playRequested() {}
 			@Override public void pauseRequested() {}
-			@Override public void selectedElementChanged(Element newElem, Element oldElem) {}
-			@Override public void mouseOverElementChanged(Element newElem, Element oldElem) {}
+			@Override public void selectedElementsChanged(List<Element> newElems, List<Element> oldElems) {}
 			@Override public void selectedNodesChanged(List<Node> newNodes, List<Node> oldNodes) {repaint();}
+			@Override public void mouseOverElementChanged(Element newElem, Element oldElem) {}
 			@Override public void currentTimeChanged(int newTime, int oldTime) {repaint();}
 		});
 	}
@@ -325,9 +326,8 @@ class GridPanel extends JPanel implements Scrollable {
 
 			} else if (mouseOverNode != null) {
 				state = MouseState.DRAG_NODES;
-				if (e.isControlDown() && !parent.getSelectedNodes().contains(mouseOverNode)) parent.addSelectedNode(mouseOverNode);
-				else if (e.isControlDown()) parent.removeSelectedNode(mouseOverNode);
-				else if (!parent.getSelectedNodes().contains(mouseOverNode)) parent.setSelectedNode(mouseOverNode);
+				PushBehavior behavior = e.isControlDown() ? PushBehavior.ADD_OR_REMOVE : PushBehavior.SET;
+				parent.pushSelectedNode(mouseOverNode, behavior);
 				trackGripRect = null;
 
 			} else if (isOverTrack) {
@@ -390,6 +390,7 @@ class GridPanel extends JPanel implements Scrollable {
 				case DRAW_SELECTION:
 					if (isDragged) {
 						if (!e.isControlDown()) parent.clearSelectedNodes();
+						PushBehavior behavior = e.isControlDown() ? PushBehavior.ADD_OR_REMOVE : PushBehavior.ADD;
 						int rx = Math.min(selectionRect.x, selectionRect.x + selectionRect.width);
 						int ry = Math.min(selectionRect.y, selectionRect.y + selectionRect.height);
 						int rw = Math.abs(selectionRect.width);
@@ -401,12 +402,7 @@ class GridPanel extends JPanel implements Scrollable {
 							int y = getYFromLine(line) + lineHeight/2;
 							for (Node node : elem.getNodes()) {
 								int x = getXFromTime(node.getTime());
-								if (rect.contains(x, y) && e.isControlDown()) {
-									if (parent.getSelectedNodes().contains(node)) parent.removeSelectedNode(node);
-									else parent.addSelectedNode(node);
-								} else if (rect.contains(x, y)) {
-									parent.addSelectedNode(node);
-								}
+								if (rect.contains(x, y)) parent.pushSelectedNode(node, behavior);
 							}
 							line += 1;
 						}
@@ -547,9 +543,10 @@ class GridPanel extends JPanel implements Scrollable {
 
 				case KeyEvent.VK_ENTER:
 					if (mouseOverProperty == null) {
-						if (parent.getSelectedElement() != null)
-							for (Element child : parent.getSelectedElement().getChildren())
+						for (Element elem : parent.getSelectedElements()) {
+							for (Element child : elem.getChildren())
 								child.addNode(parent.getCurrentTime());
+						}
 					} else {
 						mouseOverProperty.addNode(parent.getCurrentTime());
 					}

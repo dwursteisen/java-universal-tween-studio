@@ -40,8 +40,8 @@ class TimelineCreationHelper {
 
 			ElementData elemData = (ElementData) elem.getUserData();
 
-			createTweens(tl, elem, elemData.getTarget(), elemData.getProperty().getId());
-			setToInitialState(initialStatesMap, elemData.getTarget(), elemData.getProperty().getId());
+			createTweens(tl, elem, elemData.getTarget(), elemData.getProperty().tweenType);
+			setToInitialState(initialStatesMap, elemData.getTarget(), elemData.getProperty().tweenType);
 		}
 
 		tl.start();
@@ -82,9 +82,9 @@ class TimelineCreationHelper {
 		ElementData elemData = (ElementData) node.getParent().getUserData();
 		Property property = elemData.getProperty();
 
-		NodeData nodeData = new NodeData(property.getFields().length);
+		NodeData nodeData = new NodeData(property.fields.length);
 		TweenAccessor accessor = Tween.getRegisteredAccessor(elemData.getTarget().getClass());
-		accessor.getValues(elemData.getTarget(), property.getId(), nodeData.getTargets());
+		accessor.getValues(elemData.getTarget(), property.tweenType, nodeData.getTargets());
 		node.setUserData(nodeData);
 	}
 

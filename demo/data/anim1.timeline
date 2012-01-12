@@ -1,31 +1,31 @@
-Logo LibGDX;1;0;0;Linear.INOUT;-7.937000;0.000000
-Logo LibGDX;1;0;1000;Cubic.OUT;0.125002;0.000000
-Logo LibGDX;1;1000;500;Linear.INOUT;0.125000;0.000000
-Logo LibGDX;1;1500;1000;Cubic.IN;8.063000;0.000000
-Logo LibGDX;2;0;0;Linear.INOUT;0.500000;0.500000
-Logo Tween Engine;1;0;0;Linear.INOUT;-7.937000;0.000000
-Logo Tween Engine;1;0;2000;Linear.INOUT;-7.937000;0.000000
-Logo Tween Engine;1;2000;1000;Cubic.OUT;0.063000;0.000000
-Logo Tween Engine;1;3000;500;Linear.INOUT;0.063000;0.000000
-Logo Tween Engine;1;3500;1000;Cubic.IN;8.063000;0.000000
-Logo Tween Engine;2;0;0;Linear.INOUT;1.150000;1.150000
-Logo Tween;1;0;0;Linear.INOUT;0.156251;0.485854
-Logo Tween;1;0;6100;Linear.INOUT;0.156251;0.485854
-Logo Tween;1;6100;700;Back.INOUT;0.156251;3.800000
-Logo Tween;4;0;0;Linear.INOUT;0.000000
-Logo Tween;4;0;5000;Linear.INOUT;0.000000
-Logo Tween;4;5000;300;Linear.INOUT;1.000000
-Logo Tween;2;0;5000;Linear.INOUT;1.000000;10.000000
-Logo Tween;2;5000;600;Quart.OUT;1.000000;1.000000
-Logo Tween;2;5600;500;Linear.INOUT;1.000000;1.000000
-Logo Tween;2;6100;700;Back.INOUT;2.000000;2.000000
-Logo Studio;1;0;0;Linear.INOUT;0.031251;-0.321898
-Logo Studio;1;0;6100;Linear.INOUT;0.031251;-0.321898
-Logo Studio;1;6100;700;Back.INOUT;0.031251;2.200000
-Logo Studio;4;0;0;Linear.INOUT;0.000000
-Logo Studio;4;0;5300;Linear.INOUT;0.000000
-Logo Studio;4;5300;500;Linear.INOUT;1.000000
-Logo Studio;2;0;5300;Linear.INOUT;10.000000;10.000000
-Logo Studio;2;5300;600;Quart.OUT;1.000000;1.000000
-Logo Studio;2;5900;200;Linear.INOUT;1.000000;1.000000
-Logo Studio;2;6100;700;Back.INOUT;2.000000;2.000000
+Logo LibGDX;com.badlogic.gdx.graphics.g2d.Sprite;1;0;0;Linear.INOUT;-7.937000;0.000000
+Logo LibGDX;com.badlogic.gdx.graphics.g2d.Sprite;1;0;1000;Cubic.OUT;0.125002;0.000000
+Logo LibGDX;com.badlogic.gdx.graphics.g2d.Sprite;1;1000;500;Linear.INOUT;0.125000;0.000000
+Logo LibGDX;com.badlogic.gdx.graphics.g2d.Sprite;1;1500;1000;Cubic.IN;8.063000;0.000000
+Logo LibGDX;com.badlogic.gdx.graphics.g2d.Sprite;2;0;0;Linear.INOUT;0.500000;0.500000
+Logo Tween Engine;com.badlogic.gdx.graphics.g2d.Sprite;1;0;0;Linear.INOUT;-7.937000;0.000000
+Logo Tween Engine;com.badlogic.gdx.graphics.g2d.Sprite;1;0;2000;Linear.INOUT;-7.937000;0.000000
+Logo Tween Engine;com.badlogic.gdx.graphics.g2d.Sprite;1;2000;1000;Cubic.OUT;0.063000;0.000000
+Logo Tween Engine;com.badlogic.gdx.graphics.g2d.Sprite;1;3000;500;Linear.INOUT;0.063000;0.000000
+Logo Tween Engine;com.badlogic.gdx.graphics.g2d.Sprite;1;3500;1000;Cubic.IN;8.063000;0.000000
+Logo Tween Engine;com.badlogic.gdx.graphics.g2d.Sprite;2;0;0;Linear.INOUT;1.150000;1.150000
+Logo Tween;com.badlogic.gdx.graphics.g2d.Sprite;1;0;0;Linear.INOUT;0.156251;0.485854
+Logo Tween;com.badlogic.gdx.graphics.g2d.Sprite;1;0;6100;Linear.INOUT;0.156251;0.485854
+Logo Tween;com.badlogic.gdx.graphics.g2d.Sprite;1;6100;700;Back.INOUT;0.156251;3.800000
+Logo Tween;com.badlogic.gdx.graphics.g2d.Sprite;4;0;0;Linear.INOUT;0.000000
+Logo Tween;com.badlogic.gdx.graphics.g2d.Sprite;4;0;5000;Linear.INOUT;0.000000
+Logo Tween;com.badlogic.gdx.graphics.g2d.Sprite;4;5000;300;Linear.INOUT;1.000000
+Logo Tween;com.badlogic.gdx.graphics.g2d.Sprite;2;0;5000;Linear.INOUT;1.000000;10.000000
+Logo Tween;com.badlogic.gdx.graphics.g2d.Sprite;2;5000;600;Quart.OUT;1.000000;1.000000
+Logo Tween;com.badlogic.gdx.graphics.g2d.Sprite;2;5600;500;Linear.INOUT;1.000000;1.000000
+Logo Tween;com.badlogic.gdx.graphics.g2d.Sprite;2;6100;700;Back.INOUT;2.000000;2.000000
+Logo Studio;com.badlogic.gdx.graphics.g2d.Sprite;1;0;0;Linear.INOUT;0.031251;-0.321898
+Logo Studio;com.badlogic.gdx.graphics.g2d.Sprite;1;0;6100;Linear.INOUT;0.031251;-0.321898
+Logo Studio;com.badlogic.gdx.graphics.g2d.Sprite;1;6100;700;Back.INOUT;0.031251;2.200000
+Logo Studio;com.badlogic.gdx.graphics.g2d.Sprite;4;0;0;Linear.INOUT;0.000000
+Logo Studio;com.badlogic.gdx.graphics.g2d.Sprite;4;0;5300;Linear.INOUT;0.000000
+Logo Studio;com.badlogic.gdx.graphics.g2d.Sprite;4;5300;500;Linear.INOUT;1.000000
+Logo Studio;com.badlogic.gdx.graphics.g2d.Sprite;2;0;5300;Linear.INOUT;10.000000;10.000000
+Logo Studio;com.badlogic.gdx.graphics.g2d.Sprite;2;5300;600;Quart.OUT;1.000000;1.000000
+Logo Studio;com.badlogic.gdx.graphics.g2d.Sprite;2;5900;200;Linear.INOUT;1.000000;1.000000
+Logo Studio;com.badlogic.gdx.graphics.g2d.Sprite;2;6100;700;Back.INOUT;2.000000;2.000000

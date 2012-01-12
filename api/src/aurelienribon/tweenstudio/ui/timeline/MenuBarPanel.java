@@ -57,9 +57,10 @@ class MenuBarPanel extends JPanel {
 
 		addNodeBtn.addActionListener(new ActionListener() {
 			@Override public void actionPerformed(ActionEvent e) {
-				if (parent.getSelectedElement() != null)
-					for (Element child : parent.getSelectedElement().getChildren())
+				for (Element elem : parent.getSelectedElements()) {
+					for (Element child : elem.getChildren())
 						child.addNode(parent.getCurrentTime());
+				}
 			}
 		});
 

@@ -1,13 +1,15 @@
 package aurelienribon.tweenstudio;
 
+import aurelienribon.tweenengine.Tween;
+import aurelienribon.tweenengine.TweenAccessor;
 import aurelienribon.tweenstudio.Property.Field;
 import aurelienribon.tweenstudio.TweenStudio.AnimationDef;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import javax.swing.SwingUtilities;
 
 /**
  * @author Aurelien Ribon | http://www.aurelienribon.com/
@@ -15,24 +17,26 @@ import java.util.Set;
 public abstract class Editor {
 	private final Map<Class, List<Property>> propertiesMap = new HashMap<Class, List<Property>>();
 	private AnimationDef animationDef;
+	private MainWindow editionWindow;
 	private boolean isEnabled = false;
 
 	// -------------------------------------------------------------------------
-	// Public APi
+	// Public API
 	// -------------------------------------------------------------------------
 
 	public abstract void initialize();
 	public void stateChanged(boolean isEnabled) {}
 	public void render() {}
-	public void selectedObjectChanged(Object obj) {}
+	public void selectedObjectsChanged(List<Object> objs) {}
 	public void mouseOverObjectChanged(Object obj) {}
 
 	// -------------------------------------------------------------------------
 	// Package API
 	// -------------------------------------------------------------------------
 
-	final void start(AnimationDef animationDef) {
+	final void start(AnimationDef animationDef, MainWindow editionWindow) {
 		this.animationDef = animationDef;
+		this.editionWindow = editionWindow;
 		isEnabled = true;
 		stateChanged(isEnabled);
 	}
@@ -42,16 +46,19 @@ public abstract class Editor {
 		stateChanged(isEnabled);
 	}
 
-	final List<Property> getProperties(Class clazz) {
-		assert propertiesMap.containsKey(clazz);
-		return propertiesMap.get(clazz);
+	final List<Property> getProperties(Object target) {
+		List<Property> properties = new ArrayList<Property>();
+		for (Class c : propertiesMap.keySet())
+			if (target.getClass() == c)
+				properties.addAll(propertiesMap.get(c));
+		return properties;
 	}
 
-	final Property getProperty(Class clazz, int tweenType) {
-		List<Property> properties = getProperties(clazz);
-		for (Property property : properties)
-			if (property.getId() == tweenType)
-				return property;
+	final Property getProperty(Object target, TweenAccessor accessor, int tweenType) {
+		List<Property> properties = getProperties(target);
+		for (Property p : properties)
+			if (p.accessor == accessor && p.tweenType == tweenType)
+				return p;
 		assert false;
 		return null;
 	}
@@ -69,25 +76,38 @@ public abstract class Editor {
 	}
 
 	protected final void registerProperty(Class clazz, int tweenType, String propertyName, Field... fields) {
+		if (Tween.getRegisteredAccessor(clazz) == null) throw new RuntimeException("No accessor was found for the given class");
 		if (!propertiesMap.containsKey(clazz)) propertiesMap.put(clazz, new ArrayList<Property>(5));
-		propertiesMap.get(clazz).add(new Property(tweenType, propertyName, fields));
+		propertiesMap.get(clazz).add(new Property(Tween.getRegisteredAccessor(clazz), tweenType, propertyName, fields));
 	}
 
-	protected final void fireStateChanged(Object target, int tweenType) {
-		Set<Integer> tweenTypes = new HashSet<Integer>();
-		tweenTypes.add(tweenType);
-		TweenStudio.targetStateChanged(target, tweenTypes);
+	protected final void fireStateChanged(final Object target, final Class targetClass, final int tweenType) {
+		try {
+			SwingUtilities.invokeAndWait(new Runnable() {@Override public void run() {
+				editionWindow.targetStateChanged(target, targetClass, tweenType);
+			}});
+		} catch (InterruptedException ex) {
+		} catch (InvocationTargetException ex) {
+		}
 	}
 
-	protected final void fireStateChanged(Object target, Set<Integer> tweenTypes) {
-		TweenStudio.targetStateChanged(target, tweenTypes);
+	protected final void fireSelectedObjectsChanged(final List objs) {
+		try {
+			SwingUtilities.invokeAndWait(new Runnable() {@Override public void run() {
+				editionWindow.selectedObjectsChanged(objs);
+			}});
+		} catch (InterruptedException ex) {
+		} catch (InvocationTargetException ex) {
+		}
 	}
 
-	protected final void fireSelectedObjectChanged(Object obj) {
-		TweenStudio.selectedObjectChanged(obj);
-	}
-
-	protected final void fireMouseOverObjectChanged(Object obj) {
-		TweenStudio.mouseOverObjectChanged(obj);
+	protected final void fireMouseOverObjectChanged(final Object obj) {
+		try {
+			SwingUtilities.invokeAndWait(new Runnable() {@Override public void run() {
+				editionWindow.mouseOverObjectChanged(obj);
+			}});
+		} catch (InterruptedException ex) {
+		} catch (InvocationTargetException ex) {
+		}
 	}
 }

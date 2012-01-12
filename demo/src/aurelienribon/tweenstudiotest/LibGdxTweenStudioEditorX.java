@@ -28,17 +28,25 @@ import java.util.Set;
  * @author Aurelien Ribon | http://www.aurelienribon.com
  */
 public class LibGdxTweenStudioEditorX extends Editor {
+	// Constants
+	private static final Color SELECTED_SPRITE_BOX_COLOR = new Color(0.2f, 0.2f, 0.8f, 1.0f);
+	private static final Color MOUSEOVER_SPRITE_BOX_COLOR = new Color(0.2f, 0.2f, 0.8f, 0.3f);
+	private static final Color SHADOW_COLOR = new Color(0, 0, 0, 0.4f);
+
+	// General
 	private final List<Sprite> sprites = new ArrayList<Sprite>();
 	private final ImmediateModeRenderer imr = new ImmediateModeRenderer10();
 	private final SpriteBatch spriteBatch = new SpriteBatch();
 	private final BitmapFont font = new BitmapFont();
 	private final OrthographicCamera screenCamera = new OrthographicCamera(0, 0);
 
+	// Setup
 	private InputProcessor oldInputProcessor;
 	private OrthographicCamera worldCamera;
+
+	// Selection
+	private final List<Sprite> selectedSprites = new ArrayList<Sprite>();
 	private Sprite mouseOverSprite;
-	private Sprite selectedSprite;
-	private boolean selectionLocked;
 
 	// -------------------------------------------------------------------------
 	// Public API
@@ -88,12 +96,14 @@ public class LibGdxTweenStudioEditorX extends Editor {
 		int w = Gdx.graphics.getWidth();
 		int h = Gdx.graphics.getHeight();
 
-		if (selectedSprite != null) drawBoundingBox(worldCamera.combined, gl, selectedSprite, new Color(0.2f, 0.2f, 0.8f, 1.0f));
-		if (mouseOverSprite != null) drawBoundingBox(worldCamera.combined, gl, mouseOverSprite, new Color(0.2f, 0.2f, 0.8f, 0.3f));
+		for (Sprite sp : selectedSprites)
+			drawBoundingBox(worldCamera.combined, gl, sp, SELECTED_SPRITE_BOX_COLOR);
+		if (mouseOverSprite != null)
+			drawBoundingBox(worldCamera.combined, gl, mouseOverSprite, MOUSEOVER_SPRITE_BOX_COLOR);
 
-		drawRect(screenCamera.combined, 6, 4, w-10, h-10, new Color(0, 0, 0, 0.4f));
+		drawRect(screenCamera.combined, 6, 4, w-10, h-10, SHADOW_COLOR);
 		drawRect(screenCamera.combined, 5, 5, w-10, h-10, Color.RED);
-		drawRect(screenCamera.combined, 13, h-21, 10, 10, new Color(0, 0, 0, 0.4f));
+		drawRect(screenCamera.combined, 13, h-21, 10, 10, SHADOW_COLOR);
 		drawRect(screenCamera.combined, 12, h-20, 10, 10, Color.RED);
 
 		int txtY = h + 11;
@@ -102,8 +112,10 @@ public class LibGdxTweenStudioEditorX extends Editor {
 		spriteBatch.begin();
 		font.setColor(Color.RED);
 		font.draw(spriteBatch, "Recording \"" + getAnimationDef().name + "\"", 27, txtY-=20);
-		if (selectedSprite != null) {
-			String name = getAnimationDef().targetsNamesMap.get(selectedSprite);
+		if (!selectedSprites.isEmpty()) {
+			String name = selectedSprites.size() == 1
+				? getAnimationDef().targetsNamesMap.get(selectedSprites.get(0))
+				: "<" + selectedSprites.size() + " sprites>";
 			font.setColor(Color.BLUE);
 			font.draw(spriteBatch, "Selected: " + name, 10, txtY-=20);
 		}
@@ -116,8 +128,9 @@ public class LibGdxTweenStudioEditorX extends Editor {
 	}
 
 	@Override
-	public void selectedObjectChanged(Object obj) {
-		selectedSprite = (Sprite) obj;
+	public void selectedObjectsChanged(List<Object> objs) {
+		selectedSprites.clear();
+		for (Object obj : objs) selectedSprites.add((Sprite) obj);
 	}
 
 	@Override
@@ -130,23 +143,20 @@ public class LibGdxTweenStudioEditorX extends Editor {
 	// -------------------------------------------------------------------------
 
 	private final InputProcessor inputProcessor = new InputAdapter() {
-		private final Set<Integer> tweenTypes = new HashSet<Integer>();
+		private final Set<Integer> tweenTypesSet = new HashSet<Integer>();
 		private int lastX;
 		private int lastY;
-		private int selectedSpriteIdx = -1;
 
 		@Override
 		public boolean touchMoved(int x, int y) {
-			if (!selectionLocked) {
-				mouseOverSprite = null;
-				Vector2 p = screenToWorld(new Vector2(x, y));
+			Vector2 p = screenToWorld(new Vector2(x, y));
 
-				for (Sprite sp : sprites)
-					if (isOver(p, sp))
-						mouseOverSprite = sp;
+			mouseOverSprite = null;
 
-				fireMouseOverObjectChanged(mouseOverSprite);
-			}
+			for (Sprite sp : sprites)
+				if (isOver(p, sp)) mouseOverSprite = sp;
+
+			fireMouseOverObjectChanged(mouseOverSprite);
 
 			lastX = x;
 			lastY = y;
@@ -155,10 +165,18 @@ public class LibGdxTweenStudioEditorX extends Editor {
 
 		@Override
 		public boolean touchDown(int x, int y, int pointer, int button) {
-			if (!selectionLocked) {
-				selectedSprite = mouseOverSprite;
-				fireSelectedObjectChanged(selectedSprite);
+			if (mouseOverSprite != null) {
+				if (Gdx.input.isKeyPressed(Keys.CONTROL_LEFT)) {
+					if (!selectedSprites.contains(mouseOverSprite)) selectedSprites.add(mouseOverSprite);
+					else selectedSprites.remove(mouseOverSprite);
+				} else {
+					if (!selectedSprites.contains(mouseOverSprite)) selectedSprites.add(mouseOverSprite);
+				}
+			} else {
+				selectedSprites.clear();
 			}
+			
+			fireSelectedObjectsChanged(selectedSprites);
 
 			lastX = x;
 			lastY = y;
@@ -167,43 +185,23 @@ public class LibGdxTweenStudioEditorX extends Editor {
 
 		@Override
 		public boolean touchUp(int x, int y, int pointer, int button) {
-			if (selectedSprite != null)
-				fireStateChanged(selectedSprite, tweenTypes);
-			tweenTypes.clear();
+			for (Sprite sp : selectedSprites)
+				for (int tweenType : tweenTypesSet)
+					fireStateChanged(sp, Sprite.class, tweenType);
+			tweenTypesSet.clear();
 			return true;
 		}
 
 		@Override
 		public boolean touchDragged(int x, int y, int pointer) {
-			if (selectedSprite != null) {
-				int tweenType = getTweenType();
-				tweenTypes.add(tweenType);
-				Vector2 delta = new Vector2(x, y).sub(lastX, lastY);
-				apply(selectedSprite, tweenType, delta);
-			}
+			int tweenType = pollTweenType();
+			tweenTypesSet.add(tweenType);
+
+			Vector2 delta = new Vector2(x, y).sub(lastX, lastY);
+			for (Sprite sp : selectedSprites) apply(sp, tweenType, delta);
 
 			lastX = x;
 			lastY = y;
-			return true;
-		}
-
-		@Override
-		public boolean keyDown(int keycode) {
-			switch (keycode) {
-				case Keys.TAB:
-					selectionLocked = true;
-					selectedSpriteIdx = Gdx.input.isKeyPressed(Keys.SHIFT_LEFT) || Gdx.input.isKeyPressed(Keys.SHIFT_RIGHT)
-						? selectedSpriteIdx - 1
-						: selectedSpriteIdx + 1;
-					if (selectedSpriteIdx >= sprites.size()) selectedSpriteIdx = 0;
-					if (selectedSpriteIdx < 0) selectedSpriteIdx = sprites.size()-1;
-					selectedSprite = sprites.get(selectedSpriteIdx);
-					break;
-
-				case Keys.ESCAPE:
-					selectionLocked = false;
-					break;
-			}
 			return true;
 		}
 	};
@@ -212,7 +210,7 @@ public class LibGdxTweenStudioEditorX extends Editor {
 	// Helpers
 	// -------------------------------------------------------------------------
 
-	private int getTweenType() {
+	private int pollTweenType() {
 		if (Gdx.input.isKeyPressed(Keys.R)) return SpriteTweenAccessor.ROTATION;
 		if (Gdx.input.isKeyPressed(Keys.S)) return SpriteTweenAccessor.SCALE_XY;
 		if (Gdx.input.isKeyPressed(Keys.O)) return SpriteTweenAccessor.OPACITY;
@@ -274,11 +272,6 @@ public class LibGdxTweenStudioEditorX extends Editor {
 
 		Rectangle bb = getBoundingBox(sp);
 		drawRect(projModelView, bb.x, bb.y, bb.width, bb.height, color);
-
-		if (selectionLocked) {
-			Vector2 size = screenToWorld(new Vector2(10, -10)).sub(screenToWorld(new Vector2(0, 0)));
-			drawRect(projModelView, bb.x+bb.width-size.x/2, bb.y+bb.height-size.y/2, size.x, size.y, color);
-		}
 
 		gl.glPopMatrix();
 	}

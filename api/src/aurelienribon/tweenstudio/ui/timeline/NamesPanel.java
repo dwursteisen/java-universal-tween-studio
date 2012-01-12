@@ -2,6 +2,7 @@ package aurelienribon.tweenstudio.ui.timeline;
 
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Element;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Node;
+import aurelienribon.tweenstudio.ui.timeline.TimelinePanel.PushBehavior;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
@@ -38,9 +39,9 @@ class NamesPanel extends JPanel implements Scrollable {
 		parent.addListener(new TimelinePanel.Listener() {
 			@Override public void playRequested() {}
 			@Override public void pauseRequested() {}
-			@Override public void selectedElementChanged(Element newElem, Element oldElem) {repaint();}
-			@Override public void mouseOverElementChanged(Element newElem, Element oldElem) {repaint();}
+			@Override public void selectedElementsChanged(List<Element> newElems, List<Element> oldElems) {repaint();}
 			@Override public void selectedNodesChanged(List<Node> newNodes, List<Node> oldNodes) {}
+			@Override public void mouseOverElementChanged(Element newElem, Element oldElem) {repaint();}
 			@Override public void currentTimeChanged(int newTime, int oldTime) {}
 		});
 	}
@@ -116,12 +117,12 @@ class NamesPanel extends JPanel implements Scrollable {
 	private void drawSections(final Graphics2D gg) {
 		Theme theme = parent.getTheme();
 		TimelineModel model = parent.getModel();
-		Element selectedElement = parent.getSelectedElement();
+		List<Element> selectedElements = parent.getSelectedElements();
 		Element mouseOverElement = parent.getMouseOverElement();
 
 		int line = 0;
 		for (Element elem : model.getElements()) {
-			if (elem.isDescendantOf(selectedElement)) {
+			if (elem.isDescendantOf(selectedElements)) {
 				gg.setColor(theme.COLOR_NAMESPANEL_SECTION_SELECTED);
 				gg.fillRect(0, line*(lineHeight+lineGap), getWidth(), lineHeight+lineGap);
 			} else if (elem.isDescendantOf(mouseOverElement)) {
@@ -160,8 +161,8 @@ class NamesPanel extends JPanel implements Scrollable {
 	private final MouseAdapter mouseAdapter = new MouseAdapter() {
 		@Override
 		public void mousePressed(MouseEvent e) {
-			parent.setSelectedElement(parent.getMouseOverElement());
-			repaint();
+			PushBehavior behavior = e.isControlDown() ? PushBehavior.ADD_OR_REMOVE : PushBehavior.SET;
+			parent.pushSelectedElement(parent.getMouseOverElement(), behavior);
 		}
 
 		@Override
@@ -183,13 +184,11 @@ class NamesPanel extends JPanel implements Scrollable {
 			}
 
 			parent.setMouseOverElement(mouseOverElement);
-			repaint();
 		}
 
 		@Override
 		public void mouseExited(MouseEvent e) {
 			parent.setMouseOverElement(null);
-			repaint();
 		}
 
 		@Override

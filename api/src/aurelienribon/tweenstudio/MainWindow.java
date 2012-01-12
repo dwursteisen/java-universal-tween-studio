@@ -23,10 +23,10 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSpinner;
@@ -45,6 +45,7 @@ class MainWindow extends javax.swing.JFrame {
 	private final Theme theme = new Theme();
 	private final Map<Object, InitialState> initialStatesMap = new HashMap<Object, InitialState>();
 	private final float[] buffer = new float[Tween.MAX_COMBINED_TWEENS];
+	private final Callback callback;
 
 	private AnimationDef animationDef;
 	private Timeline workingTimeline;
@@ -55,76 +56,107 @@ class MainWindow extends javax.swing.JFrame {
 	// Ctor
 	// -------------------------------------------------------------------------
 
-	public MainWindow(final Callback callback) {		
+	public MainWindow(final Callback callback) {
+		this.callback = callback;
+
 		initComponents();
+		end();
+		
 		timelinePanel.setTheme(theme);
 		timelinePanel.addListener(timelinePanelListener);
-		end();
-
-		easingCbox.addItemListener(new ItemListener() {
-			@Override public void itemStateChanged(ItemEvent e) {
-				String name = (String) easingCbox.getSelectedItem();
-				TweenEquation equation = TweenEquation.parse(name);
-				if (equation != null) {
-					for (Node node : timelinePanel.getSelectedNodes()) {
-						NodeData nodeData = (NodeData) node.getUserData();
-						nodeData.setEquation(equation);
-						recreateTimeline();
-					}
-				}
-			}
-		});
-
-		saveAndStopBtn.addActionListener(new ActionListener() {
-			@Override public void actionPerformed(ActionEvent e) {
-				TimelineCreationHelper.copy(workingTimeline, animationDef.timeline);
-				end();
-				animationDef = null;
-				callback.editionComplete();
-			}
-		});
-
-		discardbtn.addActionListener(new ActionListener() {
-			@Override public void actionPerformed(ActionEvent e) {
-				end();
-				animationDef = null;
-				callback.editionDiscarded();
-			}
-		});
+		easingCbox.addItemListener(easingCboxItemListener);
+		saveAndStopBtn.addActionListener(saveAndStopBtnActionListener);
+		discardbtn.addActionListener(discardBtnActionListener);
 	}
 
+	// -------------------------------------------------------------------------
+	// Callback
+	// -------------------------------------------------------------------------
+
+	public interface Callback {
+		public void editionComplete();
+		public void editionDiscarded();
+	}
+
+	// -------------------------------------------------------------------------
+	// Listeners
+	// -------------------------------------------------------------------------
+
+	private final ItemListener easingCboxItemListener = new ItemListener() {
+		@Override
+		public void itemStateChanged(ItemEvent e) {
+			String name = (String) easingCbox.getSelectedItem();
+			TweenEquation equation = TweenEquation.parse(name);
+			if (equation != null) {
+				for (Node node : timelinePanel.getSelectedNodes()) {
+					NodeData nodeData = (NodeData) node.getUserData();
+					nodeData.setEquation(equation);
+				}
+				recreateTimeline();
+			}
+		}
+	};
+
+	private final ActionListener saveAndStopBtnActionListener = new ActionListener() {
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			TimelineCreationHelper.copy(workingTimeline, animationDef.timeline);
+			end();
+			animationDef = null;
+			callback.editionComplete();
+		}
+	};
+
+	private final ActionListener discardBtnActionListener = new ActionListener() {
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			end();
+			animationDef = null;
+			callback.editionDiscarded();
+		}
+	};
+
 	private final TimelinePanel.Listener timelinePanelListener = new Listener() {
-		@Override public void playRequested() {
+		@Override
+		public void playRequested() {
 			playDuration = workingTimeline.getFullDuration() * 1000;
 			playTime = timelinePanel.getCurrentTime();
 			timelinePanel.setPlaying(true);
 		}
 
-		@Override public void pauseRequested() {
+		@Override
+		public void pauseRequested() {
 			timelinePanel.setPlaying(false);
 		}
 
-		@Override public void currentTimeChanged(int newTime, int oldTime) {
+		@Override
+		public void currentTimeChanged(int newTime, int oldTime) {
 			workingTimeline.update((newTime - oldTime) / 1000);
 			if (objectCard.isVisible()) updateObjectCard();
 		}
 
-		@Override public void selectedElementChanged(Element newElem, Element oldElem) {
+		@Override
+		public void selectedElementsChanged(List<Element> newElems, List<Element> oldElems) {
 			CardLayout cl = (CardLayout) propertiesPanel.getLayout();
-			if (newElem != null) {
+			if (!newElems.isEmpty()) {
 				cl.show(propertiesPanel, "objectCard");
 				buildObjectCard();
 				updateObjectCard();
 
-				ElementData elemData = (ElementData) newElem.getUserData();
-				animationDef.editor.selectedObjectChanged(elemData.getTarget());
+				List<Object> selectedObjects = new ArrayList<Object>();
+				for (Element elem : newElems) {
+					ElementData elemData = (ElementData) elem.getUserData();
+					selectedObjects.add(elemData.getTarget());
+				}
+				animationDef.editor.selectedObjectsChanged(selectedObjects);
 			} else {
 				cl.show(propertiesPanel, "nothingCard");
-				animationDef.editor.selectedObjectChanged(null);
+				animationDef.editor.selectedObjectsChanged(new ArrayList<Object>());
 			}
 		}
 
-		@Override public void mouseOverElementChanged(Element newElem, Element oldElem) {
+		@Override
+		public void mouseOverElementChanged(Element newElem, Element oldElem) {
 			if (newElem != null) {
 				ElementData elemData = (ElementData) newElem.getUserData();
 				animationDef.editor.mouseOverObjectChanged(elemData.getTarget());
@@ -133,7 +165,8 @@ class MainWindow extends javax.swing.JFrame {
 			}
 		}
 
-		@Override public void selectedNodesChanged(List<Node> newNodes, List<Node> oldNodes) {
+		@Override
+		public void selectedNodesChanged(List<Node> newNodes, List<Node> oldNodes) {
 			CardLayout cl = (CardLayout) propertiesPanel.getLayout();
 			if (!newNodes.isEmpty()) {
 				cl.show(propertiesPanel, "tweenCard");
@@ -146,22 +179,13 @@ class MainWindow extends javax.swing.JFrame {
 	};
 
 	// -------------------------------------------------------------------------
-	// Callback
+	// Public API
 	// -------------------------------------------------------------------------
 
-	public interface Callback {
-		public void editionComplete();
-		public void editionDiscarded();
-	}
-
-	// -------------------------------------------------------------------------
-	// Package API
-	// -------------------------------------------------------------------------
-
-	void initialize(AnimationDef animationDef) {
+	public void initialize(AnimationDef animationDef) {
 		this.animationDef = animationDef;
-		begin();
 		animationNameField.setText(animationDef.name);
+		begin();
 
 		createInitialStates();
 		TimelineModel model = createModel();
@@ -177,7 +201,7 @@ class MainWindow extends javax.swing.JFrame {
 		});
 	}
 
-	void update(int deltaMillis) {
+	public void update(int deltaMillis) {
 		if (animationDef == null) return;
 		if (timelinePanel.isPlaying()) {
 			playTime += deltaMillis * 1000;
@@ -190,16 +214,13 @@ class MainWindow extends javax.swing.JFrame {
 		}
 	}
 
-	public void selectedObjectChanged(Object obj) {
+	public void selectedObjectsChanged(List objs) {
+		timelinePanel.clearSelectedElements();
 		for (Element elem : timelinePanel.getModel().getRoot().getChildren()) {
 			ElementData elemData = (ElementData) elem.getUserData();
-			if (elemData.getTarget() == obj) {
-				timelinePanel.setSelectedElement(elem);
-				return;
-			}
+			if (objs.contains(elemData.getTarget()))
+				timelinePanel.pushSelectedElement(elem, TimelinePanel.PushBehavior.ADD);
 		}
-
-		timelinePanel.setSelectedElement(null);
 	}
 
 	public void mouseOverObjectChanged(Object obj) {
@@ -214,17 +235,17 @@ class MainWindow extends javax.swing.JFrame {
 		timelinePanel.setMouseOverElement(null);
 	}
 
-	public void targetStateChanged(Object target, String name, Set<Integer> tweenTypes) {
-		for (int tweenType : tweenTypes) {
-			String propertyName = animationDef.editor.getProperty(target.getClass(), tweenType).getName();
-			Element elem = timelinePanel.getModel().getElement(name + "/" + propertyName);
-			Node node = TimelineHelper.getNodeOrCreate(elem, timelinePanel.getCurrentTime());
-			NodeData nodeData = (NodeData) node.getUserData();
+	public void targetStateChanged(final Object target, final Class targetClass, final int tweenType) {
+		TweenAccessor accessor = Tween.getRegisteredAccessor(targetClass);
+		String targetName = animationDef.targetsNamesMap.get(target);
+		String propertyName = animationDef.editor.getProperty(target, accessor, tweenType).name;
+		
+		Element elem = timelinePanel.getModel().getElement(targetName + "/" + propertyName);
+		Node node = TimelineHelper.getNodeOrCreate(elem, timelinePanel.getCurrentTime());
+		NodeData nodeData = (NodeData) node.getUserData();
 
-			TweenAccessor accessor = Tween.getRegisteredAccessor(target.getClass());
-			accessor.getValues(target, tweenType, buffer);
-			nodeData.setTargets(buffer);
-		}
+		accessor.getValues(target, tweenType, buffer);
+		nodeData.setTargets(buffer);
 
 		recreateTimeline();
 	}
@@ -264,13 +285,13 @@ class MainWindow extends javax.swing.JFrame {
 		});
 
 		for (Object target : animationDef.targets) {
-			List<Property> properties = animationDef.editor.getProperties(target.getClass());
+			List<Property> properties = animationDef.editor.getProperties(target);
 			Element elem = model.addElement(animationDef.targetsNamesMap.get(target));
 			elem.setSelectable(false);
 			elem.setUserData(new ElementData(target, null));
 
 			for (Property property : properties) {
-				elem = model.addElement(animationDef.targetsNamesMap.get(target) + "/" + property.getName());
+				elem = model.addElement(animationDef.targetsNamesMap.get(target) + "/" + property.name);
 				elem.setUserData(new ElementData(target, property));
 			}
 		}
@@ -284,7 +305,7 @@ class MainWindow extends javax.swing.JFrame {
 
 	private void begin() {
 		timelinePanel.setCurrentTime(0);
-		timelinePanel.setSelectedElement(null);
+		timelinePanel.clearSelectedElements();
 		timelinePanel.clearSelectedNodes();
 		saveAndStopBtn.setEnabled(true);
 		discardbtn.setEnabled(true);
@@ -292,7 +313,7 @@ class MainWindow extends javax.swing.JFrame {
 
 	private void end() {
 		timelinePanel.setCurrentTime(0);
-		timelinePanel.setSelectedElement(null);
+		timelinePanel.clearSelectedElements();
 		timelinePanel.clearSelectedNodes();
 		timelinePanel.setModel(new TimelineModel());
 		animationNameField.setText("<nothing loaded>");
@@ -302,32 +323,79 @@ class MainWindow extends javax.swing.JFrame {
 
 	private Property getCommonProperty(List<Node> nodes) {
 		Property prop = null;
+
 		for (Node node : nodes) {
 			ElementData elemData = (ElementData) node.getParent().getUserData();
 			if (prop == null) prop = elemData.getProperty();
 			if (prop != elemData.getProperty()) return null;
 		}
+
 		return prop;
 	}
 
 	private TweenEquation getCommonEquation(List<Node> nodes) {
 		TweenEquation equation = null;
-		for (Node node : timelinePanel.getSelectedNodes()) {
+
+		for (Node node : nodes) {
 			NodeData nodeData = (NodeData) node.getUserData();
 			if (equation == null) equation = nodeData.getEquation();
 			if (equation != nodeData.getEquation()) return null;
 		}
+
 		return equation;
 	}
 
 	private Float getCommonTarget(List<Node> nodes, int fieldIdx) {
 		Float target = null;
+
 		for (Node node : nodes) {
 			NodeData nodeData = (NodeData) node.getUserData();
 			if (target == null) target = new Float(nodeData.getTargets()[fieldIdx]);
 			if (target.floatValue() != nodeData.getTargets()[fieldIdx]) return null;
 		}
+		
 		return target;
+	}
+
+	private Map<Property, List<Element>> getCommonProperties(List<Element> elems) {
+		assert !elems.isEmpty();
+		Map<Property, List<Element>> propertiesMap = new HashMap<Property, List<Element>>();
+		
+		for (Element propertyElem : elems.get(0).getChildren()) {
+			ElementData elemData = (ElementData) propertyElem.getUserData();
+			propertiesMap.put(elemData.getProperty(), new ArrayList<Element>());
+			propertiesMap.get(elemData.getProperty()).add(propertyElem);
+		}
+
+		for (Element elem : elems) {
+			for (Element propertyElem : elem.getChildren()) {
+				ElementData elemData = (ElementData) propertyElem.getUserData();
+				if (propertiesMap.containsKey(elemData.getProperty()))
+					propertiesMap.get(elemData.getProperty()).add(propertyElem);
+			}
+		}
+
+		return propertiesMap;
+	}
+
+	private Float[] getCommonValues(Property property, List<Element> propertyElems) {
+		Float[] values = new Float[property.fields.length];
+		
+		for (int i=0; i<property.fields.length; i++) {
+			Field field = property.fields[i];
+			for (Element propertyElem : propertyElems) {
+				ElementData elemData = (ElementData) propertyElem.getUserData();
+				assert property == elemData.getProperty();
+
+				float[] values = new float[property.fields.length];
+				property.accessor.getValues(elemData.getTarget(), property.tweenType, values);
+
+				if (value == null) value = new Float(nodeData.getTargets()[fieldIdx]);
+				if (target.floatValue() != nodeData.getTargets()[fieldIdx]) return null;
+			}
+		}
+		
+		return values;
 	}
 
 	// -------------------------------------------------------------------------
@@ -335,21 +403,20 @@ class MainWindow extends javax.swing.JFrame {
 	// -------------------------------------------------------------------------
 
 	private void buildTweenCard() {
+		List<Node> nodes = timelinePanel.getSelectedNodes();
+
 		tweenPanel.removeAll();
 
-		List<Node> nodes = timelinePanel.getSelectedNodes();
 		Property commonProp = getCommonProperty(nodes);
-
 		if (commonProp != null) {
-			for (int i=0; i<commonProp.getFields().length; i++) {
-				Field field = commonProp.getFields()[i];
+			for (int i=0; i<commonProp.fields.length; i++) {
+				Field field = commonProp.fields[i];
 
 				JLabel label = new JLabel(field.name + ": ");
 				label.setForeground(Color.WHITE);
 				label.setHorizontalAlignment(JLabel.RIGHT);
 
 				SpinnerNullableFloatModel model = new SpinnerNullableFloatModel(field.min, field.max, field.step);
-				model.setValue(getCommonTarget(nodes, i));
 
 				JSpinner spinner = new JSpinner(model);
 				spinner.setEditor(new SpinnerNullableFloatEditor(model));
@@ -373,26 +440,37 @@ class MainWindow extends javax.swing.JFrame {
 
 	private void updateTweenCard() {
 		List<Node> nodes = timelinePanel.getSelectedNodes();
-		TweenEquation commonEquation = getCommonEquation(nodes);
 
+		TweenEquation commonEquation = getCommonEquation(nodes);
 		easingCbox.setEditable(true);
 		easingCbox.setSelectedItem(commonEquation != null ? commonEquation.toString() : "---");
 		easingCbox.setEditable(false);
+
+		Property commonProp = getCommonProperty(nodes);
+		if (commonProp != null) {
+			for (int i=0; i<commonProp.fields.length; i++) {
+				JPanel panel = (JPanel) tweenPanel.getComponent(i);
+				JSpinner spinner = (JSpinner) panel.getComponent(1);
+				NodesTargetChangeListener listener = (NodesTargetChangeListener) spinner.getChangeListeners()[0];
+
+				listener.setEnabled(false);
+				spinner.setValue(getCommonTarget(nodes, i));
+				listener.setEnabled(true);
+			}
+		}
 	}
 
 	private void buildObjectCard() {
-		Element objectElem = timelinePanel.getSelectedElement();
+		List<Element> elems = timelinePanel.getSelectedElements();
 
-		objectField.setText(objectElem.getName());
+		objectField.setText(elems.size() == 1 ? elems.get(0).getName() : "<" + elems.size() + " objects>");
 		objectPanel.removeAll();
 
-		for (Element propertyElem : objectElem.getChildren()) {
-			ElementData propElemData = (ElementData) propertyElem.getUserData();
-			Property property = propElemData.getProperty();
+		Map<Property, List<Element>> commonPropertiesMap = getCommonProperties(elems);
+		for (Property property : commonPropertiesMap.keySet()) {
+			for (int i=0; i<property.fields.length; i++) {
+				Field field = property.fields[i];
 
-			for (int i=0; i<property.getFields().length; i++) {
-				Field field = property.getFields()[i];
-				
 				JLabel label = new JLabel(field.name + ": ");
 				label.setForeground(Color.WHITE);
 				label.setHorizontalAlignment(JLabel.RIGHT);
@@ -401,7 +479,7 @@ class MainWindow extends javax.swing.JFrame {
 
 				JSpinner spinner = new JSpinner(model);
 				spinner.setEditor(new SpinnerNullableFloatEditor(model));
-				spinner.addChangeListener(new PropertyTargetChangeListener(propertyElem, i));
+				spinner.addChangeListener(new PropertyTargetChangeListener(commonPropertiesMap.get(property), i));
 				spinner.setMinimumSize(new Dimension(70, 20));
 				spinner.setPreferredSize(new Dimension(70, 20));
 				spinner.setMaximumSize(new Dimension(70, 20));
@@ -420,22 +498,19 @@ class MainWindow extends javax.swing.JFrame {
 	}
 
 	private void updateObjectCard() {
-		Element elem = timelinePanel.getSelectedElement();
-		ElementData elemData = (ElementData) elem.getUserData();
-
+		List<Element> elems = timelinePanel.getSelectedElements();
+		Map<Property, List<Element>> commonPropertiesMap = getCommonProperties(elems);
 		int cnt = 0;
 
-		for (Property property : animationDef.editor.getProperties(elemData.getTarget().getClass())) {
-			float[] values = new float[property.getFields().length];
-			TweenAccessor accessor = Tween.getRegisteredAccessor(elemData.getTarget().getClass());
-			accessor.getValues(elemData.getTarget(), property.getId(), values);
+		for (Property property : commonPropertiesMap.keySet()) {
+			Float[] commonValues = ;
 
-			for (int i=0; i<property.getFields().length; i++) {
+			for (int i=0; i<property.fields.length; i++) {
 				JPanel panel = (JPanel) objectPanel.getComponent(cnt);
 				JSpinner spinner = (JSpinner) panel.getComponent(1);
 				PropertyTargetChangeListener listener = (PropertyTargetChangeListener) spinner.getChangeListeners()[0];
 				listener.setEnabled(false);
-				spinner.setValue(values[i]);
+				spinner.setValue(commonValues[i]);
 				listener.setEnabled(true);
 				cnt += 1;
 			}
@@ -445,35 +520,6 @@ class MainWindow extends javax.swing.JFrame {
 	// -------------------------------------------------------------------------
 	// Spinner elements
 	// -------------------------------------------------------------------------
-
-	private class PropertyTargetChangeListener implements ChangeListener {
-		private final Element propertyElem;
-		private final int fieldIdx;
-		private boolean isEnabled = true;
-
-		public PropertyTargetChangeListener(Element propertyElem, int fieldIdx) {
-			this.propertyElem = propertyElem;
-			this.fieldIdx = fieldIdx;
-		}
-
-		public void setEnabled(boolean isEnabled) {
-			this.isEnabled = isEnabled;
-		}
-
-		@Override
-		public void stateChanged(ChangeEvent e) {
-			if (!isEnabled) return;
-
-			JSpinner spinner = (JSpinner) e.getSource();
-			float value = ((Number)spinner.getValue()).floatValue();
-
-			Node n = TimelineHelper.getNodeOrCreate(propertyElem, timelinePanel.getCurrentTime());
-			NodeData nodeData = (NodeData) n.getUserData();
-			nodeData.getTargets()[fieldIdx] = value;
-
-			recreateTimeline();
-		}
-	}
 
 	private class NodesTargetChangeListener implements ChangeListener {
 		private final List<Node> nodes;
@@ -498,6 +544,37 @@ class MainWindow extends javax.swing.JFrame {
 
 			for (Node node : nodes) {
 				NodeData nodeData = (NodeData) node.getUserData();
+				nodeData.getTargets()[fieldIdx] = value;
+			}
+
+			recreateTimeline();
+		}
+	}
+
+	private class PropertyTargetChangeListener implements ChangeListener {
+		private final List<Element> propertyElems;
+		private final int fieldIdx;
+		private boolean isEnabled = true;
+
+		public PropertyTargetChangeListener(List<Element> propertyElems, int fieldIdx) {
+			this.propertyElems = propertyElems;
+			this.fieldIdx = fieldIdx;
+		}
+
+		public void setEnabled(boolean isEnabled) {
+			this.isEnabled = isEnabled;
+		}
+
+		@Override
+		public void stateChanged(ChangeEvent e) {
+			if (!isEnabled) return;
+
+			JSpinner spinner = (JSpinner) e.getSource();
+			float value = ((Number)spinner.getValue()).floatValue();
+
+			for (Element propertyElem : propertyElems) {
+				Node n = TimelineHelper.getNodeOrCreate(propertyElem, timelinePanel.getCurrentTime());
+				NodeData nodeData = (NodeData) n.getUserData();
 				nodeData.getTargets()[fieldIdx] = value;
 			}
 

@@ -1,29 +1,21 @@
 package aurelienribon.tweenstudio;
 
+import aurelienribon.tweenengine.TweenAccessor;
+
 /**
  * @author Aurelien Ribon | http://www.aurelienribon.com
  */
 public class Property {
-	private final int id;
-	private final String name;
-	private final Field[] fields;
+	public final TweenAccessor accessor;
+	public final int tweenType;
+	public final String name;
+	public final Field[] fields;
 
-	public Property(int tweenType, String name, Field... fields) {
-		this.id = tweenType;
+	public Property(TweenAccessor accessor, int tweenType, String name, Field... fields) {
+		this.accessor = accessor;
+		this.tweenType = tweenType;
 		this.name = name;
 		this.fields = fields;
-	}
-
-	public int getId() {
-		return id;
-	}
-
-	public String getName() {
-		return name;
-	}
-
-	public Field[] getFields() {
-		return fields;
 	}
 
 	// -------------------------------------------------------------------------
