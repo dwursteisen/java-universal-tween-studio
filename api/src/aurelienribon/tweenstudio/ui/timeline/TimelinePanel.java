@@ -7,6 +7,7 @@ import java.awt.Dimension;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -90,17 +91,27 @@ public class TimelinePanel extends JPanel {
 
 	// -------------------------------------------------------------------------
 
-	public void pushSelectedElement(Element elem, PushBehavior behavior) {
-		assert elem != null;
+	public void pushSelectedElements(PushBehavior behavior, Element... elems) {
+		assert elems.length > 0;
 		clearSelectedNodes();
 		List<Element> oldElems = Collections.unmodifiableList(new ArrayList<Element>(selectedElements));
 
 		switch (behavior) {
-			case SET: selectedElements.clear(); selectedElements.add(elem); break;
-			case ADD: if (!selectedElements.contains(elem)) selectedElements.add(elem); break;
+			case SET:
+				selectedElements.clear();
+				selectedElements.addAll(Arrays.asList(elems));
+				break;
+			case ADD:
+				for (Element elem : elems) {
+					if (!selectedElements.contains(elem))
+						selectedElements.add(elem);
+				}
+				break;
 			case ADD_OR_REMOVE:
-				if (!selectedElements.contains(elem)) selectedElements.add(elem);
-				else selectedElements.remove(elem);
+				for (Element elem : elems) {
+					if (!selectedElements.contains(elem)) selectedElements.add(elem);
+					else selectedElements.remove(elem);
+				}
 				break;
 		}
 

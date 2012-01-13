@@ -81,7 +81,15 @@ public abstract class Editor {
 		propertiesMap.get(clazz).add(new Property(Tween.getRegisteredAccessor(clazz), tweenType, propertyName, fields));
 	}
 
-	protected final void fireStateChanged(final Object target, final Class targetClass, final int tweenType) {
+	protected final void beginStateChangedReport() {
+		
+	}
+
+	protected final void endStateChangedReport() {
+		
+	}
+
+	protected final void reportStateChanged(final Object target, final Class targetClass, final int tweenType) {
 		try {
 			SwingUtilities.invokeAndWait(new Runnable() {@Override public void run() {
 				editionWindow.targetStateChanged(target, targetClass, tweenType);

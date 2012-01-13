@@ -215,12 +215,16 @@ class MainWindow extends javax.swing.JFrame {
 	}
 
 	public void selectedObjectsChanged(List objs) {
-		timelinePanel.clearSelectedElements();
+		List<Element> elems = new ArrayList<Element>();
+
 		for (Element elem : timelinePanel.getModel().getRoot().getChildren()) {
 			ElementData elemData = (ElementData) elem.getUserData();
 			if (objs.contains(elemData.getTarget()))
-				timelinePanel.pushSelectedElement(elem, TimelinePanel.PushBehavior.ADD);
+				elems.add(elem);
 		}
+
+		if (elems.isEmpty()) timelinePanel.clearSelectedElements();
+		else timelinePanel.pushSelectedElements(TimelinePanel.PushBehavior.SET, elems.toArray(new Element[0]));
 	}
 
 	public void mouseOverObjectChanged(Object obj) {
@@ -235,7 +239,7 @@ class MainWindow extends javax.swing.JFrame {
 		timelinePanel.setMouseOverElement(null);
 	}
 
-	public void targetStateChanged(final Object target, final Class targetClass, final int tweenType) {
+	public void targetStateChanged(Object target, Class targetClass, int tweenType) {
 		TweenAccessor accessor = Tween.getRegisteredAccessor(targetClass);
 		String targetName = animationDef.targetsNamesMap.get(target);
 		String propertyName = animationDef.editor.getProperty(target, accessor, tweenType).name;
@@ -246,8 +250,6 @@ class MainWindow extends javax.swing.JFrame {
 
 		accessor.getValues(target, tweenType, buffer);
 		nodeData.setTargets(buffer);
-
-		recreateTimeline();
 	}
 
 	// -------------------------------------------------------------------------

@@ -20,9 +20,7 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  * @author Aurelien Ribon | http://www.aurelienribon.com
@@ -143,7 +141,7 @@ public class LibGdxTweenStudioEditorX extends Editor {
 	// -------------------------------------------------------------------------
 
 	private final InputProcessor inputProcessor = new InputAdapter() {
-		private final Set<Integer> tweenTypesSet = new HashSet<Integer>();
+		private boolean dragged = false;
 		private int lastX;
 		private int lastY;
 
@@ -170,7 +168,10 @@ public class LibGdxTweenStudioEditorX extends Editor {
 					if (!selectedSprites.contains(mouseOverSprite)) selectedSprites.add(mouseOverSprite);
 					else selectedSprites.remove(mouseOverSprite);
 				} else {
-					if (!selectedSprites.contains(mouseOverSprite)) selectedSprites.add(mouseOverSprite);
+					if (!selectedSprites.contains(mouseOverSprite)) {
+						selectedSprites.clear();
+						selectedSprites.add(mouseOverSprite);
+					}
 				}
 			} else {
 				selectedSprites.clear();
@@ -185,21 +186,21 @@ public class LibGdxTweenStudioEditorX extends Editor {
 
 		@Override
 		public boolean touchUp(int x, int y, int pointer, int button) {
-			for (Sprite sp : selectedSprites)
-				for (int tweenType : tweenTypesSet)
-					fireStateChanged(sp, Sprite.class, tweenType);
-			tweenTypesSet.clear();
+			if (dragged) {
+				for (Sprite sp : selectedSprites)
+					reportStateChanged(sp, Sprite.class, SpriteTweenAccessor.POSITION_XY);
+			}
+			dragged = false;
 			return true;
 		}
 
 		@Override
 		public boolean touchDragged(int x, int y, int pointer) {
-			int tweenType = pollTweenType();
-			tweenTypesSet.add(tweenType);
-
 			Vector2 delta = new Vector2(x, y).sub(lastX, lastY);
-			for (Sprite sp : selectedSprites) apply(sp, tweenType, delta);
+			for (Sprite sp : selectedSprites)
+				apply(sp, SpriteTweenAccessor.POSITION_XY, delta);
 
+			dragged = true;
 			lastX = x;
 			lastY = y;
 			return true;
@@ -210,25 +211,11 @@ public class LibGdxTweenStudioEditorX extends Editor {
 	// Helpers
 	// -------------------------------------------------------------------------
 
-	private int pollTweenType() {
-		if (Gdx.input.isKeyPressed(Keys.R)) return SpriteTweenAccessor.ROTATION;
-		if (Gdx.input.isKeyPressed(Keys.S)) return SpriteTweenAccessor.SCALE_XY;
-		if (Gdx.input.isKeyPressed(Keys.O)) return SpriteTweenAccessor.OPACITY;
-		return SpriteTweenAccessor.POSITION_XY;
-	}
-
 	private void apply(Sprite sp, int tweenType, Vector2 screenDelta) {
 		Vector2 worldDelta = screenToWorld(screenDelta).sub(screenToWorld(new Vector2(0, 0)));
 		switch (tweenType) {
-			case SpriteTweenAccessor.POSITION_XY: sp.translate(worldDelta.x, worldDelta.y); break;
-			case SpriteTweenAccessor.ROTATION: sp.rotate(screenDelta.x); break;
-			case SpriteTweenAccessor.SCALE_XY: sp.scale(screenDelta.x/20); break;
-			case SpriteTweenAccessor.OPACITY:
-				Color c = sp.getColor();
-				float ca = c.a + screenDelta.x/100;
-				ca = Math.min(ca, 1);
-				ca = Math.max(ca, 0);
-				sp.setColor(c.r, c.g, c.b, ca);
+			case SpriteTweenAccessor.POSITION_XY:
+				sp.translate(worldDelta.x, worldDelta.y);
 				break;
 		}
 	}

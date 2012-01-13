@@ -162,7 +162,7 @@ class NamesPanel extends JPanel implements Scrollable {
 		@Override
 		public void mousePressed(MouseEvent e) {
 			PushBehavior behavior = e.isControlDown() ? PushBehavior.ADD_OR_REMOVE : PushBehavior.SET;
-			parent.pushSelectedElement(parent.getMouseOverElement(), behavior);
+			parent.pushSelectedElements(behavior, parent.getMouseOverElement());
 		}
 
 		@Override
