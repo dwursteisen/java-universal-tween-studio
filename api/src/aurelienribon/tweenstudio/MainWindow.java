@@ -379,19 +379,23 @@ class MainWindow extends javax.swing.JFrame {
 	}
 
 	private Float[] getCommonValues(Property property, List<Element> propertyElems) {
-		Float[] values = new Float[property.fields.length];
+		float[] buf = new float[property.fields.length];
+		Float[] values = null;
 		
-		for (int i=0; i<property.fields.length; i++) {
-			Field field = property.fields[i];
-			for (Element propertyElem : propertyElems) {
-				ElementData elemData = (ElementData) propertyElem.getUserData();
-				assert property == elemData.getProperty();
+		for (Element propertyElem : propertyElems) {
+			ElementData elemData = (ElementData) propertyElem.getUserData();
+			assert property == elemData.getProperty();
 
-				float[] values = new float[property.fields.length];
-				property.accessor.getValues(elemData.getTarget(), property.tweenType, values);
+			property.accessor.getValues(elemData.getTarget(), property.tweenType, buf);
 
-				if (value == null) value = new Float(nodeData.getTargets()[fieldIdx]);
-				if (target.floatValue() != nodeData.getTargets()[fieldIdx]) return null;
+			if (values == null) {
+				values = new Float[property.fields.length];
+				for (int i=0; i<values.length; i++) values[i] = new Float(buf[i]);
+			} else {
+				for (int i=0; i<values.length; i++) {
+					if (values[i] != null && values[i].floatValue() != buf[i])
+						values[i] = null;
+				}
 			}
 		}
 		
@@ -503,7 +507,7 @@ class MainWindow extends javax.swing.JFrame {
 		int cnt = 0;
 
 		for (Property property : commonPropertiesMap.keySet()) {
-			Float[] commonValues = ;
+			Float[] commonValues = getCommonValues(property, commonPropertiesMap.get(property));
 
 			for (int i=0; i<property.fields.length; i++) {
 				JPanel panel = (JPanel) objectPanel.getComponent(cnt);

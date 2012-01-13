@@ -346,9 +346,11 @@ public class TweenStudio {
 			Object target = getTargetFromName(((DummyTweenAccessor)t.getTarget()).data, targetsNamesMap);
 
 			Tween tween = Tween.to(target, t.getType(), t.getDuration())
+				.as(t.getTargetClass())
 				.target(t.getTargetValues())
 				.ease(t.getEasing())
-				.delay(t.getDelay());
+				.delay(t.getDelay())
+				.build();
 
 			tl.push(tween);
 		}

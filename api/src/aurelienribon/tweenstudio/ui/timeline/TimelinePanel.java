@@ -142,9 +142,9 @@ public class TimelinePanel extends JPanel {
 	}
 
 	public void clearSelectedNodes() {
-		List<Node> oldNodes = Collections.unmodifiableList(selectedNodes);
+		List<Node> oldNodes = Collections.unmodifiableList(new ArrayList<Node>(selectedNodes));
 		selectedNodes.clear();
-		List<Node> newNodes = Collections.unmodifiableList(selectedNodes);
+		List<Node> newNodes = Collections.unmodifiableList(new ArrayList<Node>(selectedNodes));
 		if (!oldNodes.isEmpty()) fireSelectedNodesChanged(newNodes, oldNodes);
 	}
 
