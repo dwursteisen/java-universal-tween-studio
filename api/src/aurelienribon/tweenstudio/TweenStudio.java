@@ -75,7 +75,6 @@ public class TweenStudio {
 	private static final Map<String, Timeline> timelinesMap = new HashMap<String, Timeline>(5);
 	private static final List<Object> nextTargets = new ArrayList<Object>(5);
 	private static final Map<Object, String> nextTargetsNamesMap = new HashMap<Object, String>(5);
-	private static Editor nextEditor;
 	private static Callback nextCallback;
 
 	// Only needed in edition mode
@@ -84,6 +83,7 @@ public class TweenStudio {
 	private static Map<String, File> filesMap;
 	private static Queue<AnimationDef> animationsFifo;
 	private static AnimationDef currentAnimation;
+	private static Editor nextEditor;
 
 	// -------------------------------------------------------------------------
 	// Callback
