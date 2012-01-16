@@ -326,8 +326,11 @@ class GridPanel extends JPanel implements Scrollable {
 
 			} else if (mouseOverNode != null) {
 				state = MouseState.DRAG_NODES;
-				PushBehavior behavior = e.isControlDown() ? PushBehavior.ADD_OR_REMOVE : PushBehavior.SET;
-				parent.pushSelectedNode(mouseOverNode, behavior);
+				if (e.isControlDown()) {
+					parent.pushSelectedNode(mouseOverNode, PushBehavior.ADD_OR_REMOVE);
+				} else if (!parent.getSelectedNodes().contains(mouseOverNode)) {
+					parent.pushSelectedNode(mouseOverNode, PushBehavior.SET);
+				}
 				trackGripRect = null;
 
 			} else if (isOverTrack) {

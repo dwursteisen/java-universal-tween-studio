@@ -6,7 +6,7 @@ import aurelienribon.tweenstudio.Property.Field;
 import aurelienribon.tweenstudio.TweenStudio.AnimationDef;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import javax.swing.SwingUtilities;
@@ -15,7 +15,7 @@ import javax.swing.SwingUtilities;
  * @author Aurelien Ribon | http://www.aurelienribon.com/
  */
 public abstract class Editor {
-	private final Map<Class, List<Property>> propertiesMap = new HashMap<Class, List<Property>>();
+	private final Map<Class, List<Property>> propertiesMap = new LinkedHashMap<Class, List<Property>>();
 	private final List<State> changedStates = new ArrayList<State>();
 	private AnimationDef animationDef;
 	private MainWindow editionWindow;
@@ -51,7 +51,7 @@ public abstract class Editor {
 	final List<Property> getProperties(Object target) {
 		List<Property> properties = new ArrayList<Property>();
 		for (Class c : propertiesMap.keySet())
-			if (target.getClass() == c)
+			if (c.isInstance(target))
 				properties.addAll(propertiesMap.get(c));
 		return properties;
 	}
@@ -79,7 +79,7 @@ public abstract class Editor {
 
 	protected final void registerProperty(Class clazz, int tweenType, String propertyName, Field... fields) {
 		if (Tween.getRegisteredAccessor(clazz) == null) throw new RuntimeException("No accessor was found for the given class");
-		if (!propertiesMap.containsKey(clazz)) propertiesMap.put(clazz, new ArrayList<Property>(5));
+		if (!propertiesMap.containsKey(clazz)) propertiesMap.put(clazz, new ArrayList<Property>());
 		propertiesMap.get(clazz).add(new Property(Tween.getRegisteredAccessor(clazz), tweenType, propertyName, fields));
 	}
 

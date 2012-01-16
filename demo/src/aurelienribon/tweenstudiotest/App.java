@@ -31,7 +31,7 @@ public class App implements ApplicationListener {
 		// 0. Tween Studio initialization: this single call ("enableEdition()")
 		//    lets you toggle between edition and play modes!
 		int res = JOptionPane.showConfirmDialog(null, "Do you want to enable the edition of the animations ?", "Tween Studio", JOptionPane.YES_NO_OPTION);
-		if (res == 0) TweenStudio.enableEdition();
+		if (res == 0) TweenStudio.enableEdition(1000, 480);
 		// ---------------------------------------------------------------------
 	}
 

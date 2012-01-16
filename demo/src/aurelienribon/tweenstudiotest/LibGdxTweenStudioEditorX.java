@@ -30,6 +30,7 @@ public class LibGdxTweenStudioEditorX extends Editor {
 	private static final Color SELECTED_SPRITE_BOX_COLOR = new Color(0.2f, 0.2f, 0.8f, 1.0f);
 	private static final Color MOUSEOVER_SPRITE_BOX_COLOR = new Color(0.2f, 0.2f, 0.8f, 0.3f);
 	private static final Color SHADOW_COLOR = new Color(0, 0, 0, 0.4f);
+	private static final Color FRAME_COLOR = new Color(0, 0, 0, 0.2f);
 
 	// General
 	private final List<Sprite> sprites = new ArrayList<Sprite>();
@@ -39,8 +40,12 @@ public class LibGdxTweenStudioEditorX extends Editor {
 	private final OrthographicCamera screenCamera = new OrthographicCamera(0, 0);
 
 	// Setup
-	private InputProcessor oldInputProcessor;
 	private OrthographicCamera worldCamera;
+	private InputProcessor oldInputProcessor;
+	private float oldCameraZoom;
+	private float oldCameraViewportW;
+	private float oldCameraViewportH;
+	private Vector3 oldCameraPosition;
 
 	// Selection
 	private final List<Sprite> selectedSprites = new ArrayList<Sprite>();
@@ -73,6 +78,11 @@ public class LibGdxTweenStudioEditorX extends Editor {
 
 	@Override
 	public void enable() {
+		oldCameraZoom = worldCamera.zoom;
+		oldCameraViewportW = worldCamera.viewportWidth;
+		oldCameraViewportH = worldCamera.viewportHeight;
+		oldCameraPosition = worldCamera.position.cpy();
+
 		oldInputProcessor = Gdx.input.getInputProcessor();
 		Gdx.input.setInputProcessor(inputProcessor);
 
@@ -83,6 +93,10 @@ public class LibGdxTweenStudioEditorX extends Editor {
 
 	@Override
 	public void disable() {
+		worldCamera.zoom = oldCameraZoom;
+		worldCamera.position.set(oldCameraPosition);
+		worldCamera.update();
+
 		Gdx.input.setInputProcessor(oldInputProcessor);
 	}
 
@@ -123,6 +137,11 @@ public class LibGdxTweenStudioEditorX extends Editor {
 			font.draw(spriteBatch, "Mouseover :" + name, 10, txtY-=20);
 		}
 		spriteBatch.end();
+
+		drawRect(worldCamera.combined,
+			oldCameraPosition.x-oldCameraViewportW/2, 
+			oldCameraPosition.y-oldCameraViewportH/2,
+			oldCameraViewportW, oldCameraViewportH, FRAME_COLOR);
 	}
 
 	@Override
@@ -150,10 +169,7 @@ public class LibGdxTweenStudioEditorX extends Editor {
 			Vector2 p = screenToWorld(new Vector2(x, y));
 
 			mouseOverSprite = null;
-
-			for (Sprite sp : sprites)
-				if (isOver(p, sp)) mouseOverSprite = sp;
-
+			for (Sprite sp : sprites) if (isOver(p, sp)) mouseOverSprite = sp;
 			fireMouseOverObjectChanged(mouseOverSprite);
 
 			lastX = x;
@@ -205,6 +221,13 @@ public class LibGdxTweenStudioEditorX extends Editor {
 			dragged = true;
 			lastX = x;
 			lastY = y;
+			return true;
+		}
+
+		@Override
+		public boolean scrolled(int amount) {
+			worldCamera.zoom *= amount > 0 ? 1.2f : 1/1.2f;
+			worldCamera.update();
 			return true;
 		}
 	};
@@ -266,6 +289,7 @@ public class LibGdxTweenStudioEditorX extends Editor {
 	}
 
 	private void drawRect(Matrix4 projModelView, float x, float y, float w, float h, Color c) {
+		Gdx.gl10.glEnable(GL10.GL_BLEND);
 		Gdx.gl10.glLineWidth(2);
 		imr.begin(projModelView, GL10.GL_LINE_LOOP);
 		imr.color(c.r, c.g, c.b, c.a); imr.vertex(x, y, 0);

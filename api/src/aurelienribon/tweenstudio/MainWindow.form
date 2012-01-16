@@ -141,10 +141,12 @@
                   <Group type="102" alignment="0" attributes="0">
                       <EmptySpace max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="0" attributes="0">
-                          <Group type="102" alignment="1" attributes="0">
-                              <Component id="saveAndStopBtn" pref="109" max="32767" attributes="0"/>
+                          <Group type="102" alignment="0" attributes="0">
+                              <Component id="reloadBtn" min="-2" max="-2" attributes="0"/>
                               <EmptySpace max="-2" attributes="0"/>
-                              <Component id="discardbtn" min="-2" max="-2" attributes="0"/>
+                              <Component id="saveBtn" min="-2" max="-2" attributes="0"/>
+                              <EmptySpace max="-2" attributes="0"/>
+                              <Component id="nextBtn" pref="66" max="32767" attributes="0"/>
                           </Group>
                           <Component id="animationNameField" alignment="0" pref="160" max="32767" attributes="0"/>
                       </Group>
@@ -158,9 +160,12 @@
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="animationNameField" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
-                      <Group type="103" groupAlignment="3" attributes="0">
-                          <Component id="saveAndStopBtn" alignment="3" min="-2" max="-2" attributes="0"/>
-                          <Component id="discardbtn" alignment="3" min="-2" pref="25" max="-2" attributes="0"/>
+                      <Group type="103" groupAlignment="1" attributes="0">
+                          <Component id="reloadBtn" min="-2" max="-2" attributes="0"/>
+                          <Group type="103" alignment="1" groupAlignment="3" attributes="0">
+                              <Component id="nextBtn" alignment="3" min="-2" max="-2" attributes="0"/>
+                              <Component id="saveBtn" alignment="3" min="-2" max="-2" attributes="0"/>
+                          </Group>
                       </Group>
                       <EmptySpace max="32767" attributes="0"/>
                   </Group>
@@ -174,12 +179,12 @@
                 <Property name="text" type="java.lang.String" value="---"/>
               </Properties>
             </Component>
-            <Component class="javax.swing.JButton" name="saveAndStopBtn">
+            <Component class="javax.swing.JButton" name="reloadBtn">
               <Properties>
                 <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
-                  <Image iconType="3" name="/aurelienribon/tweenstudio/gfx/ic_save.png"/>
+                  <Image iconType="3" name="/aurelienribon/tweenstudio/gfx/ic_reload.png"/>
                 </Property>
-                <Property name="text" type="java.lang.String" value="Save and next"/>
+                <Property name="toolTipText" type="java.lang.String" value="Reload file"/>
                 <Property name="focusable" type="boolean" value="false"/>
                 <Property name="horizontalAlignment" type="int" value="2"/>
                 <Property name="horizontalTextPosition" type="int" value="4"/>
@@ -189,9 +194,29 @@
                 <Property name="opaque" type="boolean" value="false"/>
               </Properties>
             </Component>
-            <Component class="javax.swing.JButton" name="discardbtn">
+            <Component class="javax.swing.JButton" name="saveBtn">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Discard"/>
+                <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
+                  <Image iconType="3" name="/aurelienribon/tweenstudio/gfx/ic_save.png"/>
+                </Property>
+                <Property name="text" type="java.lang.String" value="Save"/>
+                <Property name="toolTipText" type="java.lang.String" value="Save to file"/>
+                <Property name="focusable" type="boolean" value="false"/>
+                <Property name="horizontalAlignment" type="int" value="2"/>
+                <Property name="horizontalTextPosition" type="int" value="4"/>
+                <Property name="margin" type="java.awt.Insets" editor="org.netbeans.beaninfo.editors.InsetsEditor">
+                  <Insets value="[2, 3, 2, 3]"/>
+                </Property>
+                <Property name="opaque" type="boolean" value="false"/>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JButton" name="nextBtn">
+              <Properties>
+                <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
+                  <Image iconType="3" name="/aurelienribon/tweenstudio/gfx/ic_next.png"/>
+                </Property>
+                <Property name="text" type="java.lang.String" value="Next"/>
+                <Property name="toolTipText" type="java.lang.String" value="Go to next animation"/>
                 <Property name="focusable" type="boolean" value="false"/>
                 <Property name="horizontalAlignment" type="int" value="2"/>
                 <Property name="horizontalTextPosition" type="int" value="4"/>

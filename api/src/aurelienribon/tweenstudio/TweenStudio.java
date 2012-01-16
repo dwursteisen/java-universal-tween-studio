@@ -5,6 +5,7 @@ import aurelienribon.tweenengine.Timeline;
 import aurelienribon.tweenengine.Tween;
 import aurelienribon.tweenengine.TweenAccessor;
 import aurelienribon.utils.io.FileUtils;
+import java.awt.Dimension;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
@@ -130,25 +131,14 @@ public class TweenStudio {
 				}
 
 				editionWindow = new MainWindow(new MainWindow.Callback() {
-					@Override public void editionComplete() {
-						try {
-							String str = ImportExportHelper.timelineToString(currentAnimation.timeline, currentAnimation.targetsNamesMap);
-							FileUtils.writeStringToFile(str, filesMap.get(currentAnimation.name));
-						} catch (IOException ex) {
-							throw new RuntimeException(ex.getMessage());
-						}
-
-						currentAnimation.callback.animationReady(currentAnimation.name, currentAnimation.timeline);
-						callNextAnimation();
-					}
-
-					@Override public void editionDiscarded() {
+					@Override public void next() {
 						currentAnimation.callback.animationReady(currentAnimation.name, currentAnimation.timeline);
 						callNextAnimation();
 					}
 				});
 
-				editionWindow.setSize(width, height);
+				editionWindow.getRootPane().setPreferredSize(new Dimension(width, height));
+				editionWindow.pack();
 				editionWindow.setVisible(true);
 				editionWindow.addWindowListener(new WindowAdapter() {
 					@Override public void windowClosed(WindowEvent e) {
@@ -283,7 +273,8 @@ public class TweenStudio {
 		
 		if (isEditionEnabled()) {
 			AnimationDef anim = new AnimationDef(
-				animationName, timeline, nextEditor, nextCallback,
+				animationName, filesMap.get(animationName),
+				timeline, nextEditor, nextCallback,
 				new ArrayList<Object>(nextTargets),
 				new HashMap<Object, String>(nextTargetsNamesMap));
 
@@ -380,14 +371,16 @@ public class TweenStudio {
 
 	public static class AnimationDef {
 		public final String name;
+		public final File file;
 		public final Timeline timeline;
 		public final Editor editor;
 		public final Callback callback;
 		public final List<Object> targets;
 		public final Map<Object, String> targetsNamesMap;
 
-		public AnimationDef(String name, Timeline timeline, Editor editor, Callback callback, List<Object> targets, Map<Object, String> targetsNamesMap) {
+		public AnimationDef(String name, File file, Timeline timeline, Editor editor, Callback callback, List<Object> targets, Map<Object, String> targetsNamesMap) {
 			this.name = name;
+			this.file = file;
 			this.timeline = timeline;
 			this.editor = editor;
 			this.callback = callback;

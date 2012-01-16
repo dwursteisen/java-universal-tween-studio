@@ -13,6 +13,7 @@ import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Element;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Node;
 import aurelienribon.tweenstudio.ui.timeline.TimelinePanel;
 import aurelienribon.tweenstudio.ui.timeline.TimelinePanel.Listener;
+import aurelienribon.utils.io.FileUtils;
 import aurelienribon.utils.swing.SpinnerNullableFloatEditor;
 import aurelienribon.utils.swing.SpinnerNullableFloatModel;
 import java.awt.BorderLayout;
@@ -23,11 +24,14 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JSpinner;
 import javax.swing.border.EmptyBorder;
@@ -65,8 +69,9 @@ class MainWindow extends javax.swing.JFrame {
 		timelinePanel.setTheme(theme);
 		timelinePanel.addListener(timelinePanelListener);
 		easingCbox.addItemListener(easingCboxItemListener);
-		saveAndStopBtn.addActionListener(saveAndStopBtnActionListener);
-		discardbtn.addActionListener(discardBtnActionListener);
+		reloadBtn.addActionListener(reloadBtnActionListener);
+		saveBtn.addActionListener(saveBtnActionListener);
+		nextBtn.addActionListener(nextBtnActionListener);
 	}
 
 	// -------------------------------------------------------------------------
@@ -74,8 +79,7 @@ class MainWindow extends javax.swing.JFrame {
 	// -------------------------------------------------------------------------
 
 	public interface Callback {
-		public void editionComplete();
-		public void editionDiscarded();
+		public void next();
 	}
 
 	// -------------------------------------------------------------------------
@@ -83,8 +87,7 @@ class MainWindow extends javax.swing.JFrame {
 	// -------------------------------------------------------------------------
 
 	private final ItemListener easingCboxItemListener = new ItemListener() {
-		@Override
-		public void itemStateChanged(ItemEvent e) {
+		@Override public void itemStateChanged(ItemEvent e) {
 			String name = (String) easingCbox.getSelectedItem();
 			TweenEquation equation = TweenEquation.parse(name);
 			if (equation != null) {
@@ -97,22 +100,29 @@ class MainWindow extends javax.swing.JFrame {
 		}
 	};
 
-	private final ActionListener saveAndStopBtnActionListener = new ActionListener() {
-		@Override
-		public void actionPerformed(ActionEvent e) {
-			TimelineCreationHelper.copy(workingTimeline, animationDef.timeline);
-			end();
-			animationDef = null;
-			callback.editionComplete();
+	private final ActionListener reloadBtnActionListener = new ActionListener() {
+		@Override public void actionPerformed(ActionEvent e) {
 		}
 	};
 
-	private final ActionListener discardBtnActionListener = new ActionListener() {
-		@Override
-		public void actionPerformed(ActionEvent e) {
+	private final ActionListener saveBtnActionListener = new ActionListener() {
+		@Override public void actionPerformed(ActionEvent e) {
+			try {
+				String str = ImportExportHelper.timelineToString(workingTimeline, animationDef.targetsNamesMap);
+				FileUtils.writeStringToFile(str, animationDef.file);
+				JOptionPane.showMessageDialog(MainWindow.this, "Save successfully done.");
+			} catch (IOException ex) {
+				JOptionPane.showMessageDialog(MainWindow.this, "Can't save to registered file.\n\n" + ex.getMessage());
+			}
+		}
+	};
+
+	private final ActionListener nextBtnActionListener = new ActionListener() {
+		@Override public void actionPerformed(ActionEvent e) {
+			TimelineCreationHelper.copy(workingTimeline, animationDef.timeline);
 			end();
 			animationDef = null;
-			callback.editionDiscarded();
+			callback.next();
 		}
 	};
 
@@ -312,8 +322,9 @@ class MainWindow extends javax.swing.JFrame {
 		timelinePanel.setCurrentTime(0);
 		timelinePanel.clearSelectedElements();
 		timelinePanel.clearSelectedNodes();
-		saveAndStopBtn.setEnabled(true);
-		discardbtn.setEnabled(true);
+		reloadBtn.setEnabled(true);
+		saveBtn.setEnabled(true);
+		nextBtn.setEnabled(true);
 	}
 
 	private void end() {
@@ -322,8 +333,9 @@ class MainWindow extends javax.swing.JFrame {
 		timelinePanel.clearSelectedNodes();
 		timelinePanel.setModel(new TimelineModel());
 		animationNameField.setText("<nothing loaded>");
-		saveAndStopBtn.setEnabled(false);
-		discardbtn.setEnabled(false);
+		reloadBtn.setEnabled(false);
+		saveBtn.setEnabled(false);
+		nextBtn.setEnabled(false);
 	}
 
 	private Property getCommonProperty(List<Node> nodes) {
@@ -364,7 +376,7 @@ class MainWindow extends javax.swing.JFrame {
 
 	private Map<Property, List<Element>> getCommonProperties(List<Element> elems) {
 		assert !elems.isEmpty();
-		Map<Property, List<Element>> propertiesMap = new HashMap<Property, List<Element>>();
+		Map<Property, List<Element>> propertiesMap = new LinkedHashMap<Property, List<Element>>();
 		
 		for (Element propertyElem : elems.get(0).getChildren()) {
 			ElementData elemData = (ElementData) propertyElem.getUserData();
@@ -602,8 +614,9 @@ class MainWindow extends javax.swing.JFrame {
         jLabel2 = new javax.swing.JLabel();
         jPanel3 = new javax.swing.JPanel();
         animationNameField = new javax.swing.JTextField();
-        saveAndStopBtn = new javax.swing.JButton();
-        discardbtn = new javax.swing.JButton();
+        reloadBtn = new javax.swing.JButton();
+        saveBtn = new javax.swing.JButton();
+        nextBtn = new javax.swing.JButton();
         propertiesPanel = new javax.swing.JPanel();
         nothingCard = new javax.swing.JPanel();
         tweenCard = new javax.swing.JPanel();
@@ -659,20 +672,31 @@ class MainWindow extends javax.swing.JFrame {
         animationNameField.setEditable(false);
         animationNameField.setText("---");
 
-        saveAndStopBtn.setIcon(new javax.swing.ImageIcon(getClass().getResource("/aurelienribon/tweenstudio/gfx/ic_save.png"))); // NOI18N
-        saveAndStopBtn.setText("Save and next");
-        saveAndStopBtn.setFocusable(false);
-        saveAndStopBtn.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-        saveAndStopBtn.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
-        saveAndStopBtn.setMargin(new java.awt.Insets(2, 3, 2, 3));
-        saveAndStopBtn.setOpaque(false);
+        reloadBtn.setIcon(new javax.swing.ImageIcon(getClass().getResource("/aurelienribon/tweenstudio/gfx/ic_reload.png"))); // NOI18N
+        reloadBtn.setToolTipText("Reload file");
+        reloadBtn.setFocusable(false);
+        reloadBtn.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        reloadBtn.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
+        reloadBtn.setMargin(new java.awt.Insets(2, 3, 2, 3));
+        reloadBtn.setOpaque(false);
 
-        discardbtn.setText("Discard");
-        discardbtn.setFocusable(false);
-        discardbtn.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-        discardbtn.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
-        discardbtn.setMargin(new java.awt.Insets(2, 3, 2, 3));
-        discardbtn.setOpaque(false);
+        saveBtn.setIcon(new javax.swing.ImageIcon(getClass().getResource("/aurelienribon/tweenstudio/gfx/ic_save.png"))); // NOI18N
+        saveBtn.setText("Save");
+        saveBtn.setToolTipText("Save to file");
+        saveBtn.setFocusable(false);
+        saveBtn.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        saveBtn.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
+        saveBtn.setMargin(new java.awt.Insets(2, 3, 2, 3));
+        saveBtn.setOpaque(false);
+
+        nextBtn.setIcon(new javax.swing.ImageIcon(getClass().getResource("/aurelienribon/tweenstudio/gfx/ic_next.png"))); // NOI18N
+        nextBtn.setText("Next");
+        nextBtn.setToolTipText("Go to next animation");
+        nextBtn.setFocusable(false);
+        nextBtn.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        nextBtn.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
+        nextBtn.setMargin(new java.awt.Insets(2, 3, 2, 3));
+        nextBtn.setOpaque(false);
 
         javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
         jPanel3.setLayout(jPanel3Layout);
@@ -681,10 +705,12 @@ class MainWindow extends javax.swing.JFrame {
             .addGroup(jPanel3Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
-                        .addComponent(saveAndStopBtn, javax.swing.GroupLayout.DEFAULT_SIZE, 109, Short.MAX_VALUE)
+                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addComponent(reloadBtn)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(discardbtn))
+                        .addComponent(saveBtn)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(nextBtn, javax.swing.GroupLayout.DEFAULT_SIZE, 66, Short.MAX_VALUE))
                     .addComponent(animationNameField, javax.swing.GroupLayout.DEFAULT_SIZE, 160, Short.MAX_VALUE))
                 .addContainerGap())
         );
@@ -694,9 +720,11 @@ class MainWindow extends javax.swing.JFrame {
                 .addContainerGap()
                 .addComponent(animationNameField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(saveAndStopBtn)
-                    .addComponent(discardbtn, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(reloadBtn)
+                    .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(nextBtn)
+                        .addComponent(saveBtn)))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
@@ -725,7 +753,7 @@ class MainWindow extends javax.swing.JFrame {
         groupBorder1.setTitle("Tween properties");
         jPanel5.setBorder(groupBorder1);
         jPanel5.setForeground(new java.awt.Color(255, 255, 255));
-        jPanel5.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
+        jPanel5.setFont(new java.awt.Font("Tahoma", 1, 11));
         jPanel5.setOpaque(false);
 
         jLabel3.setForeground(new java.awt.Color(255, 255, 255));
@@ -861,7 +889,6 @@ class MainWindow extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JTextField animationNameField;
-    private javax.swing.JButton discardbtn;
     private javax.swing.JComboBox easingCbox;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
@@ -871,12 +898,14 @@ class MainWindow extends javax.swing.JFrame {
     private javax.swing.JPanel jPanel3;
     private javax.swing.JPanel jPanel5;
     private javax.swing.JPanel jPanel6;
+    private javax.swing.JButton nextBtn;
     private javax.swing.JPanel nothingCard;
     private javax.swing.JPanel objectCard;
     private javax.swing.JTextField objectField;
     private javax.swing.JPanel objectPanel;
     private javax.swing.JPanel propertiesPanel;
-    private javax.swing.JButton saveAndStopBtn;
+    private javax.swing.JButton reloadBtn;
+    private javax.swing.JButton saveBtn;
     private aurelienribon.tweenstudio.ui.timeline.TimelinePanel timelinePanel;
     private javax.swing.JPanel tweenCard;
     private javax.swing.JPanel tweenPanel;
