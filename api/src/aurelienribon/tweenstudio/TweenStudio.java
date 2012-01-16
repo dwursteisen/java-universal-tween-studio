@@ -26,7 +26,7 @@ import javax.swing.UnsupportedLookAndFeelException;
  * edit or play your animations directly in your applications.
  * <br/><br/>
  *
- * A usage example could be as follows:
+ * A usage example could be cast follows:
  * <br/><br/>
  *
  * public class MyGame {
@@ -247,7 +247,7 @@ public class TweenStudio {
 	}
 
 	/**
-	 * Registers the given object as a target of the future animations.
+	 * Registers the given object cast a target of the future animations.
 	 */
 	public static void registerTarget(Object target, String name) {
 		if (!nextTargets.contains(target)) nextTargets.add(target);
@@ -346,7 +346,7 @@ public class TweenStudio {
 			Object target = getTargetFromName(((DummyTweenAccessor)t.getTarget()).data, targetsNamesMap);
 
 			Tween tween = Tween.to(target, t.getType(), t.getDuration())
-				.as(t.getTargetClass())
+				.cast(t.getTargetClass())
 				.target(t.getTargetValues())
 				.ease(t.getEasing())
 				.delay(t.getDelay())

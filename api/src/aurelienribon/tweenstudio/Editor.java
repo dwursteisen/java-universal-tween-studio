@@ -16,6 +16,7 @@ import javax.swing.SwingUtilities;
  */
 public abstract class Editor {
 	private final Map<Class, List<Property>> propertiesMap = new HashMap<Class, List<Property>>();
+	private final List<State> changedStates = new ArrayList<State>();
 	private AnimationDef animationDef;
 	private MainWindow editionWindow;
 	private boolean isEnabled = false;
@@ -25,7 +26,8 @@ public abstract class Editor {
 	// -------------------------------------------------------------------------
 
 	public abstract void initialize();
-	public void stateChanged(boolean isEnabled) {}
+	public void enable() {}
+	public void disable() {}
 	public void render() {}
 	public void selectedObjectsChanged(List<Object> objs) {}
 	public void mouseOverObjectChanged(Object obj) {}
@@ -38,12 +40,12 @@ public abstract class Editor {
 		this.animationDef = animationDef;
 		this.editionWindow = editionWindow;
 		isEnabled = true;
-		stateChanged(isEnabled);
+		enable();
 	}
 
 	final void stop() {
 		isEnabled = false;
-		stateChanged(isEnabled);
+		disable();
 	}
 
 	final List<Property> getProperties(Object target) {
@@ -81,22 +83,26 @@ public abstract class Editor {
 		propertiesMap.get(clazz).add(new Property(Tween.getRegisteredAccessor(clazz), tweenType, propertyName, fields));
 	}
 
-	protected final void beginStateChangedReport() {
-		
+	protected final void beginReport() {
+		changedStates.clear();
 	}
 
-	protected final void endStateChangedReport() {
-		
-	}
-
-	protected final void reportStateChanged(final Object target, final Class targetClass, final int tweenType) {
+	protected final void endReport() {
 		try {
 			SwingUtilities.invokeAndWait(new Runnable() {@Override public void run() {
-				editionWindow.targetStateChanged(target, targetClass, tweenType);
+				editionWindow.statesChanged(changedStates);
 			}});
 		} catch (InterruptedException ex) {
 		} catch (InvocationTargetException ex) {
 		}
+	}
+
+	protected final void reportStateChanged(Object target, Class targetClass, int tweenType) {
+		float[] buffer = new float[Tween.MAX_COMBINED_TWEENS];
+		TweenAccessor accessor = Tween.getRegisteredAccessor(targetClass);
+		accessor.getValues(target, tweenType, buffer);
+		
+		changedStates.add(new State(target, targetClass, tweenType, buffer));
 	}
 
 	protected final void fireSelectedObjectsChanged(final List objs) {

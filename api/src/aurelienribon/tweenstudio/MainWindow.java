@@ -239,17 +239,20 @@ class MainWindow extends javax.swing.JFrame {
 		timelinePanel.setMouseOverElement(null);
 	}
 
-	public void targetStateChanged(Object target, Class targetClass, int tweenType) {
-		TweenAccessor accessor = Tween.getRegisteredAccessor(targetClass);
-		String targetName = animationDef.targetsNamesMap.get(target);
-		String propertyName = animationDef.editor.getProperty(target, accessor, tweenType).name;
-		
-		Element elem = timelinePanel.getModel().getElement(targetName + "/" + propertyName);
-		Node node = TimelineHelper.getNodeOrCreate(elem, timelinePanel.getCurrentTime());
-		NodeData nodeData = (NodeData) node.getUserData();
+	public void statesChanged(List<State> changedStates) {
+		for (State state : changedStates) {
+			TweenAccessor accessor = Tween.getRegisteredAccessor(state.targetClass);
+			String targetName = animationDef.targetsNamesMap.get(state.target);
+			String propertyName = animationDef.editor.getProperty(state.target, accessor, state.tweenType).name;
 
-		accessor.getValues(target, tweenType, buffer);
-		nodeData.setTargets(buffer);
+			Element elem = timelinePanel.getModel().getElement(targetName + "/" + propertyName);
+			Node node = TimelineHelper.getNodeOrCreate(elem, timelinePanel.getCurrentTime());
+			NodeData nodeData = (NodeData) node.getUserData();
+
+			nodeData.setTargets(state.targets);
+		}
+
+		recreateTimeline();
 	}
 
 	// -------------------------------------------------------------------------

@@ -36,7 +36,7 @@ class ImportExportHelper {
 					targets[i] = Float.parseFloat(parts[i + 6]);
 
 				Tween tween = Tween.to(target, tweenType, duration)
-					.as(targetClass)
+					.cast(targetClass)
 					.target(targets)
 					.ease(equation)
 					.delay(delay);

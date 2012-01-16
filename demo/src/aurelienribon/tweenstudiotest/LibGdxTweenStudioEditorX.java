@@ -72,18 +72,18 @@ public class LibGdxTweenStudioEditorX extends Editor {
 	}
 
 	@Override
-	public void stateChanged(boolean isEnabled) {
-		if (isEnabled) {
-			oldInputProcessor = Gdx.input.getInputProcessor();
-			Gdx.input.setInputProcessor(inputProcessor);
+	public void enable() {
+		oldInputProcessor = Gdx.input.getInputProcessor();
+		Gdx.input.setInputProcessor(inputProcessor);
 
-			sprites.clear();
-			for (Object target : getAnimationDef().targets)
-				if (target instanceof Sprite) sprites.add((Sprite) target);
+		sprites.clear();
+		for (Object target : getAnimationDef().targets)
+			if (target instanceof Sprite) sprites.add((Sprite) target);
+	}
 
-		} else {
-			Gdx.input.setInputProcessor(oldInputProcessor);
-		}
+	@Override
+	public void disable() {
+		Gdx.input.setInputProcessor(oldInputProcessor);
 	}
 
 	@Override
@@ -187,8 +187,10 @@ public class LibGdxTweenStudioEditorX extends Editor {
 		@Override
 		public boolean touchUp(int x, int y, int pointer, int button) {
 			if (dragged) {
+				beginReport();
 				for (Sprite sp : selectedSprites)
 					reportStateChanged(sp, Sprite.class, SpriteTweenAccessor.POSITION_XY);
+				endReport();
 			}
 			dragged = false;
 			return true;
