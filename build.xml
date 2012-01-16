@@ -97,7 +97,7 @@
 			<fileset dir="${apiplay.dir}" includes="*.jar" />
 		</zip>
 		<zip destfile="${demo.name}-${version}.zip">
-			<fileset dir="${demo.dir}" includes="*.jar, libs/, data/" />
+			<fileset dir="${demo.dir}" includes="*.jar, libs/, data/, src/" />
 			<zipfileset file="${api.dir}/${api.name}.jar" fullpath="libs/${api.name}.jar"/>
 		</zip>
 	</target>
