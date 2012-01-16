@@ -538,7 +538,7 @@ class GridPanel extends JPanel implements Scrollable {
 					break;
 
 				case KeyEvent.VK_ENTER:
-					if (mouseOverProperty == null) {
+					if (mouseOverProperty == null || !mouseOverProperty.isSelectable()) {
 						for (Element elem : parent.getSelectedElements()) {
 							for (Element child : elem.getChildren())
 								child.addNode(parent.getCurrentTime());

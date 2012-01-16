@@ -4,7 +4,6 @@ import aurelienribon.tweenengine.BaseTween;
 import aurelienribon.tweenengine.Timeline;
 import aurelienribon.tweenengine.Tween;
 import aurelienribon.tweenengine.TweenEquation;
-import aurelienribon.tweenstudio.TweenStudio.DummyTweenAccessor;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Element;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Node;
@@ -15,7 +14,7 @@ import java.util.Map;
  * @author Aurelien Ribon | http://www.aurelienribon.com
  */
 class ImportExportHelper {
-	public static Timeline stringToTimeline(String str) {
+	public static Timeline stringToDummyTimeline(String str) {
 		Timeline tl = Timeline.createParallel();
 		String[] lines = str.split("\n");
 
@@ -24,7 +23,7 @@ class ImportExportHelper {
 				String[] parts = line.split(";");
 				if (parts.length < 7) continue;
 
-				Object target = new DummyTweenAccessor(parts[0]); // name instead of real target
+				String targetName = parts[0];
 				Class targetClass = Class.forName(parts[1]);
 				int tweenType = Integer.parseInt(parts[2]);
 				int delay = Integer.parseInt(parts[3]);
@@ -35,11 +34,12 @@ class ImportExportHelper {
 				for (int i = 0; i < targets.length; i++)
 					targets[i] = Float.parseFloat(parts[i + 6]);
 
-				Tween tween = Tween.to(target, tweenType, duration)
+				Tween tween = Tween.to(null, tweenType, duration)
 					.cast(targetClass)
 					.target(targets)
 					.ease(equation)
-					.delay(delay);
+					.delay(delay)
+					.setUserData(targetName);
 
 				tl.push(tween);
 			}

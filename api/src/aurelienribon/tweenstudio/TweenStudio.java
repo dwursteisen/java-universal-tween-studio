@@ -1,9 +1,6 @@
 package aurelienribon.tweenstudio;
 
-import aurelienribon.tweenengine.BaseTween;
 import aurelienribon.tweenengine.Timeline;
-import aurelienribon.tweenengine.Tween;
-import aurelienribon.tweenengine.TweenAccessor;
 import aurelienribon.utils.io.FileUtils;
 import java.awt.Dimension;
 import java.awt.event.WindowAdapter;
@@ -175,7 +172,7 @@ public class TweenStudio {
 	public static void preloadAnimation(File animationFile, String animationName) {
 		try {
 			String str = FileUtils.readFileToString(animationFile);
-			Timeline tl = ImportExportHelper.stringToTimeline(str);
+			Timeline tl = ImportExportHelper.stringToDummyTimeline(str);
 			timelinesMap.put(animationName, tl);
 			if (isEditionEnabled()) filesMap.put(animationName, animationFile);
 		} catch (IOException ex) {
@@ -269,12 +266,18 @@ public class TweenStudio {
 		if (nextCallback == null) throw new NullPointerException("No callback was registered");
 		if (isEditionEnabled() && nextEditor == null) throw new NullPointerException("No editor was registered.");
 		
-		Timeline timeline = buildTimeline(timelinesMap.get(animationName), nextTargetsNamesMap);
+		Timeline timeline = TimelineCreationHelper.buildTimelineFromDummy(
+			timelinesMap.get(animationName),
+			nextTargets,
+			nextTargetsNamesMap);
 		
 		if (isEditionEnabled()) {
 			AnimationDef anim = new AnimationDef(
-				animationName, filesMap.get(animationName),
-				timeline, nextEditor, nextCallback,
+				animationName,
+				filesMap.get(animationName),
+				timeline, 
+				nextEditor,
+				nextCallback,
 				new ArrayList<Object>(nextTargets),
 				new HashMap<Object, String>(nextTargetsNamesMap));
 
@@ -318,43 +321,13 @@ public class TweenStudio {
 	// Package API
 	// -------------------------------------------------------------------------
 
-	static class DummyTweenAccessor implements TweenAccessor {
-		public final String data;
-		public DummyTweenAccessor(String data) {this.data = data;}
-		@Override public int getValues(Object target, int tweenType, float[] returnValues) {return 0;}
-		@Override public void setValues(Object target, int tweenType, float[] newValues) {}
+	static Map<String, Timeline> getTimelinesMap() {
+		return Collections.unmodifiableMap(timelinesMap);
 	}
 
 	// -------------------------------------------------------------------------
 	// Helpers
 	// -------------------------------------------------------------------------
-
-	private static Timeline buildTimeline(Timeline loadedTimeline, Map<Object, String> targetsNamesMap) {
-		Timeline tl = Timeline.createParallel();
-
-		for (BaseTween child : loadedTimeline.getChildren()) {
-			Tween t = (Tween) child;
-			Object target = getTargetFromName(((DummyTweenAccessor)t.getTarget()).data, targetsNamesMap);
-
-			Tween tween = Tween.to(target, t.getType(), t.getDuration())
-				.cast(t.getTargetClass())
-				.target(t.getTargetValues())
-				.ease(t.getEasing())
-				.delay(t.getDelay())
-				.build();
-
-			tl.push(tween);
-		}
-
-		return tl;
-	}
-
-	private static Object getTargetFromName(String name, Map<Object, String> targetsNamesMap) {
-		for (Object target : nextTargets)
-			if (name.equals(targetsNamesMap.get(target)))
-				return target;
-		return null;
-	}
 
 	private static void callNextAnimation() {
 		currentAnimation.editor.stop();

@@ -102,6 +102,21 @@ class MainWindow extends javax.swing.JFrame {
 
 	private final ActionListener reloadBtnActionListener = new ActionListener() {
 		@Override public void actionPerformed(ActionEvent e) {
+			Timeline timeline = TimelineCreationHelper.buildTimelineFromDummy(
+				TweenStudio.getTimelinesMap().get(animationDef.name),
+				animationDef.targets,
+				animationDef.targetsNamesMap);
+
+			AnimationDef anim = new AnimationDef(
+				animationDef.name,
+				animationDef.file,
+				timeline,
+				animationDef.editor,
+				animationDef.callback,
+				animationDef.targets,
+				animationDef.targetsNamesMap);
+
+			initialize(anim);
 		}
 	};
 
@@ -110,6 +125,8 @@ class MainWindow extends javax.swing.JFrame {
 			try {
 				String str = ImportExportHelper.timelineToString(workingTimeline, animationDef.targetsNamesMap);
 				FileUtils.writeStringToFile(str, animationDef.file);
+				TweenStudio.preloadAnimation(animationDef.file, animationDef.name);
+
 				JOptionPane.showMessageDialog(MainWindow.this, "Save successfully done.");
 			} catch (IOException ex) {
 				JOptionPane.showMessageDialog(MainWindow.this, "Can't save to registered file.\n\n" + ex.getMessage());

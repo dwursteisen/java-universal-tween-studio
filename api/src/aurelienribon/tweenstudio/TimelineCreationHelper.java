@@ -8,6 +8,7 @@ import aurelienribon.tweenstudio.ui.timeline.TimelineHelper;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Element;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Node;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -27,6 +28,8 @@ class TimelineCreationHelper {
 			tl2.push(tween);
 		}
 	}
+
+	// -------------------------------------------------------------------------
 
 	public static Timeline createTimelineFromModel(TimelineModel model, int currentTime, Map<Object, InitialState> initialStatesMap) {
 		Timeline tl = Timeline.createParallel();
@@ -94,5 +97,34 @@ class TimelineCreationHelper {
 
 		TweenAccessor accessor = Tween.getRegisteredAccessor(target.getClass());
 		accessor.setValues(target, tweenType, initValues);
+	}
+
+	// -------------------------------------------------------------------------
+
+	public static Timeline buildTimelineFromDummy(Timeline dummyTimeline, List<Object> targets, Map<Object, String> targetsNamesMap) {
+		Timeline tl = Timeline.createParallel();
+
+		for (BaseTween child : dummyTimeline.getChildren()) {
+			Tween t = (Tween) child;
+			Object target = getTargetFromName((String) t.getUserData(), targets, targetsNamesMap);
+
+			Tween tween = Tween.to(target, t.getType(), t.getDuration())
+				.cast(t.getTargetClass())
+				.target(t.getTargetValues())
+				.ease(t.getEasing())
+				.delay(t.getDelay())
+				.build();
+
+			tl.push(tween);
+		}
+
+		return tl;
+	}
+
+	private static Object getTargetFromName(String name, List<Object> targets, Map<Object, String> targetsNamesMap) {
+		for (Object target : targets)
+			if (name.equals(targetsNamesMap.get(target)))
+				return target;
+		return null;
 	}
 }
