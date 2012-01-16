@@ -659,7 +659,7 @@ class MainWindow extends javax.swing.JFrame {
 
         jLabel2.setForeground(new java.awt.Color(255, 255, 255));
         jLabel2.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel2.setText("<html> <p align=\"center\">v0.4 - 2012 - Aurelien Ribon<br/><font color=\"#6eccff\">www.aurelienribon.com</font></p>");
+        jLabel2.setText("<html> <p align=\"center\">v0.5 - 2012 - Aurelien Ribon<br/><font color=\"#6eccff\">www.aurelienribon.com</font></p>");
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);

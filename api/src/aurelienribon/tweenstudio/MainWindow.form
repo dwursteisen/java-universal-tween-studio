@@ -116,7 +116,7 @@
                   <Color blue="ff" green="ff" red="ff" type="rgb"/>
                 </Property>
                 <Property name="horizontalAlignment" type="int" value="0"/>
-                <Property name="text" type="java.lang.String" value="&lt;html&gt; &lt;p align=&quot;center&quot;&gt;v0.4 - 2012 - Aurelien Ribon&lt;br/&gt;&lt;font color=&quot;#6eccff&quot;&gt;www.aurelienribon.com&lt;/font&gt;&lt;/p&gt;"/>
+                <Property name="text" type="java.lang.String" value="&lt;html&gt; &lt;p align=&quot;center&quot;&gt;v0.5 - 2012 - Aurelien Ribon&lt;br/&gt;&lt;font color=&quot;#6eccff&quot;&gt;www.aurelienribon.com&lt;/font&gt;&lt;/p&gt;"/>
               </Properties>
             </Component>
           </SubComponents>

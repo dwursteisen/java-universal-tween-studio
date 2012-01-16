@@ -5,7 +5,7 @@
 	<!-- ****************************************************************** -->
 	
 	<!-- version -->
-	<property name="version" value="0.4" />
+	<property name="version" value="0.5" />
 
 	<!-- projects properties -->
 	<property name="api.dir" value="api" />
