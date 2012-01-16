@@ -40,7 +40,6 @@ class GridPanel extends JPanel implements Scrollable {
 	private boolean isOverTrack = false;
 	private boolean isOverTrackGrip = false;
 	private Rectangle selectionRect = null;
-	private Rectangle trackGripRect = null;
 
 	private int vOffset;
 	private int hOffset;
@@ -196,12 +195,12 @@ class GridPanel extends JPanel implements Scrollable {
 				lastX = x;
 			}
 
-			line += 1;
-		}
+			if (elem.getNodes().size() > 1) {
+				gg.setColor(isOverTrackGrip && mouseOverProperty == elem ? theme.COLOR_GRIDPANEL_TRACK_GRIP_MOUSEOVER : theme.COLOR_GRIDPANEL_TRACK_GRIP);
+				gg.fillRect(lastX, y+linePadding, 10, lineHeight-linePadding*2);
+			}
 
-		if (trackGripRect != null) {
-			gg.setColor(isOverTrackGrip ? theme.COLOR_GRIDPANEL_TRACK_GRIP_MOUSEOVER : theme.COLOR_GRIDPANEL_TRACK_GRIP);
-			gg.fillRect(trackGripRect.x, trackGripRect.y, trackGripRect.width, trackGripRect.height);
+			line += 1;
 		}
 	}
 
@@ -331,11 +330,9 @@ class GridPanel extends JPanel implements Scrollable {
 				} else if (!parent.getSelectedNodes().contains(mouseOverNode)) {
 					parent.pushSelectedNode(mouseOverNode, PushBehavior.SET);
 				}
-				trackGripRect = null;
 
 			} else if (isOverTrack) {
 				state = MouseState.DRAG_TRACK;
-				trackGripRect = null;
 
 			} else if (isOverTrackGrip) {
 				state = MouseState.DRAG_GRIP;
@@ -343,7 +340,6 @@ class GridPanel extends JPanel implements Scrollable {
 			} else {
 				state = MouseState.DRAW_SELECTION;
 				selectionRect = new Rectangle(e.getPoint());
-				trackGripRect = null;
 			}
 
 			isPressed = true;
@@ -448,7 +444,6 @@ class GridPanel extends JPanel implements Scrollable {
 					parent.getModel().mute(true);
 					int totalTime = mouseOverProperty.getLastNode().getTime();
 					for (Node n : mouseOverProperty.getNodes()) n.setTime((int) (n.getTime() + deltaTime * (1 - (totalTime - n.getTime()) / (double)totalTime)));
-					trackGripRect.x += getXFromTime(mouseOverProperty.getLastNode().getTime()) - trackGripRect.x;
 					break;
 
 				case DRAW_SELECTION:
@@ -477,7 +472,6 @@ class GridPanel extends JPanel implements Scrollable {
 
 			mouseOverNode = null;
 			mouseOverProperty = null;
-			trackGripRect = null;
 			isOverTrack = isOverTrackGrip = false;
 
 			int line = 0;
@@ -500,9 +494,9 @@ class GridPanel extends JPanel implements Scrollable {
 			
 			if (mouseOverProperty != null && mouseOverProperty.getNodes().size() > 1) {
 				Node n = mouseOverProperty.getLastNode();
+				int nX = getXFromTime(n.getTime());
 				isOverTrack = mouseOverNode == null ? 0 <= eTime && eTime <= n.getTime() : false;
-				trackGripRect = new Rectangle(getXFromTime(n.getTime()), getYFromLine(line)+linePadding, 10, lineHeight-(linePadding)*2);
-				isOverTrackGrip = mouseOverNode == null && trackGripRect.contains(e.getPoint());
+				isOverTrackGrip = mouseOverNode == null && nX <= e.getX() && e.getX() <= nX+10;
 			}
 
 			if (oldMouseOverNode != mouseOverNode || oldMouseOverProperty != mouseOverProperty
@@ -515,7 +509,6 @@ class GridPanel extends JPanel implements Scrollable {
 				mouseOverProperty = null;
 				mouseOverNode = null;
 				selectionRect = null;
-				trackGripRect = null;
 				isOverTrack = false;
 				isOverTrackGrip = false;
 				repaint();
