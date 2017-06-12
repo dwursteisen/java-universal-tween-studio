@@ -21,6 +21,9 @@ public abstract class Editor {
 	private MainWindow editionWindow;
 	private boolean isEnabled = false;
 
+
+	static final int MAX_COMBINED_TWEENS = 50;
+
 	// -------------------------------------------------------------------------
 	// Public API
 	// -------------------------------------------------------------------------
@@ -98,7 +101,7 @@ public abstract class Editor {
 	}
 
 	protected final void reportStateChanged(Object target, Class targetClass, int tweenType) {
-		float[] buffer = new float[Tween.MAX_COMBINED_TWEENS];
+		float[] buffer = new float[MAX_COMBINED_TWEENS];
 		TweenAccessor accessor = Tween.getRegisteredAccessor(targetClass);
 		accessor.getValues(target, tweenType, buffer);
 		

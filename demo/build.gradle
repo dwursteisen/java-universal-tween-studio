@@ -10,7 +10,7 @@ dependencies {
 
     compile project(":api")
 
-    compile fileTree(dir: 'libs', include: '*tween-*.jar')
+    compile 'com.github.arcnor:universal-tween-engine:6.3.4'
 }
 
 

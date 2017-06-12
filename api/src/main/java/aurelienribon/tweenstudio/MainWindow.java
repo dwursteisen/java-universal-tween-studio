@@ -1,9 +1,6 @@
 package aurelienribon.tweenstudio;
 
-import aurelienribon.tweenengine.Timeline;
-import aurelienribon.tweenengine.Tween;
-import aurelienribon.tweenengine.TweenAccessor;
-import aurelienribon.tweenengine.TweenEquation;
+import aurelienribon.tweenengine.*;
 import aurelienribon.tweenstudio.Property.Field;
 import aurelienribon.tweenstudio.TweenStudio.AnimationDef;
 import aurelienribon.tweenstudio.ui.timeline.Theme;
@@ -38,6 +35,8 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import static aurelienribon.tweenstudio.Editor.MAX_COMBINED_TWEENS;
+
 /**
  * @author Aurelien Ribon | http://www.aurelienribon.com
  */
@@ -48,7 +47,7 @@ class MainWindow extends javax.swing.JFrame {
 
 	private final Theme theme = new Theme();
 	private final Map<Object, InitialState> initialStatesMap = new HashMap<Object, InitialState>();
-	private final float[] buffer = new float[Tween.MAX_COMBINED_TWEENS];
+	private final float[] buffer = new float[MAX_COMBINED_TWEENS];
 	private final Callback callback;
 
 	private AnimationDef animationDef;
@@ -89,7 +88,7 @@ class MainWindow extends javax.swing.JFrame {
 	private final ItemListener easingCboxItemListener = new ItemListener() {
 		@Override public void itemStateChanged(ItemEvent e) {
 			String name = (String) easingCbox.getSelectedItem();
-			TweenEquation equation = TweenEquation.parse(name);
+			TweenEquation equation = TweenUtils.parseEasing(name);
 			if (equation != null) {
 				for (Node node : timelinePanel.getSelectedNodes()) {
 					NodeData nodeData = (NodeData) node.getUserData();
@@ -146,7 +145,7 @@ class MainWindow extends javax.swing.JFrame {
 	private final TimelinePanel.Listener timelinePanelListener = new Listener() {
 		@Override
 		public void playRequested() {
-			playDuration = workingTimeline.getFullDuration() * 1000;
+			playDuration = (int)workingTimeline.getFullDuration() * 1000;
 			playTime = timelinePanel.getCurrentTime();
 			timelinePanel.setPlaying(true);
 		}

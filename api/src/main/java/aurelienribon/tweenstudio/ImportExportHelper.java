@@ -1,9 +1,6 @@
 package aurelienribon.tweenstudio;
 
-import aurelienribon.tweenengine.BaseTween;
-import aurelienribon.tweenengine.Timeline;
-import aurelienribon.tweenengine.Tween;
-import aurelienribon.tweenengine.TweenEquation;
+import aurelienribon.tweenengine.*;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Element;
 import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Node;
@@ -28,7 +25,7 @@ class ImportExportHelper {
 				int tweenType = Integer.parseInt(parts[2]);
 				int delay = Integer.parseInt(parts[3]);
 				int duration = Integer.parseInt(parts[4]);
-				TweenEquation equation = TweenEquation.parse(parts[5]);
+				TweenEquation equation = TweenUtils.parseEasing(parts[5]);
 
 				float[] targets = new float[parts.length - 6];
 				for (int i = 0; i < targets.length; i++)
@@ -62,11 +59,11 @@ class ImportExportHelper {
 
 			Element elem = model.getElement(targetName + "/" + propertyName);
 			if (elem != null) {
-				NodeData nodeData = new NodeData(tween.getCombinedTweenCount());
+				NodeData nodeData = new NodeData(tween.getCombinedAttributesCount());
 				nodeData.setEquation(tween.getEasing());
 				nodeData.setTargets(tween.getTargetValues());
 
-				Node node = elem.addNode(tween.getFullDuration()*1000);
+				Node node = elem.addNode((int)tween.getFullDuration()*1000);
 				node.setLinked(true);
 				node.setUserData(nodeData);
 			} else {
@@ -89,7 +86,7 @@ class ImportExportHelper {
 				tween.getDuration(),
 				tween.getEasing().toString());
 
-			for (int i=0; i<tween.getCombinedTweenCount(); i++)
+			for (int i=0; i<tween.getCombinedAttributesCount(); i++)
 				str += String.format(Locale.US, ";%f", tween.getTargetValues()[i]);
 
 			str += "\n";

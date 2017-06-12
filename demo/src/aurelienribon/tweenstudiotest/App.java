@@ -26,7 +26,6 @@ public class App implements ApplicationListener {
 
 	public App() {
 		// Tween Engine initialization
-		Tween.enablePooling(true);
 		Tween.registerAccessor(Sprite.class, new SpriteTweenAccessor());
 
 		// ---------------------------------------------------------------------
