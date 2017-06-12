@@ -655,7 +655,7 @@ class MainWindow extends javax.swing.JFrame {
         jPanel2.setOpaque(false);
 
         jLabel1.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/aurelienribon/tweenstudio/gfx/logo.png"))); // NOI18N
+        jLabel1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/gfx/logo.png"))); // NOI18N
 
         jLabel2.setForeground(new java.awt.Color(255, 255, 255));
         jLabel2.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
@@ -689,7 +689,7 @@ class MainWindow extends javax.swing.JFrame {
         animationNameField.setEditable(false);
         animationNameField.setText("---");
 
-        reloadBtn.setIcon(new javax.swing.ImageIcon(getClass().getResource("/aurelienribon/tweenstudio/gfx/ic_reload.png"))); // NOI18N
+        reloadBtn.setIcon(new javax.swing.ImageIcon(getClass().getResource("/gfx/ic_reload.png"))); // NOI18N
         reloadBtn.setToolTipText("Reload file");
         reloadBtn.setFocusable(false);
         reloadBtn.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
@@ -697,7 +697,7 @@ class MainWindow extends javax.swing.JFrame {
         reloadBtn.setMargin(new java.awt.Insets(2, 3, 2, 3));
         reloadBtn.setOpaque(false);
 
-        saveBtn.setIcon(new javax.swing.ImageIcon(getClass().getResource("/aurelienribon/tweenstudio/gfx/ic_save.png"))); // NOI18N
+        saveBtn.setIcon(new javax.swing.ImageIcon(getClass().getResource("/gfx/ic_save.png"))); // NOI18N
         saveBtn.setText("Save");
         saveBtn.setToolTipText("Save to file");
         saveBtn.setFocusable(false);
@@ -706,7 +706,7 @@ class MainWindow extends javax.swing.JFrame {
         saveBtn.setMargin(new java.awt.Insets(2, 3, 2, 3));
         saveBtn.setOpaque(false);
 
-        nextBtn.setIcon(new javax.swing.ImageIcon(getClass().getResource("/aurelienribon/tweenstudio/gfx/ic_next.png"))); // NOI18N
+        nextBtn.setIcon(new javax.swing.ImageIcon(getClass().getResource("/gfx/ic_next.png"))); // NOI18N
         nextBtn.setText("Next");
         nextBtn.setToolTipText("Go to next animation");
         nextBtn.setFocusable(false);
