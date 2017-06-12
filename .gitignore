@@ -28,7 +28,7 @@
 ## File-based project format:
 *.iws
 api/api.iml
-
+**/build
 ## Plugin-specific files:
 
 # IntelliJ
