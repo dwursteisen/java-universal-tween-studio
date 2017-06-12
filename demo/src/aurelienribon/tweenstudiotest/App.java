@@ -1,17 +1,19 @@
 package aurelienribon.tweenstudiotest;
 
-import aurelienribon.tweenengine.Timeline;
-import aurelienribon.tweenengine.Tween;
-import aurelienribon.tweenengine.TweenManager;
-import aurelienribon.tweenstudio.TweenStudio;
+import javax.swing.*;
+
 import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.GL10;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
-import javax.swing.JOptionPane;
+
+import aurelienribon.tweenengine.Timeline;
+import aurelienribon.tweenengine.Tween;
+import aurelienribon.tweenengine.TweenManager;
+import aurelienribon.tweenstudio.TweenStudio;
 
 public class App implements ApplicationListener {
 	private static final String ANIMATION_1 = "First animation";
@@ -138,9 +140,9 @@ public class App implements ApplicationListener {
 		TweenStudio.update(delta);
 		// ---------------------------------------------------------------------
 
-		GL10 gl = Gdx.gl10;
+		GL20 gl = Gdx.gl20;
 		gl.glClearColor(1, 1, 1, 1);
-		gl.glClear(GL10.GL_COLOR_BUFFER_BIT);
+		gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
 		spriteBatch.setProjectionMatrix(camera.combined);
 		spriteBatch.begin();

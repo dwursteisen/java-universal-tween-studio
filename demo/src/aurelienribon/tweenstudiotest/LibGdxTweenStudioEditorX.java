@@ -1,26 +1,28 @@
 package aurelienribon.tweenstudiotest;
 
-import aurelienribon.tweenstudio.Editor;
-import aurelienribon.tweenstudio.Property.Field;
+import java.util.ArrayList;
+import java.util.List;
+
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.GL10;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ImmediateModeRenderer;
-import com.badlogic.gdx.graphics.glutils.ImmediateModeRenderer10;
+import com.badlogic.gdx.graphics.glutils.ImmediateModeRenderer20;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
-import java.util.ArrayList;
-import java.util.List;
+
+import aurelienribon.tweenstudio.Editor;
+import aurelienribon.tweenstudio.Property.Field;
 
 /**
  * @author Aurelien Ribon | http://www.aurelienribon.com
@@ -34,7 +36,7 @@ public class LibGdxTweenStudioEditorX extends Editor {
 
 	// General
 	private final List<Sprite> sprites = new ArrayList<Sprite>();
-	private final ImmediateModeRenderer imr = new ImmediateModeRenderer10();
+	private final ImmediateModeRenderer imr = new ImmediateModeRenderer20(true, true, 16);
 	private final SpriteBatch spriteBatch = new SpriteBatch();
 	private final BitmapFont font = new BitmapFont();
 	private final OrthographicCamera screenCamera = new OrthographicCamera(0, 0);
@@ -102,8 +104,8 @@ public class LibGdxTweenStudioEditorX extends Editor {
 
 	@Override
 	public void render() {
-		GL10 gl = Gdx.gl10;
-		gl.glEnable(GL10.GL_BLEND);
+		GL20 gl = Gdx.gl20;
+		gl.glEnable(GL20.GL_BLEND);
 
 		int w = Gdx.graphics.getWidth();
 		int h = Gdx.graphics.getHeight();
@@ -164,8 +166,7 @@ public class LibGdxTweenStudioEditorX extends Editor {
 		private int lastX;
 		private int lastY;
 
-		@Override
-		public boolean touchMoved(int x, int y) {
+		@Override public boolean mouseMoved(int x, int y) {
 			Vector2 p = screenToWorld(new Vector2(x, y));
 
 			mouseOverSprite = null;
@@ -276,22 +277,23 @@ public class LibGdxTweenStudioEditorX extends Editor {
 		return new Vector2(newX, newY);
 	}
 	
-	private void drawBoundingBox(Matrix4 projModelView, GL10 gl, Sprite sp, Color color) {
-		gl.glPushMatrix();
-		gl.glTranslatef(+sp.getX()+sp.getOriginX(), +sp.getY()+sp.getOriginY(), 0);
-		gl.glRotatef(sp.getRotation(), 0, 0, 1);
-		gl.glTranslatef(-sp.getX()-sp.getOriginX(), -sp.getY()-sp.getOriginY(), 0);
+	private void drawBoundingBox(Matrix4 projModelView, GL20 gl, Sprite sp, Color color) {
+
+//		gl.glPushMatrix();
+//		gl.glTranslatef(+sp.getX()+sp.getOriginX(), +sp.getY()+sp.getOriginY(), 0);
+//		gl.glRotatef(sp.getRotation(), 0, 0, 1);
+//		gl.glTranslatef(-sp.getX()-sp.getOriginX(), -sp.getY()-sp.getOriginY(), 0);
 
 		Rectangle bb = getBoundingBox(sp);
 		drawRect(projModelView, bb.x, bb.y, bb.width, bb.height, color);
 
-		gl.glPopMatrix();
+//		gl.glPopMatrix();
 	}
 
 	private void drawRect(Matrix4 projModelView, float x, float y, float w, float h, Color c) {
-		Gdx.gl10.glEnable(GL10.GL_BLEND);
-		Gdx.gl10.glLineWidth(2);
-		imr.begin(projModelView, GL10.GL_LINE_LOOP);
+		Gdx.gl20.glEnable(GL20.GL_BLEND);
+		Gdx.gl20.glLineWidth(2);
+		imr.begin(projModelView, GL20.GL_LINE_LOOP);
 		imr.color(c.r, c.g, c.b, c.a); imr.vertex(x, y, 0);
 		imr.color(c.r, c.g, c.b, c.a); imr.vertex(x, y+h, 0);
 		imr.color(c.r, c.g, c.b, c.a); imr.vertex(x+w, y+h, 0);
