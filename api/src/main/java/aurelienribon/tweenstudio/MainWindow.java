@@ -1,6 +1,29 @@
 package aurelienribon.tweenstudio;
 
-import aurelienribon.tweenengine.*;
+import static aurelienribon.tweenstudio.Editor.MAX_COMBINED_TWEENS;
+
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+
+import aurelienribon.tweenengine.Timeline;
+import aurelienribon.tweenengine.Tween;
+import aurelienribon.tweenengine.TweenAccessor;
+import aurelienribon.tweenengine.TweenEquation;
+import aurelienribon.tweenengine.TweenUtils;
 import aurelienribon.tweenstudio.Property.Field;
 import aurelienribon.tweenstudio.TweenStudio.AnimationDef;
 import aurelienribon.tweenstudio.ui.timeline.Theme;
@@ -13,29 +36,6 @@ import aurelienribon.tweenstudio.ui.timeline.TimelinePanel.Listener;
 import aurelienribon.utils.io.FileUtils;
 import aurelienribon.utils.swing.SpinnerNullableFloatEditor;
 import aurelienribon.utils.swing.SpinnerNullableFloatModel;
-import java.awt.BorderLayout;
-import java.awt.CardLayout;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JSpinner;
-import javax.swing.border.EmptyBorder;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-
-import static aurelienribon.tweenstudio.Editor.MAX_COMBINED_TWEENS;
 
 /**
  * @author Aurelien Ribon | http://www.aurelienribon.com
@@ -215,7 +215,7 @@ class MainWindow extends javax.swing.JFrame {
 
 		createInitialStates();
 		TimelineModel model = createModel();
-		ImportExportHelper.timelineToModel(animationDef.timeline, model, animationDef.targetsNamesMap, animationDef.editor);
+		ImportExportStudioHelper.timelineToModel(animationDef.timeline, model, animationDef.targetsNamesMap, animationDef.editor);
 		timelinePanel.setModel(model);
 		recreateTimeline();
 

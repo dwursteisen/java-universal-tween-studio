@@ -1,1 +1,2 @@
-include("api", "api-play-only", "demo")
+include("bridge", "api", "api-play-only", "demo")
+
