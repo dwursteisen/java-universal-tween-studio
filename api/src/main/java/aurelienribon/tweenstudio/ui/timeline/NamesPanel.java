@@ -1,17 +1,17 @@
 package aurelienribon.tweenstudio.ui.timeline;
 
-import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Element;
-import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Node;
-import aurelienribon.tweenstudio.ui.timeline.TimelinePanel.PushBehavior;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.Image;
+import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.awt.image.BufferedImage;
 import java.util.List;
-import javax.swing.JPanel;
+
+import javax.swing.*;
+
+import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Element;
+import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Node;
+import aurelienribon.tweenstudio.ui.timeline.TimelinePanel.PushBehavior;
 
 /**
  * @author Aurelien Ribon | http://www.aurelienribon.com/
@@ -176,8 +176,8 @@ class NamesPanel extends JPanel implements Scrollable {
 			for (Element elem : model.getElements()) {
 				if (evLine == line) {
 					mouseOverElement = elem;
-					while (mouseOverElement.getParent() != model.getRoot())
-						mouseOverElement = mouseOverElement.getParent();
+//					while (mouseOverElement.getParent() != model.getRoot())
+//						mouseOverElement = mouseOverElement.getParent();
 					break;
 				}
 				line += 1;

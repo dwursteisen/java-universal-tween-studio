@@ -1,16 +1,15 @@
 package aurelienribon.tweenstudio.ui.timeline;
 
-import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Element;
-import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Node;
-import java.awt.BorderLayout;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.List;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
+
+import javax.swing.*;
+
+import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Element;
+import aurelienribon.tweenstudio.ui.timeline.TimelineModel.Node;
 
 /**
  * @author Aurelien Ribon | http://www.aurelienribon.com/
@@ -58,8 +57,12 @@ class MenuBarPanel extends JPanel {
 		addNodeBtn.addActionListener(new ActionListener() {
 			@Override public void actionPerformed(ActionEvent e) {
 				for (Element elem : parent.getSelectedElements()) {
-					for (Element child : elem.getChildren())
-						child.addNode(parent.getCurrentTime());
+					if (elem.getChildren().isEmpty()) {
+						elem.addNode(parent.getCurrentTime());
+					} else {
+						for (Element child : elem.getChildren())
+							child.addNode(parent.getCurrentTime());
+					}
 				}
 			}
 		});
