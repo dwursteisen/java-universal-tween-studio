@@ -1,77 +1,73 @@
 package aurelienribon.tweenstudio;
 
+import aurelienribon.tweenengine.*;
+
+import java.util.Arrays;
 import java.util.Locale;
 import java.util.Map;
-
-import aurelienribon.tweenengine.BaseTween;
-import aurelienribon.tweenengine.Timeline;
-import aurelienribon.tweenengine.Tween;
-import aurelienribon.tweenengine.TweenEquation;
-import aurelienribon.tweenengine.TweenUtils;
 
 /**
  * @author Aurelien Ribon | http://www.aurelienribon.com
  */
 class ImportExportHelper {
-	public static Timeline stringToDummyTimeline(String str) {
-		Timeline tl = Timeline.createParallel();
-		String[] lines = str.split("\n");
+    public static Timeline stringToDummyTimeline(String str) {
+        Timeline tl = Timeline.createParallel();
+        String[] lines = str.split("\n");
 
-		try {
-			for (String line : lines) {
-				String[] parts = line.split(";");
-				if (parts.length < 7)
-					continue;
+        // lire propriete forme ici
+        Arrays.stream(lines)
+                .map(line -> line.split(";"))
+                .filter(parts -> parts.length >= 7)
+                .map(parts -> {
+                    try {
+                        String targetName = parts[0];
+                        Class targetClass = null;
+                        targetClass = Class.forName(parts[1]);
 
-				String targetName = parts[0];
-				Class targetClass = Class.forName(parts[1]);
-				int tweenType = Integer.parseInt(parts[2]);
-				int delay = Integer.parseInt(parts[3]);
-				int duration = Integer.parseInt(parts[4]);
-				TweenEquation equation = TweenUtils.parseEasing(parts[5]);
+                        int tweenType = Integer.parseInt(parts[2]);
+                        int delay = Integer.parseInt(parts[3]);
+                        int duration = Integer.parseInt(parts[4]);
+                        TweenEquation equation = TweenUtils.parseEasing(parts[5]);
 
-				float[] targets = new float[parts.length - 6];
-				for (int i = 0; i < targets.length; i++)
-					targets[i] = Float.parseFloat(parts[i + 6]);
+                        float[] targets = new float[parts.length - 6];
+                        for (int i = 0; i < targets.length; i++)
+                            targets[i] = Float.parseFloat(parts[i + 6]);
 
-				Tween tween = Tween.to(null, tweenType, duration)
-						.cast(targetClass)
-						.target(targets)
-						.ease(equation)
-						.delay(delay)
-						.setUserData(targetName);
+                        return Tween.to(null, tweenType, duration)
+                                .cast(targetClass)
+                                .target(targets)
+                                .ease(equation)
+                                .delay(delay)
+                                .setUserData(targetName);
+                    } catch (ClassNotFoundException e) {
+                        throw new RuntimeException(e);
+                    }
+                }).forEach(tl::push);
 
-				tl.push(tween);
-			}
+        return tl;
+    }
 
-		}
-		catch (ClassNotFoundException | NumberFormatException ex) {
-			throw new RuntimeException(ex);
-		}
+    public static String timelineToString(Timeline timeline, Map<Object, String> targetsNamesMap) {
+        StringBuilder str = new StringBuilder();
 
-		return tl;
-	}
+        // TODO: ajouter propriete des formes ici
+        for (BaseTween child : timeline.getChildren()) {
+            Tween tween = (Tween) child;
 
-	public static String timelineToString(Timeline timeline, Map<Object, String> targetsNamesMap) {
-		StringBuilder str = new StringBuilder();
+            str.append(String.format(Locale.US, "%s;%s;%d;%d;%d;%s",
+                    targetsNamesMap.get(tween.getTarget()),
+                    tween.getTargetClass().getName(),
+                    tween.getType(),
+                    (int) tween.getDelay(),
+                    (int) tween.getDuration(),
+                    tween.getEasing().toString()));
 
-		for (BaseTween child : timeline.getChildren()) {
-			Tween tween = (Tween) child;
+            for (int i = 0; i < tween.getCombinedAttributesCount(); i++)
+                str.append(String.format(Locale.US, ";%f", tween.getTargetValues()[i]));
 
-			str.append(String.format(Locale.US, "%s;%s;%d;%d;%d;%s",
-					targetsNamesMap.get(tween.getTarget()),
-					tween.getTargetClass().getName(),
-					tween.getType(),
-					(int) tween.getDelay(),
-					(int) tween.getDuration(),
-					tween.getEasing().toString()));
+            str.append("\n");
+        }
 
-			for (int i = 0; i < tween.getCombinedAttributesCount(); i++)
-				str.append(String.format(Locale.US, ";%f", tween.getTargetValues()[i]));
-
-			str.append("\n");
-		}
-
-		return str.toString();
-	}
+        return str.toString();
+    }
 }
