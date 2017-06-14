@@ -1,6 +1,7 @@
 
 apply plugin: 'java'
 dependencies {
+    compile project(":bridge")
     compile 'com.github.arcnor:universal-tween-engine:6.3.4'
     //compile fileTree(dir: 'libs', include: '*.jar')
 }
