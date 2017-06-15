@@ -11,7 +11,8 @@ object ImportExportHelper {
         val tl = Timeline.createParallel()
         val lines = str.split("\n".toRegex())
 
-        val header = lines.takeWhile { it != "---" }
+        val properties = lines.takeWhile { it != "---" }
+        val header = lines.dropWhile { it != "---" }.drop(1)
 
         val confs = header.map {
             it.split(";".toRegex())
@@ -21,7 +22,6 @@ object ImportExportHelper {
                     size = Pair(it[2].toInt(), it[3].toInt()),
                     position = Pair(it[2].toInt(), it[3].toInt()))
         }
-        val properties = lines.dropWhile { it != "---" }.drop(1)
 
         properties.map { line -> line.split(";".toRegex()) }
                 .filter { parts -> parts.count() >= 7 }
@@ -56,11 +56,7 @@ object ImportExportHelper {
     fun timelineToString(confs: List<TargetConfiguration>, timeline: Timeline, targetsNamesMap: Map<Any, String>): String {
         val str = StringBuilder()
 
-        confs.map {
-            "${it.name};${it.color};${it.size.first};${it.size.second};${it.position.first};${it.size.second}\n"
-        }.forEach({str.append(it)})
 
-        str.append("---")
 
         timeline.children.map { it as Tween }
                 .forEach({ tween ->
@@ -77,6 +73,12 @@ object ImportExportHelper {
 
                     str.append("\n")
                 })
+        str.append("---")
+
+        confs.map {
+            "${it.name};${it.color};${it.size.first};${it.size.second};${it.position.first};${it.size.second}\n"
+        }.forEach({ str.append(it) })
+
 
         return str.toString()
     }

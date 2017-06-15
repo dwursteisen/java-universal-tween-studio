@@ -2,13 +2,11 @@ package aurelienribon.tweenstudio;
 
 import aurelienribon.tweenengine.Timeline;
 import aurelienribon.utils.io.FileUtils;
+import com.dwursteisen.tween.studio.Import;
+
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * The Universal Tween Studio features multiple static calls to let you either
@@ -107,8 +105,9 @@ public class TweenStudio {
 	public static void preloadAnimation(File animationFile, String animationName) {
 		try {
 			String str = FileUtils.readFileToString(animationFile);
-			Timeline tl = ImportExportHelper.stringToDummyTimeline(str);
-			timelinesMap.put(animationName, tl);
+            Import imp = com.dwursteisen.tween.studio.ImportExportHelper.INSTANCE.stringToDummyTimeline(str);
+            Timeline tl = imp.getTimeline();
+            timelinesMap.put(animationName, tl);
 		} catch (IOException ex) {
 			throw new RuntimeException(ex);
 		}

@@ -2,22 +2,18 @@ package aurelienribon.tweenstudio;
 
 import aurelienribon.tweenengine.Timeline;
 import aurelienribon.utils.io.FileUtils;
-import java.awt.Dimension;
+import com.dwursteisen.tween.studio.Import;
+
+import javax.swing.*;
+import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 import java.util.Queue;
-import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
-import javax.swing.UnsupportedLookAndFeelException;
 
 /**
  * The Universal Tween Studio features multiple static calls to let you either
@@ -121,10 +117,7 @@ public class TweenStudio {
 			SwingUtilities.invokeAndWait(new Runnable() {@Override public void run() {
 				try {
 					UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-				} catch (ClassNotFoundException ex) {
-				} catch (InstantiationException ex) {
-				} catch (IllegalAccessException ex) {
-				} catch (UnsupportedLookAndFeelException ex) {
+				} catch (ClassNotFoundException | InstantiationException | UnsupportedLookAndFeelException | IllegalAccessException ignored) {
 				}
 
 				editionWindow = new MainWindow(new MainWindow.Callback() {
@@ -156,10 +149,7 @@ public class TweenStudio {
 			if (filesMap == null) filesMap = new HashMap<String, File>();
 			if (animationsFifo == null) animationsFifo = new ArrayDeque<AnimationDef>();
 
-		} catch (InterruptedException ex) {
-			editionWindow = null;
-			throw new RuntimeException(ex);
-		} catch (InvocationTargetException ex) {
+		} catch (InterruptedException | InvocationTargetException ex) {
 			editionWindow = null;
 			throw new RuntimeException(ex);
 		}
@@ -172,7 +162,8 @@ public class TweenStudio {
 	public static void preloadAnimation(File animationFile, String animationName) {
 		try {
 			String str = FileUtils.readFileToString(animationFile);
-			Timeline tl = ImportExportHelper.stringToDummyTimeline(str);
+			Import anImport = com.dwursteisen.tween.studio.ImportExportHelper.INSTANCE.stringToDummyTimeline(str);
+			Timeline tl = anImport.getTimeline();
 			timelinesMap.put(animationName, tl);
 			if (isEditionEnabled()) filesMap.put(animationName, animationFile);
 		} catch (IOException ex) {

@@ -1,7 +1,6 @@
+import aurelienribon.tweenstudiotest.App;
 import com.badlogic.gdx.backends.lwjgl.LwjglApplication;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
-
-import aurelienribon.tweenstudiotest.App;
 
 public class Main {
     public static void main(String[] args) {
