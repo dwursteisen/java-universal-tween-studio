@@ -7,14 +7,22 @@ import java.util.*
 import java.util.function.Consumer
 
 object ImportExportHelper {
-    fun stringToDummyTimeline(str: String): Timeline {
+    fun stringToDummyTimeline(str: String): Import {
         val tl = Timeline.createParallel()
         val lines = str.split("\n".toRegex())
 
         val header = lines.takeWhile { it != "---" }
+
+        val confs = header.map {
+            it.split(";".toRegex())
+        }.map {
+            TargetConfiguration(name = it[0],
+                    color = it[1],
+                    size = Pair(it[2].toInt(), it[3].toInt()),
+                    position = Pair(it[2].toInt(), it[3].toInt()))
+        }
         val properties = lines.dropWhile { it != "---" }.drop(1)
 
-        // lire propriete forme ici
         properties.map { line -> line.split(";".toRegex()) }
                 .filter { parts -> parts.count() >= 7 }
                 .map { parts ->
@@ -42,13 +50,18 @@ object ImportExportHelper {
 
                 }.forEach(Consumer<Tween> { tl.push(it) })
 
-        return tl
+        return Import(confs = confs, timeline = tl)
     }
 
-    fun timelineToString(timeline: Timeline, targetsNamesMap: Map<Any, String>): String {
+    fun timelineToString(confs: List<TargetConfiguration>, timeline: Timeline, targetsNamesMap: Map<Any, String>): String {
         val str = StringBuilder()
 
-        // TODO: append propriete des objs ici
+        confs.map {
+            "${it.name};${it.color};${it.size.first};${it.size.second};${it.position.first};${it.size.second}\n"
+        }.forEach({str.append(it)})
+
+        str.append("---")
+
         timeline.children.map { it as Tween }
                 .forEach({ tween ->
                     str.append(String.format(Locale.US, "%s;%s;%d;%d;%d;%s",
