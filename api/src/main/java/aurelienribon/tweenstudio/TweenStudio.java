@@ -3,6 +3,7 @@ package aurelienribon.tweenstudio;
 import aurelienribon.tweenengine.Timeline;
 import aurelienribon.utils.io.FileUtils;
 import com.dwursteisen.tween.studio.Import;
+import com.dwursteisen.tween.studio.TargetConfiguration;
 
 import javax.swing.*;
 import java.awt.*;
@@ -69,7 +70,8 @@ public class TweenStudio {
 
 	// Always needed
 	private static final Map<String, Timeline> timelinesMap = new HashMap<String, Timeline>(5);
-	private static final List<Object> nextTargets = new ArrayList<Object>(5);
+    private static final Map<String, List<TargetConfiguration>> configurationsMap = new HashMap<>(5);
+    private static final List<Object> nextTargets = new ArrayList<Object>(5);
 	private static final Map<Object, String> nextTargetsNamesMap = new HashMap<Object, String>(5);
 	private static Callback nextCallback;
 
@@ -149,6 +151,7 @@ public class TweenStudio {
 			if (filesMap == null) filesMap = new HashMap<String, File>();
 			if (animationsFifo == null) animationsFifo = new ArrayDeque<AnimationDef>();
 
+
 		} catch (InterruptedException | InvocationTargetException ex) {
 			editionWindow = null;
 			throw new RuntimeException(ex);
@@ -159,14 +162,16 @@ public class TweenStudio {
 	 * Loads the file content and create a timeline out of it. If edition is
 	 * enabled, the file path is also stored for future modification.
 	 */
-	public static void preloadAnimation(File animationFile, String animationName) {
-		try {
+    public static Import preloadAnimation(File animationFile, String animationName) {
+        try {
 			String str = FileUtils.readFileToString(animationFile);
 			Import anImport = com.dwursteisen.tween.studio.ImportExportHelper.INSTANCE.stringToDummyTimeline(str);
 			Timeline tl = anImport.getTimeline();
-			timelinesMap.put(animationName, tl);
+            configurationsMap.put(animationName, anImport.getConfs());
+            timelinesMap.put(animationName, tl);
 			if (isEditionEnabled()) filesMap.put(animationName, animationFile);
-		} catch (IOException ex) {
+            return anImport;
+        } catch (IOException ex) {
 			throw new RuntimeException(ex);
 		}
 	}
@@ -293,9 +298,8 @@ public class TweenStudio {
 			SwingUtilities.invokeAndWait(new Runnable() {@Override public void run() {
 				editionWindow.update(deltaMillis);
 			}});
-		} catch (InterruptedException ex) {
-		} catch (InvocationTargetException ex) {
-		}
+        } catch (InterruptedException | InvocationTargetException ignored) {
+        }
 	}
 
 	/**

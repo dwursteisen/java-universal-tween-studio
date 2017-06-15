@@ -12,10 +12,14 @@ import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.dwursteisen.tween.studio.Import;
+import com.dwursteisen.tween.studio.model.Shape;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class App implements ApplicationListener {
     private static final String ANIMATION_1 = "First animation";
-    private static final String ANIMATION_2 = "Second animation";
 
     private OrthographicCamera camera;
     private SpriteBatch spriteBatch;
@@ -51,8 +55,8 @@ public class App implements ApplicationListener {
         // 1. Preloading of the animations. You should always do that in your
         //    initialization code and not while your game is running, for
         //    performance reason.
-        TweenStudio.preloadAnimation(Gdx.files.internal("data/anim1.timeline").file(), ANIMATION_1);
-        TweenStudio.preloadAnimation(Gdx.files.internal("data/anim2.timeline").file(), ANIMATION_2);
+        Import anImport = TweenStudio.preloadAnimation(Gdx.files.internal("data/anim1.timeline").file(), ANIMATION_1);
+        List<Shape> shapes = anImport.getConfs().stream().map(c -> Shape.Companion.fromConf(c)).collect(Collectors.toList());
 
         // (optional) The provided LibGdxTweenStudioEditorX editor needs to be
         //            configurated. Be careful that when edition is disabled,
@@ -66,10 +70,13 @@ public class App implements ApplicationListener {
         // 3. Registration of the objects that are part of the next animation.
         //    Their names are required to create timelines from serialized
         //    content.
-        TweenStudio.registerTarget(sprites[0], "Logo LibGDX");
-        TweenStudio.registerTarget(sprites[1], "Logo Tween Engine");
-        TweenStudio.registerTarget(sprites[2], "Logo Tween");
-        TweenStudio.registerTarget(sprites[3], "Logo Studio");
+
+        shapes.forEach(s -> TweenStudio.registerTarget(s, s.getName()));
+
+//        TweenStudio.registerTarget(sprites[0], "Logo LibGDX");
+        //      TweenStudio.registerTarget(sprites[1], "Logo Tween Engine");
+        //    TweenStudio.registerTarget(sprites[2], "Logo Tween");
+        //  TweenStudio.registerTarget(sprites[3], "Logo Studio");
 
         // 4. Registration of the callback that will be used for the next
         //    animation. Callbacks are the only way to retrieve the created
@@ -86,25 +93,6 @@ public class App implements ApplicationListener {
         TweenStudio.createAnimation(ANIMATION_1);
         // ---------------------------------------------------------------------
 
-        // That's all! The following lines create a second animation once
-        // you're happy with the first one.
-
-        TweenStudio.unregisterAllTargets();
-        TweenStudio.registerTarget(sprites[4], "Wave 1");
-        TweenStudio.registerTarget(sprites[5], "Wave 2");
-        TweenStudio.registerTarget(sprites[6], "Wave 3");
-
-        TweenStudio.registerCallback(new TweenStudio.Callback() {
-            @Override
-            public void animationReady(String animationName, Timeline animation) {
-                Timeline.createSequence()
-                        .pushPause(TweenStudio.isEditionEnabled() ? 0 : 6500)
-                        .push(animation)
-                        .start(tweenManager);
-            }
-        });
-
-        TweenStudio.createAnimation(ANIMATION_2);
     }
 
     private void createSprites() {
@@ -147,6 +135,7 @@ public class App implements ApplicationListener {
         gl.glClearColor(1, 1, 1, 1);
         gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
+        // TODO: draw shapes instead
         spriteBatch.setProjectionMatrix(camera.combined);
         spriteBatch.begin();
         for (int i = 0; i < sprites.length; i++)
