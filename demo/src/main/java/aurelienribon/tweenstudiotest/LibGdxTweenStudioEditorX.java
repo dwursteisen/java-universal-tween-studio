@@ -3,7 +3,6 @@ package aurelienribon.tweenstudiotest;
 import aurelienribon.tweenstudio.Editor;
 import aurelienribon.tweenstudio.Property.Field;
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.graphics.Color;
@@ -15,6 +14,8 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ImmediateModeRenderer;
 import com.badlogic.gdx.graphics.glutils.ImmediateModeRenderer20;
 import com.badlogic.gdx.math.*;
+import com.dwursteisen.tween.studio.model.Shape;
+import com.dwursteisen.tween.studio.model.ShapeAccessor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,7 +46,7 @@ public class LibGdxTweenStudioEditorX extends Editor {
     private Vector3 oldCameraPosition;
 
     // Selection
-    private final List<Sprite> selectedSprites = new ArrayList<Sprite>();
+    private final List<Shape> selectedSprites = new ArrayList<>();
     private Sprite mouseOverSprite;
 
     // -------------------------------------------------------------------------
@@ -67,10 +68,10 @@ public class LibGdxTweenStudioEditorX extends Editor {
 
     @Override
     public void initialize() {
-        registerProperty(Sprite.class, SpriteTweenAccessor.POSITION_XY, "position", new Field("x", 1), new Field("y", 1));
-        registerProperty(Sprite.class, SpriteTweenAccessor.ROTATION, "rotation", new Field("rotation", 5));
-        registerProperty(Sprite.class, SpriteTweenAccessor.OPACITY, "opacity", new Field("opacity", 0, 1, 0.1f));
-        registerProperty(Sprite.class, SpriteTweenAccessor.SCALE_XY, "scale", new Field("scaleX", 0.1f), new Field("scaleY", 0.1f));
+        registerProperty(Shape.class, ShapeAccessor.Companion.getPOSITION_XY(), "position", new Field("x", 1), new Field("y", 1));
+        registerProperty(Shape.class, ShapeAccessor.Companion.getROTATION(), "rotation", new Field("rotation", 5));
+        registerProperty(Shape.class, ShapeAccessor.Companion.getOPACITY(), "opacity", new Field("opacity", 0, 1, 0.1f));
+        registerProperty(Shape.class, ShapeAccessor.Companion.getSCALE_XY(), "scale", new Field("scaleX", 0.1f), new Field("scaleY", 0.1f));
     }
 
     @Override
@@ -105,8 +106,8 @@ public class LibGdxTweenStudioEditorX extends Editor {
         int w = Gdx.graphics.getWidth();
         int h = Gdx.graphics.getHeight();
 
-        for (Sprite sp : selectedSprites)
-            drawBoundingBox(worldCamera.combined, gl, sp, SELECTED_SPRITE_BOX_COLOR);
+        // for (Sprite sp : selectedSprites)
+        //    drawBoundingBox(worldCamera.combined, gl, sp, SELECTED_SPRITE_BOX_COLOR);
         if (mouseOverSprite != null)
             drawBoundingBox(worldCamera.combined, gl, mouseOverSprite, MOUSEOVER_SPRITE_BOX_COLOR);
 
@@ -144,12 +145,12 @@ public class LibGdxTweenStudioEditorX extends Editor {
     @Override
     public void selectedObjectsChanged(List<Object> objs) {
         selectedSprites.clear();
-        for (Object obj : objs) selectedSprites.add((Sprite) obj);
+        for (Object obj : objs) selectedSprites.add((Shape) obj);
     }
 
     @Override
     public void mouseOverObjectChanged(Object obj) {
-        mouseOverSprite = (Sprite) obj;
+        //       mouseOverSprite = (Sprite) obj;
     }
 
     // -------------------------------------------------------------------------
@@ -176,24 +177,25 @@ public class LibGdxTweenStudioEditorX extends Editor {
 
         @Override
         public boolean touchDown(int x, int y, int pointer, int button) {
-            if (mouseOverSprite != null) {
-                if (Gdx.input.isKeyPressed(Keys.CONTROL_LEFT)) {
-                    if (!selectedSprites.contains(mouseOverSprite)) selectedSprites.add(mouseOverSprite);
-                    else selectedSprites.remove(mouseOverSprite);
-                } else {
-                    if (!selectedSprites.contains(mouseOverSprite)) {
-                        selectedSprites.clear();
-                        selectedSprites.add(mouseOverSprite);
-                    }
-                }
-            } else {
-                selectedSprites.clear();
-            }
-
-            fireSelectedObjectsChanged(selectedSprites);
-
-            lastX = x;
-            lastY = y;
+//            if (mouseOverSprite != null) {
+//                if (Gdx.input.isKeyPressed(Keys.CONTROL_LEFT)) {
+//                   // if (!selectedSprites.contains(mouseOverSprite)) selectedSprites.add(mouseOverSprite);
+//                   // else selectedSprites.remove(mouseOverSprite);
+//                } else {
+//                   // if (!selectedSprites.contains(mouseOverSprite)) {
+//                   //     selectedSprites.clear();
+//                   //     selectedSprites.add(mouseOverSprite);
+//                    }
+//                }
+//            } else {
+//                selectedSprites.clear();
+//            }
+//
+//            fireSelectedObjectsChanged(selectedSprites);
+//
+//            lastX = x;
+//            lastY = y;
+//            return true;
             return true;
         }
 
@@ -201,8 +203,8 @@ public class LibGdxTweenStudioEditorX extends Editor {
         public boolean touchUp(int x, int y, int pointer, int button) {
             if (dragged) {
                 beginReport();
-                for (Sprite sp : selectedSprites)
-                    reportStateChanged(sp, Sprite.class, SpriteTweenAccessor.POSITION_XY);
+                //for (Sprite sp : selectedSprites)
+                //    reportStateChanged(sp, Sprite.class, SpriteTweenAccessor.POSITION_XY);
                 endReport();
             }
             dragged = false;
@@ -212,8 +214,8 @@ public class LibGdxTweenStudioEditorX extends Editor {
         @Override
         public boolean touchDragged(int x, int y, int pointer) {
             Vector2 delta = new Vector2(x, y).sub(lastX, lastY);
-            for (Sprite sp : selectedSprites)
-                apply(sp, SpriteTweenAccessor.POSITION_XY, delta);
+            // for (Sprite sp : selectedSprites)
+            //     apply(sp, SpriteTweenAccessor.POSITION_XY, delta);
 
             dragged = true;
             lastX = x;
@@ -232,15 +234,6 @@ public class LibGdxTweenStudioEditorX extends Editor {
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
-
-    private void apply(Sprite sp, int tweenType, Vector2 screenDelta) {
-        Vector2 worldDelta = screenToWorld(screenDelta).sub(screenToWorld(new Vector2(0, 0)));
-        switch (tweenType) {
-            case SpriteTweenAccessor.POSITION_XY:
-                sp.translate(worldDelta.x, worldDelta.y);
-                break;
-        }
-    }
 
     private Vector2 screenToWorld(Vector2 v) {
         Vector3 v3 = new Vector3(v.x, v.y, 0);
