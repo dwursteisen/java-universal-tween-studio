@@ -9,8 +9,6 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.Sprite;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.dwursteisen.tween.studio.Import;
 import com.dwursteisen.tween.studio.model.Shape;
@@ -22,11 +20,9 @@ public class App implements ApplicationListener {
     private static final String ANIMATION_1 = "First animation";
 
     private OrthographicCamera camera;
-    private SpriteBatch spriteBatch;
-
     private ShapeRenderer shapeRenderer;
-    private Sprite[] sprites;
     private TweenManager tweenManager;
+    private List<Shape> shapes;
 
     public App() {
         // Tween Engine initialization
@@ -46,17 +42,18 @@ public class App implements ApplicationListener {
         // Common game creation stuff
         float ratio = (float) Gdx.graphics.getWidth() / Gdx.graphics.getHeight();
         camera = new OrthographicCamera(10, 10 / ratio);
-        spriteBatch = new SpriteBatch();
         shapeRenderer = new ShapeRenderer();
         tweenManager = new TweenManager();
-        createSprites();
 
         // ---------------------------------------------------------------------
         // 1. Preloading of the animations. You should always do that in your
         //    initialization code and not while your game is running, for
         //    performance reason.
-        Import anImport = TweenStudio.preloadAnimation(Gdx.files.internal("data/anim1.timeline").file(), ANIMATION_1);
-        List<Shape> shapes = anImport.getConfs().stream().map(c -> Shape.Companion.fromConf(c)).collect(Collectors.toList());
+        Import anImport = TweenStudio.preloadAnimation(Gdx.files.internal("data/shapes.timeline").file(), ANIMATION_1);
+        shapes = anImport.getConfs()
+                .stream()
+                .map(Shape.Companion::fromConf)
+                .collect(Collectors.toList());
 
         // (optional) The provided LibGdxTweenStudioEditorX editor needs to be
         //            configurated. Be careful that when edition is disabled,
@@ -95,29 +92,6 @@ public class App implements ApplicationListener {
 
     }
 
-    private void createSprites() {
-        TextureAtlas atlas = new TextureAtlas(Gdx.files.internal("data/pack"));
-
-        sprites = new Sprite[7];
-
-        sprites[0] = atlas.createSprite("logoLibgdx");
-        sprites[1] = atlas.createSprite("logoTweenEngine");
-        sprites[2] = atlas.createSprite("logoTween");
-        sprites[3] = atlas.createSprite("logoStudio");
-        sprites[4] = atlas.createSprite("wave");
-        sprites[5] = atlas.createSprite("wave");
-        sprites[6] = atlas.createSprite("wave");
-
-        for (int i = 0; i < sprites.length; i++) {
-            float ratio = sprites[i].getWidth() / sprites[i].getHeight();
-            sprites[i].setSize(5, 5 / ratio);
-            sprites[i].setOrigin(sprites[i].getWidth() / 2, sprites[i].getHeight() / 2);
-        }
-
-        sprites[4].setColor(1, 1, 1, 0);
-        sprites[5].setColor(1, 1, 1, 0);
-        sprites[6].setColor(1, 1, 1, 0);
-    }
 
     @Override
     public void render() {
@@ -135,12 +109,20 @@ public class App implements ApplicationListener {
         gl.glClearColor(1, 1, 1, 1);
         gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        // TODO: draw shapes instead
-        spriteBatch.setProjectionMatrix(camera.combined);
-        spriteBatch.begin();
-        for (int i = 0; i < sprites.length; i++)
-            sprites[i].draw(spriteBatch);
-        spriteBatch.end();
+        shapeRenderer.setProjectionMatrix(camera.combined);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        shapes.forEach(s -> {
+            shapeRenderer.setColor(s.getColor());
+            shapeRenderer.rect(
+                    s.getPosition().x, s.getPosition().y,
+                    0, 0,
+                    s.getSize().x, s.getSize().y,
+                    s.getScale().x, s.getScale().y,
+                    s.getRotation()
+            );
+        });
+
+        shapeRenderer.end();
 
         // ---------------------------------------------------------------------
         // 6. Some editors (like LibGdxTweenStudioEditorX) render something in

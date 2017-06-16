@@ -20,7 +20,8 @@ data class Shape(var name: String,
             return Shape(
                     name = conf.name,
                     color = conf.color.toColor(),
-                    position = Vector2(conf.position.first.toFloat(), conf.position.second.toFloat())
+                    position = Vector2(conf.position.first.toFloat(), conf.position.second.toFloat()),
+                    size = Vector2(conf.size.first.toFloat(), conf.size.second.toFloat())
             )
         }
     }

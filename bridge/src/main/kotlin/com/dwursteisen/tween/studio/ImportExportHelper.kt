@@ -16,12 +16,13 @@ object ImportExportHelper {
 
         val confs = header.map {
             it.split(";".toRegex())
-        }.map {
-            TargetConfiguration(name = it[0],
-                    color = it[1],
-                    size = Pair(it[2].toInt(), it[3].toInt()),
-                    position = Pair(it[2].toInt(), it[3].toInt()))
-        }
+        }.filter { parts -> parts.count() >= 3 }
+                .map {
+                    TargetConfiguration(name = it[0],
+                            color = it[1],
+                            size = Pair(it[2].toInt(), it[3].toInt()),
+                            position = Pair(it[4].toInt(), it[5].toInt()))
+                }
 
         properties.map { line -> line.split(";".toRegex()) }
                 .filter { parts -> parts.count() >= 7 }
