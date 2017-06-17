@@ -12,6 +12,7 @@ import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.dwursteisen.tween.studio.Import;
 import com.dwursteisen.tween.studio.model.Shape;
+import com.dwursteisen.tween.studio.model.ShapeAccessor;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -27,6 +28,7 @@ public class App implements ApplicationListener {
     public App() {
         // Tween Engine initialization
         Tween.registerAccessor(Sprite.class, new SpriteTweenAccessor());
+        Tween.registerAccessor(Shape.class, new ShapeAccessor());
 
         // ---------------------------------------------------------------------
         // 0. Tween Studio initialization: this single call ("enableEdition()")

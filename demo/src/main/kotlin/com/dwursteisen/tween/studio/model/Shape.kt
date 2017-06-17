@@ -9,12 +9,12 @@ fun String.toColor(): Color {
     return Color.RED
 }
 
-data class Shape(var name: String,
-                 var color: Color,
-                 var position: Vector2 = Vector2(),
-                 var size: Vector2 = Vector2(),
-                 var scale: Vector2 = Vector2(1f, 1f),
-                 var rotation: Float = 0f) {
+class Shape(var name: String,
+            var color: Color,
+            var position: Vector2 = Vector2(),
+            var size: Vector2 = Vector2(),
+            var scale: Vector2 = Vector2(1f, 1f),
+            var rotation: Float = 0f) {
     companion object {
         fun fromConf(conf: TargetConfiguration): Shape {
             return Shape(
